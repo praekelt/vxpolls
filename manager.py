@@ -1,3 +1,4 @@
+# -*- test-case-name: vxpolls.tests.test_manager -*-
 import time
 import json
 

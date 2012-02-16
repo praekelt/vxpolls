@@ -1,7 +1,7 @@
 vxPolls
 =======
 
-Simple PollManager, ResultsManager and PollResultsDashboardServer.
+Simple PollManager, ResultsManager and PollResultsDashboardServer. The example uses the PollManager only and as a result it doesn't track results yet, however the ResultManager does that for you - it just needs to be hooked up.
 
 Installation
 ------------

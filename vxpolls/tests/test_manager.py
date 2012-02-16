@@ -40,8 +40,7 @@ class PollManagerTestCase(TestCase):
         self.assertEqual(question.copy, expected_question)
         response = self.poll_manager.submit_answer(self.participant,
                                                     invalid_input)
-        self.assertEqual(response, '%s is an invalid answer to %s' % (
-            invalid_input, expected_question))
+        self.assertEqual(response, expected_question)
 
     def test_valid_input_response(self):
         expected_question = 'What is your favorite colour?'

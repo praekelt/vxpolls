@@ -58,8 +58,7 @@ class PollManager(object):
             participant.has_unanswered_question = False
             participant.interactions += 1
         else:
-            return '%s is an invalid answer to %s' % (
-                answer, poll_question.copy)
+            return poll_question.copy
 
     def has_more_questions_for(self, participant):
         next_question = self.get_next_question(participant)

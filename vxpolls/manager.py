@@ -110,13 +110,13 @@ class PollQuestion(object):
                     send_at=None, group_name=None):
         self.index = index
         self.copy = copy
-        self.valid_responses = [unicode(a).lower() for a in valid_responses]
+        self.valid_responses = [unicode(a) for a in valid_responses]
         self.send_at = send_at
         self.group_name = group_name
         self.answered = False
 
     def answer(self, answer):
-        if self.valid_responses and (answer.lower() not in self.valid_responses):
+        if self.valid_responses and (answer not in self.valid_responses):
                 return False
         else:
             self.answer = answer

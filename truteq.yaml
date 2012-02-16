@@ -1,0 +1,5 @@
+transport_name: vxpolls_transport
+username: username
+password: password
+host: host.name
+port: 1234

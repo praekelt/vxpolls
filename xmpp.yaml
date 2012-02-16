@@ -1,0 +1,7 @@
+transport_name: vxpolls_transport
+username: username@gmail.com
+password: password
+status: Vumi Transport
+host: talk.google.com
+port: 5222
+debug: False

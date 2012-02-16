@@ -24,3 +24,12 @@ Update `xmpp.yaml` with your GTalk account details and run the following:
 
 That will run the necessary processes. Run `supervisorctl` to manage the individual processes.
 Your GTalk account should come online, send it a message to start the poll.
+
+
+Tests
+-----
+
+::
+
+	$ source ve/bin/activate
+	$ trial tests

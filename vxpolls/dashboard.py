@@ -131,6 +131,11 @@ class PollUsersCSVResource(Resource):
         return NOT_DONE_YET
 
 class InstructionsResource(Resource):
+
+    def __init__(self, config):
+        Resource.__init__(self)
+        self.config = config
+
     def render_GET(self, request):
         request.write("""
 <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
@@ -139,7 +144,7 @@ class InstructionsResource(Resource):
 <html lang="en">
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-    <title>Afropinions QA</title>
+    <title>vxPolls</title>
     <meta name="generator" content="TextMate http://macromates.com/">
     <meta name="author" content="Simon de Haan">
     <!-- Date: 2011-05-26 -->
@@ -162,21 +167,26 @@ class InstructionsResource(Resource):
 </head>
 <body>
     <div id="main">
-        <h1>Afropinions QA instance</h1>
+        <h1>vxPolls QA instance</h1>
         <p>
-            This is a QA version of Afropinions, all content is for testing purposes
+            This is a QA version of vxPolls, all content is for testing purposes
             only and are not in anyway related to real people.
         </p>
         <h2>Documentation</h2>
         <div>
             <strong>Dashboard</strong>
+            <p>
+                We provide a simple HTTP URL for Geckoboard based dashboards. These are the available URLs.
+            </p>
             <ul>
-                <li><a target="_blank" href="https://afropinions.geckoboard.com/dashboard/CCE8E56F70989ED8/">Geckoboard</a></li>
+                <li><a target="_blank" href="active">Active Participants</a></li>
+                <li><a target="_blank" href="completed?collection_id=%(collection_id)s">Completed Surveys</a></li>
+                <li><a target="_blank" href="results?collection_id=%(collection_id)s&amp;question=%(question)s">Results for question '%(question)s'</a></li>
             </ul>
             <strong>Data export</strong>
             <ul>
-                <li><a href="users.csv?collection_id=poll-1">User data</a></li>
-                <li><a href="results.csv?collection_id=poll-1">Poll results</a></li>
+                <li><a href="users.csv?collection_id=%(collection_id)s">User data</a></li>
+                <li><a href="results.csv?collection_id=%(collection_id)s">Poll results</a></li>
             </ul>
             <strong>QA via Gtalk</strong>
             <p>
@@ -187,68 +197,29 @@ class InstructionsResource(Resource):
             </p>
             <ul>
                 <li>
-                    Add <code>dev@vumi.org</code> as a
+                    Add your configured Gtalk address as a
                     contact to your Gtalk contact list.
                 </li>
                 <li>
-                    Send your age as the first chat message.
+                    Initiate the conversation by sending something random like "hi"
                 </li>
                 <li>
                     The menu will return and ask your first question.
-                </li>
-                <li>
-                    It is configured to ask questions in batches and at a specified
-                    interval. Currently the settings as 2 questions per batch at 5 second intervals.
-                    This can be configured.
-                </li>
-                <li>
-                    Follow the instructions on the screen. From this point on
-                    it works like a multiple choice menu, except for the questions about tribes
-                    and political party affiliation - the options for those are listed below.
-                </li>
-                <li>
-                    Possible tribes:
-                    <ul>
-                        <li>Muganda</li>
-                        <li>Munyakole</li>
-                        <li>Munyoro</li>
-                        <li>Musoga</li>
-                        <li>Mugishu</li>
-                        <li>Munyole</li>
-                        <li>Ateso</li>
-                        <li>Acholi</li>
-                        <li>Alur</li>
-                        <li>Lugbara</li>
-                    </ul>
-                </li>
-                <li>
-                    Possible political parties:
-                    <ul>
-                        <li>NRM</li>
-                        <li>FDC</li>
-                        <li>DP</li>
-                        <li>CP</li>
-                        <li>UPC</li>
-                        <li>PPP</li>
-                        <li>UFA</li>
-                        <li>JEEMA</li>
-                        <li>PDP</li>
-                        <li>None</li>
-                    </ul>
+                    It is configured to ask questions in batches.
                 </li>
             </ul>
         </div>
     </div>
 </body>
-</html>""")
+</html>""" % self.config)
         request.finish()
         return NOT_DONE_YET
 
 class PollResource(Resource):
 
-    def __init__(self, poll_manager, results_manager, path_prefix):
+    def __init__(self, poll_manager, results_manager, config):
         Resource.__init__(self)
-
+        path_prefix = config['path']
         request_path_bits = filter(None, path_prefix.split('/'))
 
         def create_node(node, path):
@@ -271,14 +242,14 @@ class PollResource(Resource):
         parent.putChild('users.csv',
             PollUsersCSVResource(results_manager))
         parent.putChild('index.html',
-            InstructionsResource())
+            InstructionsResource(config))
 
 class PollDashboardServer(Service):
-    def __init__(self, poll_manager, results_manager, port, path_prefix):
+    def __init__(self, poll_manager, results_manager, config):
         self.webserver = None
-        self.port = port
+        self.port = config['port']
         self.site_factory = Site(PollResource(poll_manager, results_manager,
-            path_prefix))
+            config))
 
     @inlineCallbacks
     def startService(self):

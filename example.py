@@ -7,7 +7,7 @@ from twisted.internet.defer import inlineCallbacks
 from vumi.tests.utils import FakeRedis
 from vumi.application.base import ApplicationWorker
 
-from vxpolls.manager import PollManager
+from vxpolls import PollManager, ResultManager, PollDashboardServer
 
 
 class PollApplication(ApplicationWorker):
@@ -21,17 +21,42 @@ class PollApplication(ApplicationWorker):
         self.questions = self.config.get('questions', [])
         self.r_config = self.config.get('redis_config', {})
         self.batch_size = self.config.get('batch_size', 5)
+        self.dashboard_port = int(self.config.get('dashboard_port', 8000))
+        self.dashboard_prefix = self.config.get('dashboard_path_prefix', '/')
         self.poll_id = self.config.get('poll_id', self.generate_unique_id())
 
     def generate_unique_id(self):
         return hashlib.md5(json.dumps(self.config)).hexdigest()
 
+    @inlineCallbacks
     def setup_application(self):
         self.r_server = FakeRedis(**self.r_config)
+        # Poll Manager is responsible for iterating over
+        # questions and batching them.
         self.pm = PollManager(self.r_server, self.questions,
                                     batch_size=self.batch_size)
+        # Result Manager keeps track of what was answered
+        # to which question. We need to tell it about the options
+        # before hand.
+        self.rm = ResultManager(self.r_server, r_prefix='vxpolls')
+        self.rm.register_collection(self.poll_id)
+        for question in self.questions:
+            self.rm.register_question(self.poll_id, question['copy'],
+                question['valid_responses'])
+        # Dashboard server creates an HTTP API for GeckoBoard based
+        # dasbhoards.
+        self.dashboard = PollDashboardServer(
+            self.pm, self.rm, {
+                'port': self.dashboard_port,
+                'path': self.dashboard_prefix,
+                'collection_id': self.poll_id,
+                'question': self.questions[0]['copy'],
+            })
+        yield self.dashboard.startService()
 
+    @inlineCallbacks
     def teardown_application(self):
+        yield self.dashboard.stopService()
         self.pm.stop()
 
     def consume_user_message(self, message):
@@ -49,6 +74,8 @@ class PollApplication(ApplicationWorker):
         if error_message:
             self.reply_to(message, error_message)
         else:
+            self.rm.add_result(self.poll_id, participant.user_id,
+                last_question.copy, content)
             if self.pm.has_more_questions_for(participant):
                 next_question = self.pm.get_next_question(participant)
                 self.reply_to(message, self.ask_question(participant, next_question))

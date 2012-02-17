@@ -1,7 +1,7 @@
 vxPolls
 =======
 
-Simple PollManager, ResultsManager and PollResultsDashboardServer. The example uses the PollManager only and as a result it doesn't track results yet, however the ResultManager does that for you - it just needs to be hooked up.
+Simple PollManager, ResultsManager and PollResultsDashboardServer. 
 
 Installation
 ------------
@@ -25,6 +25,7 @@ Update `xmpp.yaml` with your GTalk account details and run the following:
 That will run the necessary processes. Run `supervisorctl` to manage the individual processes.
 Your GTalk account should come online, send it a message to start the poll.
 
+You'll find more instructions for dashboards at http://localhost:8101/dashboard/index.html
 
 Tests
 -----

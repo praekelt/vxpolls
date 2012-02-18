@@ -43,7 +43,12 @@ class PollDashboardTestCase(TestCase):
                 [resp.lower() for resp in entry['valid_responses']])
 
         self.service = PollDashboardServer(self.poll_manager,
-                                            self.results_manager, 0, '')
+                                    self.results_manager, {
+                                        'port': 0,
+                                        'path': '',
+                                        'collection_id': self.poll_id,
+                                        'question': self.questions[0]['copy']
+                                    })
         yield self.service.startService()
         addr = self.service.webserver.getHost()
         self.url = "http://%s:%s/" % (addr.host, addr.port)

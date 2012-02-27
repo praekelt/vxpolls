@@ -2,7 +2,7 @@ from twisted.internet.defer import inlineCallbacks
 
 from vumi.application.tests.test_base import ApplicationTestCase
 
-from example import PollApplication
+from vxpolls.example import PollApplication
 
 
 class PollApplicationTestCase(ApplicationTestCase):

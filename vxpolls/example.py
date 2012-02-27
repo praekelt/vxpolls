@@ -89,10 +89,13 @@ class PollApplication(ApplicationWorker):
         if next_question:
             self.reply_to(message, self.batch_completed_response,
                 continue_session=False)
+            self.pm.save_participant(participant)
         else:
             self.reply_to(message, self.survey_completed_response,
                 continue_session=False)
-        self.pm.save_participant(participant)
+            self.pm.save_participant(participant)
+            # Archive for demo purposes so we can redial in and start over.
+            self.pm.archive(participant)
 
     def init_session(self, participant, message):
         # brand new session

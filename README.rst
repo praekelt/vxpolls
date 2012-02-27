@@ -3,14 +3,22 @@ vxPolls
 
 Simple PollManager, ResultsManager and PollResultsDashboardServer. 
 
+Dependencies
+------------
+
+#. `RabbitMQ <http://www.rabbitmq.com/>`_
+
 Installation
 ------------
 
 ::
+    $ virtualenv --no-site-packages ve
+    $ source ve/bin/activate
+    $ pip install -r requirements.pip
 
-	$ virtualenv --no-site-packages ve
-	$ source ve/bin/activate
-	$ pip install -r requirements.pip
+On initial setup RabbitMQ needs to be configured::
+
+    $ sudo ./ve/src/vumi/utils/rabbitmq.setup.sh
 
 Running
 -------

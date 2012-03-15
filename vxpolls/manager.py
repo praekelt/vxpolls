@@ -78,7 +78,7 @@ class PollManager(object):
                         participant.user_id)
 
         def equals(key, value):
-            return state[key] == value
+            return unicode(state[key]) == unicode(value)
 
         operations_dispatcher = {
             'equal': equals

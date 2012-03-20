@@ -31,8 +31,9 @@ class PollDashboardTestCase(TestCase):
     @inlineCallbacks
     def setUp(self):
         self.r_server = FakeRedis()
-        self.poll_manager = PollManager(self.r_server, self.questions)
-        self.results_manager = ResultManager(self.r_server)
+        self.poll_manager = PollManager(self.r_server, 'poll_id',
+                                        self.questions)
+        self.results_manager = self.poll_manager.results_manager
         # Let the results manager know what collections it should be
         # aware of.
         self.results_manager.register_collection(self.poll_id)

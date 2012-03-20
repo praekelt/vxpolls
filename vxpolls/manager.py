@@ -6,15 +6,27 @@ from vumi.application import SessionManager
 from vumi import log
 
 from vxpolls.participant import PollParticipant
+from vxpolls.results import ResultManager
 
 
 class PollManager(object):
-    def __init__(self, r_server, questions, batch_size=None,
+    def __init__(self, r_server, poll_id, questions, batch_size=None,
         r_prefix='poll_manager'):
-        self.questions = questions
         self.r_server = r_server
+        self.poll_id = poll_id
+        self.questions = questions
         self.r_prefix = r_prefix
         self.batch_size = batch_size
+        # Result Manager keeps track of what was answered
+        # to which question. We need to tell it about the options
+        # before hand.
+        self.results_manager = ResultManager(self.r_server,
+                                                self.r_key('results'))
+        self.results_manager.register_collection(self.poll_id)
+        for index, question_data in enumerate(self.questions):
+            question = PollQuestion(index, **question_data)
+            self.results_manager.register_question(self.poll_id,
+                question.label, question.valid_responses)
         self.session_manager = SessionManager(self.r_server,
                                                 self.r_key('session'))
 
@@ -43,18 +55,53 @@ class PollManager(object):
     def set_last_question(self, participant, question):
         participant.last_question_index = question.index
 
-    def get_next_question(self, participant):
-        last_question = self.get_last_question(participant)
+    def get_next_question(self, participant, last_index=None):
+        if last_index is None:
+            last_question = self.get_last_question(participant)
+        else:
+            last_question = self.get_question(last_index)
+
         if last_question:
             next_index = last_question.index + 1
         else:
             next_index = 0
-        return self.get_question(next_index)
+        question = self.get_question(next_index)
+        if question:
+            if self.is_suitable_question(participant, question):
+                return question
+            else:
+                return self.get_next_question(participant, next_index)
+
+    def is_suitable_question(self, participant, question):
+
+        state = self.results_manager.get_user(self.poll_id,
+                        participant.user_id)
+
+        def equals(key, value):
+            return unicode(state[key]) == unicode(value)
+
+        operations_dispatcher = {
+            'equal': equals
+        }
+
+        if not question.checks:
+            return True
+
+        for operation, params in question.checks.items():
+            handler = operations_dispatcher[operation]
+            key = params.keys()[0]
+            value = params.values()[0]
+            if handler(key, value):
+                return True
+
+        return False
 
     def submit_answer(self, participant, answer):
         poll_question = self.get_last_question(participant)
         assert poll_question, 'Need a question to submit an answer for'
         if poll_question.answer(answer):
+            self.results_manager.add_result(self.poll_id, participant.user_id,
+                poll_question.label, answer)
             participant.has_unanswered_question = False
             participant.interactions += 1
         else:
@@ -106,18 +153,17 @@ class PollManager(object):
         self.session_manager.stop()
 
 class PollQuestion(object):
-    def __init__(self, index, copy, valid_responses=[],
-                    send_at=None, group_name=None):
+    def __init__(self, index, copy, label=None, valid_responses=[], checks={}):
         self.index = index
         self.copy = copy
+        self.label = label or copy
         self.valid_responses = [unicode(a) for a in valid_responses]
-        self.send_at = send_at
-        self.group_name = group_name
+        self.checks = checks
         self.answered = False
 
     def answer(self, answer):
         if self.valid_responses and (answer not in self.valid_responses):
-                return False
+            return False
         else:
             self.answer = answer
             self.answered = True

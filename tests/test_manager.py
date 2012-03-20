@@ -25,31 +25,33 @@ class PollManagerTestCase(TestCase):
 
     def setUp(self):
         self.r_server = FakeRedis()
-        self.poll_manager = PollManager(self.r_server, 'poll_id',
-                                self.default_questions)
-        self.participant = self.poll_manager.get_participant('user_id')
+        self.poll_manager = PollManager(self.r_server)
+        self.poll = self.poll_manager.register('poll-id', {
+            'questions': self.default_questions
+        })
+        self.participant = self.poll.get_participant('user_id')
 
     @inlineCallbacks
     def tearDown(self):
-        yield self.poll_manager.stop()
+        yield self.poll.stop()
 
     def test_invalid_input_response(self):
         expected_question = 'What is your favorite colour?'
         invalid_input = 'I LOVE TURTLES!!'
-        question = self.poll_manager.get_next_question(self.participant)
-        self.poll_manager.set_last_question(self.participant, question)
+        question = self.poll.get_next_question(self.participant)
+        self.poll.set_last_question(self.participant, question)
         self.assertEqual(question.copy, expected_question)
-        response = self.poll_manager.submit_answer(self.participant,
+        response = self.poll.submit_answer(self.participant,
                                                     invalid_input)
         self.assertEqual(response, expected_question)
 
     def test_valid_input_response(self):
         expected_question = 'What is your favorite colour?'
         valid_input = 'red'
-        question = self.poll_manager.get_next_question(self.participant)
-        self.poll_manager.set_last_question(self.participant, question)
+        question = self.poll.get_next_question(self.participant)
+        self.poll.set_last_question(self.participant, question)
         self.assertEqual(question.copy, expected_question)
-        response = self.poll_manager.submit_answer(self.participant,
+        response = self.poll.submit_answer(self.participant,
                                                     valid_input)
         self.assertEqual(None, response)
 
@@ -57,14 +59,14 @@ class PollManagerTestCase(TestCase):
         for index, question in enumerate(self.default_questions):
             valid_input = random.choice(question['valid_responses'])
             next_question_copy = question['copy']
-            next_question = self.poll_manager.get_next_question(
+            next_question = self.poll.get_next_question(
                                                 self.participant)
             self.assertEqual(next_question.copy, next_question_copy)
-            last_question = self.poll_manager.get_last_question(
+            last_question = self.poll.get_last_question(
                                                 self.participant)
-            self.poll_manager.set_last_question(self.participant,
+            self.poll.set_last_question(self.participant,
                                                 next_question)
-            self.poll_manager.submit_answer(self.participant,
+            self.poll.submit_answer(self.participant,
                                                 valid_input)
             if not index:
                 self.assertEqual(None, last_question)
@@ -98,49 +100,52 @@ class MultiLevelPollManagerTestCase(TestCase):
 
     def setUp(self):
         self.r_server = FakeRedis()
-        self.poll_manager = PollManager(self.r_server, 'poll_id',
-                                        self.default_questions)
-        self.participant = self.poll_manager.get_participant('user_id')
+        self.poll_manager = PollManager(self.r_server)
+        self.poll_manager.set('poll-id', {
+            'questions': self.default_questions,
+        })
+        self.poll = self.poll_manager.get('poll-id')
+        self.participant = self.poll.get_participant('user_id')
 
     @inlineCallbacks
     def tearDown(self):
-        yield self.poll_manager.stop()
+        yield self.poll.stop()
 
     def test_checks_skip(self):
         expected_question = 'What is your favorite colour?'
         valid_input = 'red'
         # get the first question
-        question = self.poll_manager.get_next_question(self.participant)
+        question = self.poll.get_next_question(self.participant)
         self.assertEqual(question.valid_responses, ['red', 'green', 'blue'])
-        self.poll_manager.set_last_question(self.participant, question)
+        self.poll.set_last_question(self.participant, question)
         self.assertEqual(question.copy, expected_question)
-        response = self.poll_manager.submit_answer(self.participant,
+        response = self.poll.submit_answer(self.participant,
                                                     valid_input)
         self.assertEqual(None, response)
 
         next_question_copy = 'Orange, Yellow or Black?'
-        next_question = self.poll_manager.get_next_question(self.participant)
+        next_question = self.poll.get_next_question(self.participant)
         self.assertEqual(next_question.copy, next_question_copy)
 
     def test_checks_follow_up(self):
         expected_question = 'What is your favorite colour?'
         valid_input = 'green'
         # get the first question
-        question = self.poll_manager.get_next_question(self.participant)
+        question = self.poll.get_next_question(self.participant)
         self.assertEqual(question.valid_responses, ['red', 'green', 'blue'])
-        self.poll_manager.set_last_question(self.participant, question)
+        self.poll.set_last_question(self.participant, question)
         self.assertEqual(question.copy, expected_question)
-        response = self.poll_manager.submit_answer(self.participant,
+        response = self.poll.submit_answer(self.participant,
                                                     valid_input)
         self.assertEqual(None, response)
 
         next_question_copy = 'What sort of green? Dark or Light?'
-        next_question = self.poll_manager.get_next_question(self.participant)
-        self.poll_manager.set_last_question(self.participant, next_question)
+        next_question = self.poll.get_next_question(self.participant)
+        self.poll.set_last_question(self.participant, next_question)
         self.assertEqual(next_question.copy, next_question_copy)
-        response = self.poll_manager.submit_answer(self.participant, 'dark')
+        response = self.poll.submit_answer(self.participant, 'dark')
         self.assertEqual(None, response)
 
         next_question_copy = 'Orange, Yellow or Black?'
-        next_question = self.poll_manager.get_next_question(self.participant)
+        next_question = self.poll.get_next_question(self.participant)
         self.assertEqual(next_question.copy, next_question_copy)

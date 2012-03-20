@@ -1,6 +1,7 @@
-# -*- test-case-name: vxpolls.tests.test_manager -*-
+# -*- test-case-name: tests.test_manager -*-
 import time
 import json
+import hashlib
 
 from vumi.application import SessionManager
 from vumi import log
@@ -8,10 +9,44 @@ from vumi import log
 from vxpolls.participant import PollParticipant
 from vxpolls.results import ResultManager
 
-
 class PollManager(object):
+    def __init__(self, r_server, r_prefix='poll_manager'):
+        self.r_server = r_server
+        self.r_prefix = r_prefix
+
+    def r_key(self, *args):
+        parts = [self.r_prefix]
+        parts.extend(args)
+        return ':'.join(map(unicode, parts))
+
+    def generate_unique_id(self, version):
+        return hashlib.md5(json.dumps(version)).hexdigest()
+
+    def set(self, poll_id, version):
+        uid = self.generate_unique_id(version)
+        self.r_server.hset(self.r_key('versions', poll_id), uid,
+                            json.dumps(version))
+        self.r_server.zadd(self.r_key('version_timestamps', poll_id), **{
+            uid: time.time(),
+        })
+        return uid
+
+    def register(self, poll_id, version):
+        uid = self.set(poll_id, version)
+        return self.get(poll_id, timestamp=uid)
+
+    def get(self, poll_id, timestamp=None):
+        if timestamp is None:
+            [timestamp] = self.r_server.zrange(
+                        self.r_key('version_timestamps', poll_id), 0, 1)
+        version = json.loads(self.r_server.hget(
+                        self.r_key('versions', poll_id), timestamp))
+        return Poll(self.r_server, poll_id, version['questions'],
+                version.get('batch_size'), r_prefix=self.r_key('poll'))
+
+class Poll(object):
     def __init__(self, r_server, poll_id, questions, batch_size=None,
-        r_prefix='poll_manager'):
+        r_prefix='poll'):
         self.r_server = r_server
         self.poll_id = poll_id
         self.questions = questions

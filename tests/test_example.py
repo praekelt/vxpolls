@@ -31,7 +31,7 @@ class PollApplicationTestCase(ApplicationTestCase):
             'batch_size': 2
         }
         self.app = yield self.get_application(self.config)
-        self.pm = self.app.pm
+        self.poll = self.app.poll
 
     def assertResponse(self, response, content):
         self.assertEqual(response['content'], content)
@@ -50,8 +50,8 @@ class PollApplicationTestCase(ApplicationTestCase):
         # a response
         self.assertEvent(response, None)
         # get the participant and check the state after the first interaction
-        participant = self.pm.get_participant(msg.user())
-        next_question = self.app.pm.get_next_question(participant)
+        participant = self.poll.get_participant(msg.user())
+        next_question = self.app.poll.get_next_question(participant)
         self.assertEqual(next_question.copy, self.default_questions[1]['copy'])
 
     @inlineCallbacks
@@ -59,10 +59,10 @@ class PollApplicationTestCase(ApplicationTestCase):
         # create the inbound message
         msg = self.mkmsg_in(content='red')
         # prime the participant
-        participant = self.pm.get_participant(msg.user())
+        participant = self.poll.get_participant(msg.user())
         participant.has_unanswered_question = True
         participant.last_question_index = 0
-        self.pm.save_participant(participant)
+        self.poll.save_participant(participant)
         # send to the app
         yield self.dispatch(msg)
         [response] = self.get_dispatched_messages()
@@ -75,10 +75,10 @@ class PollApplicationTestCase(ApplicationTestCase):
         # create the inbound message
         msg = self.mkmsg_in(content='apple')
         # prime the participant
-        participant = self.pm.get_participant(msg.user())
+        participant = self.poll.get_participant(msg.user())
         participant.has_unanswered_question = True
         participant.last_question_index = 2
-        self.pm.save_participant(participant)
+        self.poll.save_participant(participant)
         # send to the app
         yield self.dispatch(msg)
         [response] = self.get_dispatched_messages()
@@ -90,10 +90,10 @@ class PollApplicationTestCase(ApplicationTestCase):
         # create the inbound init message
         msg = self.mkmsg_in(content=None)
         # prime the participant
-        participant = self.pm.get_participant(msg.user())
+        participant = self.poll.get_participant(msg.user())
         participant.has_unanswered_question = True
         participant.last_question_index = 1
-        self.pm.save_participant(participant)
+        self.poll.save_participant(participant)
         # send to app
         yield self.dispatch(msg)
         [response] = self.get_dispatched_messages()
@@ -106,11 +106,11 @@ class PollApplicationTestCase(ApplicationTestCase):
     def test_batching_session(self):
         msg = self.mkmsg_in(content='orange')
         # prime the participant
-        participant = self.pm.get_participant(msg.user())
+        participant = self.poll.get_participant(msg.user())
         participant.has_unanswered_question = True
         participant.interactions = 1
         participant.last_question_index = 1
-        self.pm.save_participant(participant)
+        self.poll.save_participant(participant)
         # send to app
         yield self.dispatch(msg)
         [response] = self.get_dispatched_messages()
@@ -134,10 +134,10 @@ class PollApplicationTestCase(ApplicationTestCase):
     @inlineCallbacks
     def test_initial_connect_after_completion(self):
         msg = self.mkmsg_in(content=None)
-        participant = self.pm.get_participant(msg.user())
+        participant = self.poll.get_participant(msg.user())
         participant.has_unanswered_question = False
         participant.last_question_index = 2
-        self.pm.save_participant(participant)
+        self.poll.save_participant(participant)
         yield self.dispatch(msg)
         [response] = self.get_dispatched_messages()
         self.assertResponse(response, self.app.survey_completed_response)

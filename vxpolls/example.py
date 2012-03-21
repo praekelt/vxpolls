@@ -43,7 +43,6 @@ class PollApplication(ApplicationWorker):
         poll = self.pm.get_poll_for_participant(self.poll_id, participant)
         participant.poll_uid = poll.uid
         participant.questions_per_session = poll.batch_size
-
         if participant.has_unanswered_question:
             self.on_message(participant, poll, message)
         else:

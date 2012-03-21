@@ -184,7 +184,32 @@ class PollManagerVersioningTestCase(BasePollApplicationTestCase):
         # a response
         self.assertEvent(response, None)
         # get the participant and check the state after the first interaction
-        participant = self.poll.get_participant(msg.user())
-        next_question = self.poll.get_next_question(participant)
+        participant, poll = self.get_participant_and_poll(msg.user())
+        next_question = poll.get_next_question(participant)
         self.assertEqual(next_question.copy, self.updated_questions[1]['copy'])
 
+    @inlineCallbacks
+    def test_storing_of_poll_uid(self):
+        msg = self.mkmsg_in(content=None)
+        yield self.dispatch(msg)
+        [response] = self.get_dispatched_messages()
+        self.assertResponse(response, self.default_questions[0]['copy'])
+        participant, poll = self.get_participant_and_poll(msg.user())
+        self.assertEqual(participant.poll_uid, poll.uid)
+
+        # update the poll with new content but the system should
+        # still remember that we're working with an older version
+        # of the poll.
+        self.app.pm.register(self.poll_id, {
+            'questions': self.updated_questions
+        })
+
+        yield self.dispatch(self.mkmsg_in(content='red'))
+        response = self.get_dispatched_messages()[-1]
+        self.assertResponse(response, self.default_questions[1]['copy'])
+
+        # now try from a different number, should get an
+        # updated first question.
+        yield self.dispatch(self.mkmsg_in(content=None, from_addr='123'))
+        response = self.get_dispatched_messages()[-1]
+        self.assertResponse(response, self.updated_questions[0]['copy'])

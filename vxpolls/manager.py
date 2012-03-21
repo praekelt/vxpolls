@@ -40,10 +40,8 @@ class PollManager(object):
     def get(self, poll_id, uid=None):
         versions_key = self.r_key('versions', poll_id)
         timestamps_key = self.r_key('version_timestamps', poll_id)
-        [latest_uid] = self.r_server.zrange(timestamps_key, 0, 0, desc=True)
-        uid = uid or latest_uid
-        if not self.r_server.hexists(versions_key, uid):
-            uid = latest_uid
+        uids = self.r_server.zrange(timestamps_key, 0, -1, desc=True)
+        uid = uid or uids[0]
         version = json.loads(self.r_server.hget(versions_key, uid))
         return Poll(self.r_server, poll_id, uid, version['questions'],
                 version.get('batch_size'), r_prefix=self.r_key('poll'))

@@ -29,11 +29,11 @@ class PollManagerTestCase(TestCase):
         self.poll = self.poll_manager.register('poll-id', {
             'questions': self.default_questions
         })
-        self.participant = self.poll.get_participant('user_id')
+        self.participant = self.poll_manager.get_participant('user_id')
 
     @inlineCallbacks
     def tearDown(self):
-        yield self.poll.stop()
+        yield self.poll_manager.stop()
 
     def test_invalid_input_response(self):
         expected_question = 'What is your favorite colour?'
@@ -104,11 +104,11 @@ class MultiLevelPollManagerTestCase(TestCase):
         self.poll = self.poll_manager.register('poll-id', {
             'questions': self.default_questions,
         })
-        self.participant = self.poll.get_participant('user_id')
+        self.participant = self.poll_manager.get_participant('user_id')
 
     @inlineCallbacks
     def tearDown(self):
-        yield self.poll.stop()
+        yield self.poll_manager.stop()
 
     def test_checks_skip(self):
         expected_question = 'What is your favorite colour?'

@@ -31,6 +31,7 @@ class PollParticipant(object):
         self.received_messages = []
         self.retries = 0
         self.continue_session = True
+        self.poll_uid = None
         if session_data:
             self.load(session_data)
 
@@ -73,6 +74,8 @@ class PollParticipant(object):
             'received_messages', deserialize_messages, default=[])
         self.retries = typed(session_data,
             'retries', int, 0)
+        self.poll_uid = typed(session_data,
+            'poll_uid', str, default=None)
 
     def dump(self):
         return {
@@ -86,6 +89,7 @@ class PollParticipant(object):
             'sent_messages': serialize_messages(self.sent_messages),
             'received_messages': serialize_messages(self.received_messages),
             'retries': self.retries,
+            'poll_uid': self.poll_uid,
         }
 
     def clean_dump(self):

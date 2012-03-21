@@ -45,7 +45,7 @@ class PollDashboardTestCase(TestCase):
             self.results_manager.register_question(self.poll_id, entry['copy'],
                 [resp.lower() for resp in entry['valid_responses']])
 
-        self.service = PollDashboardServer(self.poll,
+        self.service = PollDashboardServer(self.poll_manager,
                                     self.results_manager, {
                                         'port': 0,
                                         'path': '',
@@ -58,7 +58,7 @@ class PollDashboardTestCase(TestCase):
 
     @inlineCallbacks
     def tearDown(self):
-        yield self.poll.stop()
+        yield self.poll_manager.stop()
         yield self.service.stopService()
 
     @inlineCallbacks
@@ -73,13 +73,13 @@ class PollDashboardTestCase(TestCase):
 
     def submit_answers(self, *answers, **kwargs):
         for answer in answers:
-            participant = self.poll.get_participant(kwargs.get('user_id', 'user_id'))
+            participant = self.poll_manager.get_participant(kwargs.get('user_id', 'user_id'))
             question = self.poll.get_next_question(participant)
             self.poll.set_last_question(participant, question)
             error_message = self.poll.submit_answer(participant, answer)
             if error_message:
                 raise ValueError(error_message)
-            self.poll.save_participant(participant)
+            self.poll_manager.save_participant(participant)
 
     @inlineCallbacks
     def test_question_output(self):

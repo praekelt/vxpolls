@@ -32,8 +32,7 @@ class PollManager(object):
         return uid
 
     def register(self, poll_id, version):
-        uid = self.set(poll_id, version)
-        return self.get(poll_id, timestamp=uid)
+        return self.get(poll_id, timestamp=self.set(poll_id, version))
 
     def get(self, poll_id, timestamp=None):
         if timestamp is None:

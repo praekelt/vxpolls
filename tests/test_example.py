@@ -5,27 +5,30 @@ from vumi.application.tests.test_base import ApplicationTestCase
 from vxpolls.example import PollApplication
 
 
-class PollApplicationTestCase(ApplicationTestCase):
+class BasePollApplicationTestCase(ApplicationTestCase):
 
     application_class = PollApplication
     timeout = 1
+    poll_id = 'poll-id'
     default_questions = [{
-        'copy': 'What is your favorite colour?',
-        'valid_responses': ['red', 'green', 'blue'],
-    },
-    {
-        'copy': 'Orange, Yellow or Black?',
-        'valid_responses': ['orange', 'yellow', 'black'],
-    },
-    {
-        'copy': 'What is your favorite fruit?',
-        'valid_responses': ['apple', 'orange'],
-    }]
+            'copy': 'What is your favorite colour?',
+            'valid_responses': ['red', 'green', 'blue'],
+        },
+        {
+            'copy': 'Orange, Yellow or Black?',
+            'valid_responses': ['orange', 'yellow', 'black'],
+        },
+        {
+            'copy': 'What is your favorite fruit?',
+            'valid_responses': ['apple', 'orange'],
+        }
+    ]
 
     @inlineCallbacks
     def setUp(self):
-        yield super(PollApplicationTestCase, self).setUp()
+        yield super(BasePollApplicationTestCase, self).setUp()
         self.config = {
+            'poll_id': self.poll_id,
             'questions': self.default_questions,
             'transport_name': self.transport_name,
             'batch_size': 2
@@ -38,6 +41,9 @@ class PollApplicationTestCase(ApplicationTestCase):
 
     def assertEvent(self, response, event):
         self.assertEqual(response['session_event'], event)
+
+
+class PollApplicationTestCase(BasePollApplicationTestCase):
 
     @inlineCallbacks
     def test_initial_connect(self):
@@ -142,3 +148,35 @@ class PollApplicationTestCase(ApplicationTestCase):
         [response] = self.get_dispatched_messages()
         self.assertResponse(response, self.app.survey_completed_response)
         self.assertEvent(response, 'close')
+
+
+class PollManagerVersioningTestCase(BasePollApplicationTestCase):
+
+    # copy the default_questions and change the
+    # content of the first one.
+    updated_questions = BasePollApplicationTestCase.default_questions[:]
+    updated_questions[0] = {
+        'copy': 'What is your favorite food?',
+        'valid_responses': ['italian', 'mexican', 'asian'],
+    }
+
+    @inlineCallbacks
+    def test_first_question(self):
+        # update the poll with new content
+        self.app.pm.set(self.poll_id, {
+            'questions': self.updated_questions
+        })
+
+        msg = self.mkmsg_in(content=None)
+        yield self.dispatch(msg)
+        [response] = self.get_dispatched_messages()
+        # make sure we get the first question as a response
+        self.assertResponse(response, self.updated_questions[0]['copy'])
+        # the session event should be none so it is expecting
+        # a response
+        self.assertEvent(response, None)
+        # get the participant and check the state after the first interaction
+        participant = self.poll.get_participant(msg.user())
+        next_question = self.poll.get_next_question(participant)
+        self.assertEqual(next_question.copy, self.updated_questions[1]['copy'])
+

@@ -101,10 +101,9 @@ class MultiLevelPollManagerTestCase(TestCase):
     def setUp(self):
         self.r_server = FakeRedis()
         self.poll_manager = PollManager(self.r_server)
-        self.poll_manager.set('poll-id', {
+        self.poll = self.poll_manager.register('poll-id', {
             'questions': self.default_questions,
         })
-        self.poll = self.poll_manager.get('poll-id')
         self.participant = self.poll.get_participant('user_id')
 
     @inlineCallbacks

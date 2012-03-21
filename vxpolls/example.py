@@ -1,4 +1,4 @@
-# -*- test-case-name: vxtxtalert.tests.test_survey -*-
+# -*- test-case-name: tests.test_example -*-
 # -*- coding: utf8 -*-
 import hashlib
 import json
@@ -7,7 +7,7 @@ from twisted.internet.defer import inlineCallbacks
 from vumi.tests.utils import FakeRedis
 from vumi.application.base import ApplicationWorker
 
-from vxpolls import PollManager, ResultManager, PollDashboardServer
+from vxpolls import PollManager, PollDashboardServer
 
 
 class PollApplication(ApplicationWorker):

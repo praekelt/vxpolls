@@ -24,6 +24,10 @@ class PollManager(object):
     def generate_unique_id(self, version):
         return hashlib.md5(json.dumps(version)).hexdigest()
 
+    def exists(self, poll_id):
+        key = self.r_key('versions', poll_id)
+        return self.r_server.exists(key)
+
     def set(self, poll_id, version):
         uid = self.generate_unique_id(version)
         self.r_server.hset(self.r_key('versions', poll_id), uid,

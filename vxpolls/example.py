@@ -30,10 +30,11 @@ class PollApplication(ApplicationWorker):
     def setup_application(self):
         self.r_server = FakeRedis(**self.r_config)
         self.pm = PollManager(self.r_server)
-        self.pm.register(self.poll_id, {
-            'questions': self.questions,
-            'batch_size': self.batch_size,
-        })
+        if not self.pm.exists(self.poll_id):
+            self.pm.register(self.poll_id, {
+                'questions': self.questions,
+                'batch_size': self.batch_size,
+            })
 
     def teardown_application(self):
         self.pm.stop()
@@ -41,6 +42,8 @@ class PollApplication(ApplicationWorker):
     def consume_user_message(self, message):
         participant = self.pm.get_participant(message.user())
         poll = self.pm.get_poll_for_participant(self.poll_id, participant)
+        # store the uid so we get this one on the next time around
+        # even if the content changes.
         participant.poll_uid = poll.uid
         participant.questions_per_session = poll.batch_size
         if participant.has_unanswered_question:

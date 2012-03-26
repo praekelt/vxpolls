@@ -1,0 +1,71 @@
+{% extends "djdashboard/base.html" %}
+
+{% block content %}
+        <h1>VXPolls Dashboard Instance</h1>
+        <p>
+            All content is for testing purposes only and are not in anyway related to real people.
+        </p>
+        <h2>Documentation</h2>
+        <div>
+            <strong>Dashboard</strong>
+            <p>
+                We provide a simple HTTP URL for Geckoboard based dashboards. These are the available URLs.
+            </p>
+            <ul>
+                <li><a target="_blank" href="{% url api:active %}">Active Participants</a></li>
+                {% for collection in collections %}
+                <li>
+                    <a target="_blank" href="{% url api:completed %}?collection_id={{collection}}">
+                        Completed Surveys in {{collection}}
+                    </a>
+                </li>
+                {% endfor %}
+                {% for collection in collections %}
+                    <li>
+                        {{collection}} results.
+                        <ul>
+                        {% for question in questions %}
+                            <li>
+                                <a target="_blank" href="{% url api:results %}?collection_id={{collection}}&amp;question={{question.copy}}">
+                                    Results for {{question.copy}}.
+                                </a>
+                            </li>
+                        {% endfor %}
+                        </ul>
+                    </li>
+                {% endfor %}
+            </ul>
+            <strong>Data export</strong>
+            <ul>
+            {% for collection in collections %}
+                <li>
+                    {{collection}}
+                    <ul>
+                        <li><a href="{% url api:export_users %}?collection_id={{collection}}">User data</a></li>
+                        <li><a href="{% url api:export_results %}?collection_id={{collection}}">Poll results</a></li>
+                    </ul>
+                </li>
+            {% endfor %}
+            </ul>
+            <strong>QA via Gtalk</strong>
+            <p>
+                While the SMS provider and gateway are still in the process of
+                being setup, the SMS application can in the mean time be
+                tested by using GTalk or any other Jabber/XMPP based chat client
+                by following these instructions:
+            </p>
+            <ul>
+                <li>
+                    Add your configured Gtalk address as a
+                    contact to your Gtalk contact list.
+                </li>
+                <li>
+                    Initiate the conversation by sending something random like "hi"
+                </li>
+                <li>
+                    The menu will return and ask your first question.
+                    It is configured to ask questions in batches.
+                </li>
+            </ul>
+        </div>
+{% endblock %}

@@ -18,7 +18,7 @@ def json_response(obj):
     return HttpResponse(json.dumps(obj), content_type='application/javascript')
 
 def home(request):
-    return render(request, 'dashboard/home.html', {
+    return render(request, 'djdashboard/home.html', {
         'collections': settings.VXPOLLS_COLLECTIONS,
         'questions': settings.VXPOLLS_QUESTIONS,
     })

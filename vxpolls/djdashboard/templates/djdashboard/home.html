@@ -26,7 +26,7 @@
                         <ul>
                         {% for question in questions %}
                             <li>
-                                <a target="_blank" href="{% url api:results %}?collection_id={{collection}}&amp;question={{question.copy}}">
+                                <a target="_blank" href="{% url api:results %}?collection_id={{collection}}&amp;question={{question.label}}">
                                     Results for {{question.copy}}.
                                 </a>
                             </li>

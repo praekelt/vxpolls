@@ -22,7 +22,7 @@ def json_response(obj):
 def home(request):
     return render(request, 'djdashboard/home.html', {
         'collections': settings.VXPOLLS_COLLECTIONS,
-        'questions': settings.VXPOLLS_QUESTIONS,
+        'questions': vxpolls_questions,
     })
 
 def active(request):

@@ -5,10 +5,12 @@ import json
 import redis
 
 from vxpolls import PollManager
+from vxpolls.manager import PollQuestion
 
 
 vxpolls_redis_config = settings.VXPOLLS_REDIS_CONFIG
-vxpolls_questions = settings.VXPOLLS_QUESTIONS
+vxpolls_questions = [PollQuestion(idx, **params) for idx, params
+                        in enumerate(settings.VXPOLLS_QUESTIONS)]
 redis = redis.Redis(**vxpolls_redis_config)
 
 poll_manager = PollManager(redis, settings.VXPOLLS_POLL_ID, vxpolls_questions)

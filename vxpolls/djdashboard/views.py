@@ -13,7 +13,7 @@ vxpolls_questions = [PollQuestion(idx, **params) for idx, params
                         in enumerate(settings.VXPOLLS_QUESTIONS)]
 redis = redis.Redis(**vxpolls_redis_config)
 
-poll_manager = PollManager(redis, settings.VXPOLLS_POLL_ID, vxpolls_questions)
+poll_manager = PollManager(redis, settings.VXPOLLS_POLL_ID, settings.VXPOLLS_QUESTIONS)
 results_manager = poll_manager.results_manager
 
 def json_response(obj):

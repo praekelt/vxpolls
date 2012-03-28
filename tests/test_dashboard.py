@@ -31,9 +31,11 @@ class PollDashboardTestCase(TestCase):
     @inlineCallbacks
     def setUp(self):
         self.r_server = FakeRedis()
-        self.poll_manager = PollManager(self.r_server, 'poll_id',
-                                        self.questions)
-        self.results_manager = self.poll_manager.results_manager
+        self.poll_manager = PollManager(self.r_server)
+        self.poll = self.poll_manager.register(self.poll_id, {
+            'questions': self.questions,
+        })
+        self.results_manager = self.poll.results_manager
         # Let the results manager know what collections it should be
         # aware of.
         self.results_manager.register_collection(self.poll_id)
@@ -72,9 +74,9 @@ class PollDashboardTestCase(TestCase):
     def submit_answers(self, *answers, **kwargs):
         for answer in answers:
             participant = self.poll_manager.get_participant(kwargs.get('user_id', 'user_id'))
-            question = self.poll_manager.get_next_question(participant)
-            self.poll_manager.set_last_question(participant, question)
-            error_message = self.poll_manager.submit_answer(participant, answer)
+            question = self.poll.get_next_question(participant)
+            self.poll.set_last_question(participant, question)
+            error_message = self.poll.submit_answer(participant, answer)
             if error_message:
                 raise ValueError(error_message)
             self.poll_manager.save_participant(participant)

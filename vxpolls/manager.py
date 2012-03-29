@@ -4,7 +4,6 @@ import json
 import hashlib
 
 from vumi.application import SessionManager
-from vumi import log
 
 from vxpolls.participant import PollParticipant
 from vxpolls.results import ResultManager

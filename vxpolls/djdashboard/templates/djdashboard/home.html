@@ -12,40 +12,13 @@
                 We provide a simple HTTP URL for Geckoboard based dashboards. These are the available URLs.
             </p>
             <ul>
-                <li><a target="_blank" href="{% url api:active %}">Active Participants</a></li>
-                {% for collection in collections %}
+                {% for poll_id in poll_ids %}
                 <li>
-                    <a target="_blank" href="{% url api:completed %}?collection_id={{collection}}">
-                        Completed Surveys in {{collection}}
+                    <a target="_blank" href="{% url dashboard:show poll_id=poll_id %}">
+                        {{poll_id}}
                     </a>
                 </li>
                 {% endfor %}
-                {% for collection in collections %}
-                    <li>
-                        {{collection}} results.
-                        <ul>
-                        {% for question in questions %}
-                            <li>
-                                <a target="_blank" href="{% url api:results %}?collection_id={{collection}}&amp;question={{question.label}}">
-                                    Results for {{question.copy}}.
-                                </a>
-                            </li>
-                        {% endfor %}
-                        </ul>
-                    </li>
-                {% endfor %}
-            </ul>
-            <strong>Data export</strong>
-            <ul>
-            {% for collection in collections %}
-                <li>
-                    {{collection}}
-                    <ul>
-                        <li><a href="{% url api:export_users %}?collection_id={{collection}}">User data</a></li>
-                        <li><a href="{% url api:export_results %}?collection_id={{collection}}">Poll results</a></li>
-                    </ul>
-                </li>
-            {% endfor %}
             </ul>
             <strong>QA via Gtalk</strong>
             <p>

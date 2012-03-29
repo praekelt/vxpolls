@@ -1,0 +1,26 @@
+{% extends "djdashboard/base.html" %}
+
+{% block content %}
+        <h1>VXPolls {{poll_id}} Dashboard Instance</h1>
+        <div>
+            <p>
+                We provide a simple HTTP URL for Geckoboard based dashboards. These are the available URLs.
+            </p>
+            <ul>
+                <li><a target="_blank" href="{% url dashboard:active poll_id=poll_id %}">Active Participants</a></li>
+                <li><a target="_blank" href="{% url dashboard:completed poll_id=poll_id %}">Completed Surveys</a></li>
+                {% for question in poll.questions %}
+                    <li>
+                        <a target="_blank" href="{% url dashboard:results poll_id=poll_id %}?question={{question.label}}">
+                            Results for {{question.copy}}.
+                        </a>
+                    </li>
+                {% endfor %}
+            </ul>
+            <strong>Data export</strong>
+            <ul>
+                <li><a href="{% url dashboard:export_users poll_id=poll_id %}">User data</a></li>
+                <li><a href="{% url dashboard:export_results poll_id=poll_id %}">Poll results</a></li>
+            </ul>
+        </div>
+{% endblock %}

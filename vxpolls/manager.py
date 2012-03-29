@@ -79,9 +79,10 @@ class PollManager(object):
         self.session_manager.save_session(participant.user_id,
                                     participant.clean_dump())
 
-    def active_participants(self):
+    def active_participants(self, poll_id):
         return [PollParticipant(user_id, session) for user_id, session
-                 in self.session_manager.active_sessions()]
+                 in self.session_manager.active_sessions()
+                 if session.get('poll_id') == poll_id]
 
     def inactive_participant_user_ids(self):
         archive_key = self.r_key('archive')

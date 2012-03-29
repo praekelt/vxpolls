@@ -23,21 +23,6 @@ def _normalize_question(question_dict):
         defaults['valid_responses'] = ', '.join(list_values)
     return defaults
 
-def _normalize_value(key, value):
-
-    def handle_checks(value):
-        equality_checks = value.get('equal', {}).items()
-        if equality_checks:
-            return equality_checks[0]
-        else:
-            return '', ''
-
-    key_map = {
-        'checks': handle_checks
-    }
-    cb = key_map.get(key, lambda value: value)
-    return cb(value)
-
 def _roll_up_questions(questions):
     """
     Roll up the question to a flattened dictionary instead
@@ -48,8 +33,14 @@ def _roll_up_questions(questions):
     questions = questions[:]
     for idx, question in enumerate(questions):
         for key, value in _normalize_question(question).items():
-            value = _normalize_value(key, value)
-            result['question__%s__%s' % (idx, key)] = value
+            if key == 'checks':
+                equal = value.get('equal', {})
+                if equal:
+                    key, value = equal.items()[0]
+                    result['question--%s--checks_0' % (idx,)] = key
+                    result['question--%s--checks_1' % (idx,)] = value
+            else:
+                result['question--%s--%s' % (idx, key)] = value
     return result
 
 def _field_for(key):
@@ -58,7 +49,7 @@ def _field_for(key):
     Defaults to a CharField
     """
     try:
-        [_, key_number, key_type] = key.split('__')
+        [_, key_number, key_type] = key.split('--')
     except ValueError:
         key_type = key
         key_number = None
@@ -71,10 +62,10 @@ def _field_for(key):
             required=False),
         'copy': forms.CharField(
             label='Question %s text' % (key_number,),
-            required=True, widget=forms.Textarea),
+            required=False, widget=forms.Textarea),
         'label': forms.CharField(
             label='Question %s is stored as' % (key_number,),
-            required=True),
+            required=False),
         'checks': fields.CheckField(
             label='Question %s should only be asked if' % (key_number,),
             required=False),
@@ -82,12 +73,6 @@ def _field_for(key):
     return key_map.get(key_type, forms.CharField(required=False))
 
 class VxpollForm(forms.BaseForm):
-
-    def __init__(self, **kwargs):
-        data = kwargs.get('initial', {}).copy()
-        questions = _roll_up_questions(data.pop('questions', []))
-        data.update(questions)
-        super(VxpollForm, self).__init__(**kwargs)
 
     def export(self):
         if not self.is_valid():
@@ -111,8 +96,8 @@ class VxpollForm(forms.BaseForm):
         for index in range(total_num_questions):
             question = {}
             for key in keys_per_question:
-                data_key = 'question__%s__%s' % (index, key)
-                question[key] = self.cleaned_data[data_key]
+                data_key = 'question--%s--%s' % (index, key)
+                question[key] = self.cleaned_data.get(data_key, {})
             results.append(question)
         return results
 
@@ -122,8 +107,17 @@ def make_form_class(config_data, base_class):
     Dynamically create a form class for the given configuration
     data. Automatically creates all the necessary fields
     """
+    keys = set([])
+    for key in config_data.keys():
+        # check for CheckWidget, ends with 0 or 1 and should
+        # be collapsed into a single widget with multiple
+        # values
+        if key.endswith('0') or key.endswith('1'):
+            keys.add(key.split('_', 1)[0])
+        else:
+            keys.add(key)
     base_fields = SortedDict([
-        (key, _field_for(key)) for key in sorted(config_data.keys())
+        (key, _field_for(key)) for key in sorted(keys)
     ])
     return type('DynamicVxpollForm', (base_class,), {
         'base_fields': base_fields,

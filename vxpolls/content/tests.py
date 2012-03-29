@@ -1,9 +1,12 @@
 import yaml
 
+from django.test.client import Client
 from django.test import TestCase
+from django.core.urlresolvers import reverse
 from vumi.tests.utils import FakeRedis
 from vxpolls.manager import PollManager
 from vxpolls.content import forms
+from vxpolls.content import views as content_views
 
 
 class VxpollFormTestCase(TestCase):
@@ -27,7 +30,7 @@ class VxpollFormTestCase(TestCase):
           - '2'
         checks:
           equal:
-              favorite color: 1
+              favorite color: '1'
       - copy: 'What is your favorite fruit? 1. Apples 2. Oranges 3. Bananas'
         label: favorite fruit
         valid_responses:
@@ -46,8 +49,11 @@ class VxpollFormTestCase(TestCase):
         self.config = yaml.load(self.config_data)
         self.r_server = FakeRedis()
         self.poll_manager = PollManager(self.r_server)
-        self.poll = self.poll_manager.register(self.config['poll_id'],
-                                                self.config)
+        self.poll_id = self.config['poll_id']
+        self.poll = self.poll_manager.register(self.poll_id, self.config)
+        self.client = Client()
+        # Monkey patch the views redis attribute to point to our Fake redis
+        content_views.redis = self.r_server
 
     def test_form_creation(self):
         form = forms.make_form(data=self.config.copy(), initial=self.config.copy())
@@ -66,3 +72,15 @@ class VxpollFormTestCase(TestCase):
                                 question.get('label'))
             self.assertEqual(config_question['valid_responses'],
                                 question['valid_responses'])
+
+    def test_form_posting(self):
+        response = self.client.post(reverse('content:home'), {
+            'question__0__copy': 'What is your favorite music?',
+            'question__0__label': 'favorite music',
+            'question__0__valid_responses': 'rock, jazz, techno',
+            'question__0__checks_0': 'a',
+            'question__0__checks_1': 'b',
+        })
+        poll = self.poll_manager.get(self.poll_id)
+        self.assertEqual(response.status_code, 200)
+        # print poll.questions[0]

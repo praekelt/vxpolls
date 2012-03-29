@@ -4,25 +4,22 @@ from django.conf import settings
 import json
 import redis
 
-from vxpolls import PollManager
-from vxpolls.manager import PollQuestion
+from vxpolls.manager import PollManager, PollQuestion
 
 
 vxpolls_redis_config = settings.VXPOLLS_REDIS_CONFIG
-vxpolls_questions = [PollQuestion(idx, **params) for idx, params
-                        in enumerate(settings.VXPOLLS_QUESTIONS)]
+# vxpolls_questions = [PollQuestion(idx, **params) for idx, params
+#                         in enumerate(settings.VXPOLLS_QUESTIONS)]
 redis = redis.Redis(**vxpolls_redis_config)
 
-poll_manager = PollManager(redis, settings.VXPOLLS_POLL_ID, settings.VXPOLLS_QUESTIONS)
-results_manager = poll_manager.results_manager
+poll_manager = PollManager(redis, settings.VXPOLLS_PREFIX)
 
 def json_response(obj):
     return HttpResponse(json.dumps(obj), content_type='application/javascript')
 
 def home(request):
     return render(request, 'djdashboard/home.html', {
-        'collections': settings.VXPOLLS_COLLECTIONS,
-        'questions': vxpolls_questions,
+        'collections': poll_manager.polls(),
     })
 
 def active(request):

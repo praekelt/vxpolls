@@ -6,7 +6,7 @@ from django.conf.urls.defaults import patterns, include, url
 
 urlpatterns = patterns('',
     # Examples:
-    url(r'^dashboard/$', 'vxpolls.djdashboard.home', name='home'),
+    url(r'^dashboard/$', 'vxpolls.djdashboard.views.home', name='home'),
     url(r'^content/', include('vxpolls.content.urls', namespace='content')),
 
     # Uncomment the admin/doc line below to enable admin documentation:

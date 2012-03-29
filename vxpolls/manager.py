@@ -24,11 +24,14 @@ class PollManager(object):
         return hashlib.md5(json.dumps(version)).hexdigest()
 
     def exists(self, poll_id):
-        key = self.r_key('versions', poll_id)
-        return self.r_server.exists(key)
+        self.r_server.sismember(self.r_key('polls'), poll_id)
+
+    def polls(self):
+        return self.r_server.smembers(self.r_key('polls'))
 
     def set(self, poll_id, version):
         uid = self.generate_unique_id(version)
+        self.r_server.sadd(self.r_key('polls'), poll_id)
         self.r_server.hset(self.r_key('versions', poll_id), uid,
                             json.dumps(version))
         key = self.r_key('version_timestamps', poll_id)

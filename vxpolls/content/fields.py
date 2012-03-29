@@ -15,40 +15,45 @@ class CSVField(forms.Field):
         return [v.strip() for v in value.split(',')]
 
 
-class CheckWidget(forms.Widget):
+class CheckWidget(forms.MultiWidget):
 
-    def render(self, name, value, attrs):
-        check_field, check_value = value
+    def __init__(self, attrs=None):
+        widgets = (forms.TextInput(attrs=attrs),
+                   forms.TextInput(attrs=attrs))
+        super(CheckWidget, self).__init__(widgets, attrs)
 
-        defaults = {
-            'type': 'text',
-        }
-        field_attrs = defaults.copy()
-        field_attrs.update({
-            'name': 'field',
-            'value': check_field,
-        })
-        value_attrs = defaults.copy()
-        value_attrs.update({
-            'name': 'value',
-            'value': check_value,
-        })
-
-        return mark_safe(u''.join([
-            u'<input %s/>' % (flatatt(field_attrs),),
-            u' must equal ',
-            u'<input %s/>' % (flatatt(value_attrs),),
+    def format_output(self, widgets):
+        return mark_safe(u' '.join([
+            widgets[0],
+            u'equals',
+            widgets[1],
         ]))
 
-class CheckField(forms.Field):
+    def decompress(self, value):
+        equal = value.get('equal', {})
+        if equal.items():
+            return equal.items()[0]
+        else:
+            return ('', '')
+
+
+class CheckField(forms.MultiValueField):
 
     widget = CheckWidget
 
-    def to_python(self, value):
-        if value == ('', ''):
-            return {}
-        return {
-            'equal': {
-                value[0]: value[1]
+    def __init__(self, *args, **kwargs):
+        fields = (
+            forms.CharField(),
+            forms.CharField(),
+        )
+        super(CheckField, self).__init__(fields, *args, **kwargs)
+
+    def compress(self, data_list):
+        if data_list:
+            return {
+                'equal': {
+                    data_list[0]: data_list[1],
+                }
             }
-        }
+        else:
+            return {}

@@ -146,3 +146,6 @@ LOGGING = {
         },
     }
 }
+
+VXPOLLS_REDIS_CONFIG = {}
+VXPOLLS_PREFIX = 'vxpolls_manager'

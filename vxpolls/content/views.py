@@ -19,8 +19,9 @@ def show(request, poll_id):
         post_data = request.POST.copy()
         post_data.update({
             'poll_id': poll_id,
+            'transport_name': 'vxpolls_transport',
         })
-        form = forms.make_form(data=post_data, initial=post_data)
+        form = forms.make_form(data=post_data, initial=config)
         if form.is_valid():
             pm.set(poll_id, form.export())
             return redirect(reverse('content:show', kwargs={

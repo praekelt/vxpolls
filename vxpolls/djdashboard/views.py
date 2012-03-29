@@ -4,7 +4,7 @@ from django.conf import settings
 import json
 import redis
 
-from vxpolls.manager import PollManager, PollQuestion
+from vxpolls.manager import PollManager
 
 
 vxpolls_redis_config = settings.VXPOLLS_REDIS_CONFIG

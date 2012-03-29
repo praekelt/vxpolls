@@ -1,3 +1,4 @@
+from pprint import pprint
 from django import forms
 from django.utils.datastructures import SortedDict
 from django.core.exceptions import ValidationError
@@ -13,7 +14,11 @@ def _normalize_question(question_dict):
         'copy': '',
         'label': '',
         'valid_responses': '',
-        'checks': {},
+        'checks': {
+            'equal': {
+                '': '',
+            }
+        },
     }
     defaults.update(question_dict)
     if not defaults['label']:
@@ -88,13 +93,14 @@ class VxpollForm(forms.BaseForm):
         return data
 
     def _export_questions(self):
-        questions = [(key, value) for key, value in self.cleaned_data.items()
+        questions = [key for key in self.base_fields.keys()
                         if key.startswith('question')]
         sample_question = _normalize_question({})
         keys_per_question = sample_question.keys()
         total_num_questions = max([int(key.split('--')[1])
-                                    for key, value in questions]) + 1
+                                    for key in questions]) + 1
         results = []
+        pprint(self.cleaned_data)
         for index in range(total_num_questions):
             copy_key = 'question--%s--copy' % (index,)
             if self.cleaned_data.get(copy_key):
@@ -105,6 +111,8 @@ class VxpollForm(forms.BaseForm):
                     if data:
                         question[key] = data
                 results.append(question)
+            else:
+                print 'nothing', copy_key, self.cleaned_data.get(copy_key)
         return results
 
 
@@ -138,11 +146,14 @@ def make_form(**kwargs):
     base_class = kwargs.pop('base_class', VxpollForm)
 
     config_data = kwargs.pop('initial', {})
-    questions = _roll_up_questions(config_data.pop('questions', []))
+    initial_questions = config_data.pop('questions', [])
+    initial_questions.append(_normalize_question({}))
+    questions = _roll_up_questions(initial_questions)
     config_data.update(questions)
     form_class = make_form_class(config_data, base_class=base_class)
 
     form_data = kwargs.pop('data', {})
-    questions = _roll_up_questions(form_data.pop('questions', []))
+    data_questions = form_data.pop('questions', [])
+    questions = _roll_up_questions(data_questions)
     form_data.update(questions)
     return form_class(data=form_data, initial=config_data, **kwargs)

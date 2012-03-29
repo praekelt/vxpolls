@@ -149,3 +149,4 @@ LOGGING = {
 
 VXPOLLS_REDIS_CONFIG = {}
 VXPOLLS_PREFIX = 'poll_manager'
+VXPOLLS_CONFIG = open('../poll.yaml', 'r')

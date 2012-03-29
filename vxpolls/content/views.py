@@ -1,7 +1,7 @@
-import yaml
 import redis
 
-from django.shortcuts import render
+from django.shortcuts import render, redirect
+from django.core.urlresolvers import reverse
 from django.conf import settings
 from vxpolls.content import forms
 from vxpolls.manager import PollManager
@@ -9,17 +9,22 @@ from vxpolls.manager import PollManager
 
 redis = redis.Redis(**settings.VXPOLLS_REDIS_CONFIG)
 
-def home(request):
-    config = yaml.load(open('../poll.yaml', 'r').read())
+def show(request, poll_id):
+    pm = PollManager(redis, settings.VXPOLLS_PREFIX)
+    config = pm.get_config(poll_id)
     if request.POST:
-        form = forms.make_form(data=request.POST.copy(), initial=config)
+        post_data = request.POST.copy()
+        post_data.update({
+            'poll_id': poll_id,
+        })
+        form = forms.make_form(data=post_data, initial=post_data)
         if form.is_valid():
-            pm = PollManager(redis, settings.VXPOLLS_PREFIX)
-            pm.set(form.cleaned_data['poll_id'], form.export())
-        else:
-            print form.errors
+            pm.set(poll_id, form.export())
+            return redirect(reverse('content:show', kwargs={
+                'poll_id': poll_id,
+            }))
     else:
         form = forms.make_form(data=config, initial=config)
-    return render(request, 'home.html', {
+    return render(request, 'show.html', {
         'form': form,
     })

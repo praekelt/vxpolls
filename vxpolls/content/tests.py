@@ -1,5 +1,6 @@
 import yaml
 
+from django.conf import settings
 from django.test.client import Client
 from django.test import TestCase
 from django.core.urlresolvers import reverse
@@ -48,7 +49,7 @@ class VxpollFormTestCase(TestCase):
     def setUp(self):
         self.config = yaml.load(self.config_data)
         self.r_server = FakeRedis()
-        self.poll_manager = PollManager(self.r_server)
+        self.poll_manager = PollManager(self.r_server, settings.VXPOLLS_PREFIX)
         self.poll_id = self.config['poll_id']
         self.poll = self.poll_manager.register(self.poll_id, self.config)
         self.client = Client()
@@ -74,13 +75,20 @@ class VxpollFormTestCase(TestCase):
                                 question['valid_responses'])
 
     def test_form_posting(self):
-        response = self.client.post(reverse('content:home'), {
-            'question__0__copy': 'What is your favorite music?',
-            'question__0__label': 'favorite music',
-            'question__0__valid_responses': 'rock, jazz, techno',
-            'question__0__checks_0': 'a',
-            'question__0__checks_1': 'b',
+        response = self.client.post(reverse('content:show', kwargs={
+            'poll_id': self.poll_id}), {
+            'transport_name': 'test_transport',
+            'question--0--copy': 'What is your favorite music?',
+            'question--0--label': 'favorite music',
+            'question--0--valid_responses': 'rock, jazz, techno',
         })
-        poll = self.poll_manager.get(self.poll_id)
-        self.assertEqual(response.status_code, 200)
-        # print poll.questions[0]
+        uid = self.poll_manager.get_latest_uid(self.poll_id)
+        poll = self.poll_manager.get(self.poll_id, uid)
+        self.assertRedirects(response, reverse('content:show', kwargs={
+            'poll_id': self.poll_id,
+        }))
+        self.assertEqual(len(poll.questions), 1)
+        # test that the new version is actually being server
+        participant = self.poll_manager.get_participant('somemsisdn')
+        question = poll.get_next_question(participant)
+        self.assertEqual(question.copy, 'What is your favorite music?')

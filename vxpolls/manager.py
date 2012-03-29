@@ -43,12 +43,25 @@ class PollManager(object):
     def register(self, poll_id, version):
         return self.get(poll_id, uid=self.set(poll_id, version))
 
-    def get(self, poll_id, uid=None):
-        versions_key = self.r_key('versions', poll_id)
+    def get_latest_uid(self, poll_id):
         timestamps_key = self.r_key('version_timestamps', poll_id)
         uids = self.r_server.zrange(timestamps_key, 0, -1, desc=True)
-        uid = uid or uids[0]
-        version = json.loads(self.r_server.hget(versions_key, uid))
+        if uids:
+            return uids[0]
+        else:
+            return None
+
+    def get_config(self, poll_id, uid=None):
+        uid = uid or self.get_latest_uid(poll_id)
+        if uid:
+            versions_key = self.r_key('versions', poll_id)
+            return json.loads(self.r_server.hget(versions_key, uid))
+        else:
+            return {}
+
+    def get(self, poll_id, uid=None):
+        uid = uid or self.get_latest_uid(poll_id)
+        version = self.get_config(poll_id, uid)
         return Poll(self.r_server, poll_id, uid, version['questions'],
                 version.get('batch_size'), r_prefix=self.r_key('poll'))
 

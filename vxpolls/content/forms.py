@@ -69,6 +69,8 @@ def _field_for(key):
         'checks': fields.CheckField(
             label='Question %s should only be asked if' % (key_number,),
             required=False),
+        'poll_id': forms.CharField(required=True),
+        'transport_name': forms.CharField(required=True),
     }
     return key_map.get(key_type, forms.CharField(required=False))
 
@@ -80,7 +82,7 @@ class VxpollForm(forms.BaseForm):
         data = {
             'transport_name': self.cleaned_data['transport_name'],
             'poll_id': self.cleaned_data['poll_id'],
-            'batch_size': self.cleaned_data['batch_size'],
+            'batch_size': self.cleaned_data.get('batch_size', None),
             'questions': self._export_questions()
         }
         return data
@@ -89,16 +91,20 @@ class VxpollForm(forms.BaseForm):
         questions = [(key, value) for key, value in self.cleaned_data.items()
                         if key.startswith('question')]
         sample_question = _normalize_question({})
-        num_of_parts_per_question = len(sample_question)
         keys_per_question = sample_question.keys()
-        total_num_questions = len(questions) / num_of_parts_per_question
+        total_num_questions = max([int(key.split('--')[1])
+                                    for key, value in questions]) + 1
         results = []
         for index in range(total_num_questions):
-            question = {}
-            for key in keys_per_question:
-                data_key = 'question--%s--%s' % (index, key)
-                question[key] = self.cleaned_data.get(data_key, {})
-            results.append(question)
+            copy_key = 'question--%s--copy' % (index,)
+            if self.cleaned_data.get(copy_key):
+                question = {}
+                for key in keys_per_question:
+                    data_key = 'question--%s--%s' % (index, key)
+                    data = self.cleaned_data.get(data_key)
+                    if data:
+                        question[key] = data
+                results.append(question)
         return results
 
 

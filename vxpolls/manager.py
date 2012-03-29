@@ -46,6 +46,7 @@ class PollManager(object):
     def get_latest_uid(self, poll_id):
         timestamps_key = self.r_key('version_timestamps', poll_id)
         uids = self.r_server.zrange(timestamps_key, 0, -1, desc=True)
+        print self.r_server.zrange(timestamps_key, 0, -1, withscores=True)
         if uids:
             return uids[0]
         else:

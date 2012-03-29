@@ -2,11 +2,12 @@
 # -*- coding: utf8 -*-
 import hashlib
 import json
+import redis
 
 from vumi.tests.utils import FakeRedis
 from vumi.application.base import ApplicationWorker
 
-from vxpolls import PollManager
+from vxpolls.manager import PollManager
 
 
 class PollApplication(ApplicationWorker):
@@ -28,7 +29,7 @@ class PollApplication(ApplicationWorker):
         return hashlib.md5(json.dumps(self.config)).hexdigest()
 
     def setup_application(self):
-        self.r_server = FakeRedis(**self.r_config)
+        self.r_server = redis.Redis(**self.r_config)
         self.pm = PollManager(self.r_server)
         if not self.pm.exists(self.poll_id):
             self.pm.register(self.poll_id, {
@@ -41,7 +42,10 @@ class PollApplication(ApplicationWorker):
 
     def consume_user_message(self, message):
         participant = self.pm.get_participant(message.user())
+        print self.pm.get_latest_uid(self.poll_id)
         poll = self.pm.get_poll_for_participant(self.poll_id, participant)
+        print 'poll', poll.questions
+        print 'poll', poll.uid
         # store the uid so we get this one on the next time around
         # even if the content changes.
         participant.poll_uid = poll.uid

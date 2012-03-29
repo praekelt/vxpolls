@@ -1,4 +1,5 @@
 import redis
+import yaml
 
 from django.shortcuts import render, redirect
 from django.core.urlresolvers import reverse
@@ -11,6 +12,8 @@ redis = redis.Redis(**settings.VXPOLLS_REDIS_CONFIG)
 
 def show(request, poll_id):
     pm = PollManager(redis, settings.VXPOLLS_PREFIX)
+    if not pm.polls():
+        pm.set(poll_id, yaml.load(open('../poll.yaml', 'r')))
     config = pm.get_config(poll_id)
     if request.POST:
         post_data = request.POST.copy()

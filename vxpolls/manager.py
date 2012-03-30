@@ -61,8 +61,13 @@ class PollManager(object):
         else:
             return {}
 
+    def uid_exists(self, poll_id, uid):
+        versions_key = self.r_key('versions', poll_id)
+        return self.r_server.hexists(versions_key, uid)
+
     def get(self, poll_id, uid=None):
-        uid = uid or self.get_latest_uid(poll_id)
+        if not self.uid_exists(poll_id, uid):
+            uid = self.get_latest_uid(poll_id)
         version = self.get_config(poll_id, uid)
         return Poll(self.r_server, poll_id, uid, version['questions'],
                 version.get('batch_size'), r_prefix=self.r_key('poll'))
@@ -73,7 +78,6 @@ class PollManager(object):
         return participant
 
     def get_poll_for_participant(self, poll_id, participant):
-        print 'getting poll', poll_id, participant.poll_uid
         return self.get(poll_id, participant.poll_uid)
 
     def save_participant(self, participant):

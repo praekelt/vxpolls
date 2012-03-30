@@ -60,6 +60,10 @@ def _field_for(key):
         key_number = None
 
     key_map = {
+        'character_limit': forms.CharField(required=False,
+            widget=forms.HiddenInput),
+        'dashboard_port': forms.CharField(required=False,
+            widget=forms.HiddenInput),
         'dashboard_path_prefix': forms.CharField(required=False,
             widget=forms.HiddenInput),
         'interval': forms.IntegerField(required=False,
@@ -139,8 +143,15 @@ def make_form_class(config_data, base_class):
             keys.add(key.split('_', 1)[0])
         else:
             keys.add(key)
+
+    def sort_on_key_index(key):
+        try:
+            return int(key.split('--')[1])
+        except IndexError:
+            return 0
+
     base_fields = SortedDict([
-        (key, _field_for(key)) for key in sorted(keys)
+        (key, _field_for(key)) for key in sorted(keys, key=sort_on_key_index)
     ])
     return type('DynamicVxpollForm', (base_class,), {
         'base_fields': base_fields,

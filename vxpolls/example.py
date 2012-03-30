@@ -23,7 +23,7 @@ class PollApplication(ApplicationWorker):
         self.batch_size = self.config.get('batch_size', 5)
         self.dashboard_port = int(self.config.get('dashboard_port', 8000))
         self.dashboard_prefix = self.config.get('dashboard_path_prefix', '/')
-        self.prefix = self.config.get('prefix', 'poll_manager')
+        self.poll_prefix = self.config.get('poll_prefix', 'poll_manager')
         self.poll_id = self.config.get('poll_id', self.generate_unique_id())
 
     def generate_unique_id(self):
@@ -31,7 +31,7 @@ class PollApplication(ApplicationWorker):
 
     def setup_application(self):
         self.r_server = redis.Redis(**self.r_config)
-        self.pm = PollManager(self.r_server)
+        self.pm = PollManager(self.r_server, self.poll_prefix)
         if not self.pm.exists(self.poll_id):
             self.pm.register(self.poll_id, {
                 'questions': self.questions,

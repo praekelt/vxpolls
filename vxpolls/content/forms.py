@@ -60,7 +60,7 @@ def _field_for(key):
         key_number = None
 
     key_map = {
-        'dashboard_path_prefix': forms.CharField(
+        'dashboard_path_prefix': forms.CharField(required=False,
             widget=forms.HiddenInput),
         'interval': forms.IntegerField(required=False,
             widget=forms.HiddenInput),

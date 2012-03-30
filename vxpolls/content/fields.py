@@ -5,7 +5,7 @@ from django.utils.safestring import mark_safe
 
 class CSVField(forms.Field):
 
-    widget = forms.TextInput
+    widget = forms.Textarea
 
     def to_python(self, value):
         "Normalize data to a list of strings."
@@ -25,7 +25,7 @@ class CheckWidget(forms.MultiWidget):
     def format_output(self, widgets):
         return mark_safe(u' '.join([
             widgets[0],
-            u'equals',
+            u'<label>equals</label>',
             widgets[1],
         ]))
 
@@ -39,7 +39,7 @@ class CheckWidget(forms.MultiWidget):
 
 class CheckField(forms.MultiValueField):
 
-    widget = CheckWidget
+    widget = CheckWidget(attrs={'class': 'txtbox'})
 
     def __init__(self, *args, **kwargs):
         fields = (

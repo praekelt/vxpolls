@@ -60,22 +60,27 @@ def _field_for(key):
         key_number = None
 
     key_map = {
-        'batch_size': forms.IntegerField(required=False),
+        'batch_size': forms.IntegerField(required=False,
+            widget=forms.HiddenInput),
         'valid_responses': fields.CSVField(
             label='Question %s valid responses' % (key_number,),
             help_text='Only comma separated values are allowed.',
             required=False),
         'copy': forms.CharField(
             label='Question %s text' % (key_number,),
+            help_text='The actual copy that is sent to the phone.',
             required=False, widget=forms.Textarea),
         'label': forms.CharField(
             label='Question %s is stored as' % (key_number,),
+            help_text='What to refer and store this value as in the database.',
+            widget=forms.TextInput(attrs={'class': 'txtbox'}),
             required=False),
         'checks': fields.CheckField(
             label='Question %s should only be asked if' % (key_number,),
+            help_text='Skip this question unless the value of the given label matches the answer given.',
             required=False),
-        'poll_id': forms.CharField(required=True),
-        'transport_name': forms.CharField(required=True),
+        'poll_id': forms.CharField(required=True, widget=forms.HiddenInput),
+        'transport_name': forms.CharField(required=True, widget=forms.HiddenInput),
     }
     return key_map.get(key_type, forms.CharField(required=False))
 

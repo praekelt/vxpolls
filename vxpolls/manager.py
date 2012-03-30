@@ -12,6 +12,7 @@ class PollManager(object):
     def __init__(self, r_server, r_prefix='poll_manager'):
         self.r_server = r_server
         self.r_prefix = r_prefix
+        print 'starting PollManager with', r_prefix
         self.session_manager = SessionManager(self.r_server,
                                                 self.r_key('session'))
 
@@ -72,6 +73,7 @@ class PollManager(object):
         return participant
 
     def get_poll_for_participant(self, poll_id, participant):
+        print 'getting poll', poll_id, participant.poll_uid
         return self.get(poll_id, participant.poll_uid)
 
     def save_participant(self, participant):

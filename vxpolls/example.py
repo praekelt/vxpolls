@@ -23,6 +23,7 @@ class PollApplication(ApplicationWorker):
         self.batch_size = self.config.get('batch_size', 5)
         self.dashboard_port = int(self.config.get('dashboard_port', 8000))
         self.dashboard_prefix = self.config.get('dashboard_path_prefix', '/')
+        self.prefix = self.config.get('prefix', 'poll_manager')
         self.poll_id = self.config.get('poll_id', self.generate_unique_id())
 
     def generate_unique_id(self):
@@ -42,16 +43,22 @@ class PollApplication(ApplicationWorker):
 
     def consume_user_message(self, message):
         participant = self.pm.get_participant(message.user())
-        poll = self.pm.get_poll_for_participant(self.poll_id, participant)
+        poll_id = message['helper_metadata'].get('poll_id', self.poll_id)
+        poll = self.pm.get_poll_for_participant(poll_id, participant)
         # store the uid so we get this one on the next time around
         # even if the content changes.
         participant.poll_uid = poll.uid
-        participant.poll_id = self.poll_id
+        participant.poll_id = poll_id
         participant.questions_per_session = poll.batch_size
         if participant.has_unanswered_question:
             self.on_message(participant, poll, message)
         else:
             self.init_session(participant, poll, message)
+
+    def reply_to(self, *args, **kwargs):
+        print 'reply_to', args, kwargs
+        print self.transport_publisher
+        super(PollApplication, self).reply_to(*args, **kwargs)
 
     def on_message(self, participant, poll, message):
         # receive a message as part of a live session
@@ -77,6 +84,8 @@ class PollApplication(ApplicationWorker):
         else:
             self.reply_to(message, self.survey_completed_response,
                 continue_session=False)
+            participant.poll_id = None
+            participant.poll_uid = None
             self.pm.save_participant(participant)
             # Archive for demo purposes so we can redial in and start over.
             self.pm.archive(participant)

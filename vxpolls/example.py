@@ -72,7 +72,8 @@ class PollApplication(ApplicationWorker):
         participant.interactions = 0
         participant.has_unanswered_question = False
         next_question = poll.get_next_question(participant)
-        config = self.pm.get_config(poll.poll_id, poll.uid)
+        config = self.pm.get_config(poll.poll_id)
+        print config
         if next_question:
             response = config.get('batch_completed_response',
                                     self.batch_completed_response)

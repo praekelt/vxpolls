@@ -89,6 +89,14 @@ def _field_for(key):
             required=False),
         'poll_id': forms.CharField(required=True, widget=forms.HiddenInput),
         'transport_name': forms.CharField(required=True, widget=forms.HiddenInput),
+        'survey_completed_response': forms.CharField(
+            label='All Completed response' % (key_number,),
+            help_text='The copy that is sent at the end of the session.',
+            required=False, widget=forms.Textarea),
+        'batch_completed_response': forms.CharField(
+            label='Batch Completed response' % (key_number,),
+            help_text='The copy that is sent at the end of a batch.',
+            required=False, widget=forms.Textarea),
     }
     return key_map.get(key_type, forms.CharField(required=False))
 

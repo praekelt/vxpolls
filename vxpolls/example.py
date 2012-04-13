@@ -23,6 +23,10 @@ class PollApplication(ApplicationWorker):
         self.batch_size = self.config.get('batch_size', 5)
         self.dashboard_port = int(self.config.get('dashboard_port', 8000))
         self.dashboard_prefix = self.config.get('dashboard_path_prefix', '/')
+        self.batch_completed_response = self.config.get(
+                'batch_completed_response') or self.batch_completed_response
+        self.survey_completed_response = self.config.get(
+                'survey_completed_response') or self.survey_completed_response
         self.poll_prefix = self.config.get('poll_prefix', 'poll_manager')
         self.poll_id = self.config.get('poll_id', self.generate_unique_id())
 
@@ -54,11 +58,6 @@ class PollApplication(ApplicationWorker):
             self.on_message(participant, poll, message)
         else:
             self.init_session(participant, poll, message)
-
-    def reply_to(self, *args, **kwargs):
-        print 'reply_to', args, kwargs
-        print self.transport_publisher
-        super(PollApplication, self).reply_to(*args, **kwargs)
 
     def on_message(self, participant, poll, message):
         # receive a message as part of a live session

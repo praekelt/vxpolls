@@ -23,10 +23,6 @@ class PollApplication(ApplicationWorker):
         self.batch_size = self.config.get('batch_size', 5)
         self.dashboard_port = int(self.config.get('dashboard_port', 8000))
         self.dashboard_prefix = self.config.get('dashboard_path_prefix', '/')
-        self.batch_completed_response = self.config.get(
-                'batch_completed_response') or self.batch_completed_response
-        self.survey_completed_response = self.config.get(
-                'survey_completed_response') or self.survey_completed_response
         self.poll_prefix = self.config.get('poll_prefix', 'poll_manager')
         self.poll_id = self.config.get('poll_id', self.generate_unique_id())
 
@@ -76,13 +72,16 @@ class PollApplication(ApplicationWorker):
         participant.interactions = 0
         participant.has_unanswered_question = False
         next_question = poll.get_next_question(participant)
+        config = self.pm.get_config(poll.poll_id, poll.uid)
         if next_question:
-            self.reply_to(message, self.batch_completed_response,
-                continue_session=False)
+            response = config.get('batch_completed_response',
+                                    self.batch_completed_response)
+            self.reply_to(message, response, continue_session=False)
             self.pm.save_participant(participant)
         else:
-            self.reply_to(message, self.survey_completed_response,
-                continue_session=False)
+            response = config.get('survey_completed_response',
+                                    self.survey_completed_response)
+            self.reply_to(message, response, continue_session=False)
             participant.poll_id = None
             participant.poll_uid = None
             self.pm.save_participant(participant)

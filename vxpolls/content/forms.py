@@ -109,7 +109,8 @@ class VxpollForm(forms.BaseForm):
             'transport_name': self.cleaned_data['transport_name'],
             'poll_id': self.cleaned_data['poll_id'],
             'batch_size': self.cleaned_data.get('batch_size', None),
-            'questions': self._export_questions()
+            'questions': self._export_questions(),
+            'survey_completed_response': self.cleaned_data['survey_completed_response'],
         }
         return data
 

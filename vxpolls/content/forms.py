@@ -146,7 +146,8 @@ def make_form_class(config_data, base_class):
 
     def sort_on_key_index(key):
         try:
-            return int(key.split('--')[1])
+            parts = key.split('--')
+            return '%s%s' % (parts[1], parts[2])
         except IndexError:
             return 0
 

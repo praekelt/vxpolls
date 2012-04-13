@@ -90,11 +90,11 @@ def _field_for(key):
         'poll_id': forms.CharField(required=True, widget=forms.HiddenInput),
         'transport_name': forms.CharField(required=True, widget=forms.HiddenInput),
         'survey_completed_response': forms.CharField(
-            label='All Completed response' % (key_number,),
+            label='All Completed response',
             help_text='The copy that is sent at the end of the session.',
             required=False, widget=forms.Textarea),
         'batch_completed_response': forms.CharField(
-            label='Batch Completed response' % (key_number,),
+            label='Batch Completed response',
             help_text='The copy that is sent at the end of a batch.',
             required=False, widget=forms.Textarea),
     }

@@ -7,3 +7,6 @@ from vxpolls.multipoll_example import MultiPollApplication
 class MultiPollApplicationTestCase(ApplicationTestCase):
 
     application_class = MultiPollApplication
+
+    def test_pass(self):
+        pass

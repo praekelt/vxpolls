@@ -3,12 +3,13 @@
 
 
 from vumi.tests.utils import FakeRedis
-from vumi.application.base import ApplicationWorker
+#from vumi.application.base import ApplicationWorker
+from vxpolls.example import PollApplication
 
 from vxpolls import PollManager
 
 
-class MultiPollApplication(ApplicationWorker):
+class MultiPollApplication(PollApplication):
 
     registertration_partial_response = ''
 

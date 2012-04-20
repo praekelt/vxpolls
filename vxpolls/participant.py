@@ -31,7 +31,7 @@ class PollParticipant(object):
         self.interactions = 0
         self.opted_in = False
         self.age = None
-        self.last_question_index = None
+        self.last_question_index_list = []
         self.has_unanswered_question = False
         self.sent_messages = []
         self.received_messages = []
@@ -42,25 +42,35 @@ class PollParticipant(object):
         if session_data:
             self.load(session_data)
 
+    def set_last_question_index(self, index):
+        if index == self.get_last_question_index():
+            pass  # no need to update so don't grow list
+        self.last_question_index_list.append(index)
+
+    def get_last_question_index(self):
+        if len(self.last_question_index_list) == 0:
+            return None
+        return self.last_question_index_list[-1]
+
+    def set_poll_id(self, id):
+        if id == self.get_poll_id():
+            pass  # no need to update so don't grow list
+        self.poll_id_list.append(id)
+
     def get_poll_id(self):
         if len(self.poll_id_list) == 0:
             return None
         return self.poll_id_list[-1]
 
-    def set_poll_id(self, id):
-        if id == self.get_poll_id():
+    def set_poll_uid(self, uid):
+        if uid == self.get_poll_uid():
             pass  # no need to update so don't grow list
-        self.poll_id_list.append(uid)
+        self.poll_uid_list.append(uid)
 
     def get_poll_uid(self):
         if len(self.poll_uid_list) == 0:
             return None
         return self.poll_uid_list[-1]
-
-    def set_poll_uid(self, uid):
-        if uid == self.get_poll_uid():
-            pass  # no need to update so don't grow list
-        self.poll_uid_list.append(uid)
 
     def __eq__(self, other):
         if isinstance(other, PollParticipant):
@@ -89,8 +99,8 @@ class PollParticipant(object):
             'opted_in', lambda v: v == 'True')
         self.age = typed(session_data,
             'age', int)
-        self.last_question_index = typed(session_data,
-            'last_question_index', int)
+        self.last_question_index_list = typed(session_data,
+            'last_question_index_list', deserialize, default=[])
         self.has_unanswered_question = typed(session_data,
             'has_unanswered_question', lambda v: v == 'True')
         self.updated_at = typed(session_data,
@@ -110,7 +120,7 @@ class PollParticipant(object):
             'interactions': self.interactions,
             'opted_in': self.opted_in,
             'age': self.age,
-            'last_question_index': self.last_question_index,
+            'last_question_index_list': serialize(self.last_question_index_list),
             'has_unanswered_question': self.has_unanswered_question,
             'updated_at': self.updated_at,
             'sent_messages': serialize_messages(self.sent_messages),

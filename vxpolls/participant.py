@@ -16,10 +16,10 @@ def deserialize_messages(json_data):
 def serialize_messages(messages):
     return json.dumps([message.to_json() for message in messages])
 
-def deserialize_list(json_data):
+def deserialize(json_data):
     return json.loads(json_data)
 
-def serialize_list(data):
+def serialize(data):
     return json.dumps(data)
 
 class PollParticipant(object):
@@ -102,7 +102,7 @@ class PollParticipant(object):
         self.retries = typed(session_data,
             'retries', int, 0)
         self.poll_uid_list = typed(session_data,
-            'poll_uid_list', deserialize_list, default=[])
+            'poll_uid_list', deserialize, default=[])
 
     def dump(self):
         return {
@@ -116,7 +116,7 @@ class PollParticipant(object):
             'sent_messages': serialize_messages(self.sent_messages),
             'received_messages': serialize_messages(self.received_messages),
             'retries': self.retries,
-            'poll_uid_list': serialize_list(self.poll_uid_list),
+            'poll_uid_list': serialize(self.poll_uid_list),
         }
 
     def clean_dump(self):

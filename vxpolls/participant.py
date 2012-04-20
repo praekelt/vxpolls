@@ -31,9 +31,30 @@ class PollParticipant(object):
         self.received_messages = []
         self.retries = 0
         self.continue_session = True
-        self.poll_uid = None
+        self.poll_id_list = []
+        self.poll_uid_list = []
         if session_data:
             self.load(session_data)
+
+    def get_poll_id(self):
+        if len(self.poll_id_list) == 0:
+            return None
+        return self.poll_id_list[-1]
+
+    def set_poll_id(self, id):
+        if id == self.get_poll_id():
+            pass  # no need to update so don't grow list
+        self.poll_id_list.append(uid)
+
+    def get_poll_uid(self):
+        if len(self.poll_uid_list) == 0:
+            return None
+        return self.poll_uid_list[-1]
+
+    def set_poll_uid(self, uid):
+        if uid == self.get_poll_uid():
+            pass  # no need to update so don't grow list
+        self.poll_uid_list.append(uid)
 
     def __eq__(self, other):
         if isinstance(other, PollParticipant):
@@ -74,8 +95,8 @@ class PollParticipant(object):
             'received_messages', deserialize_messages, default=[])
         self.retries = typed(session_data,
             'retries', int, 0)
-        self.poll_uid = typed(session_data,
-            'poll_uid', str, default=None)
+        self.set_poll_uid(typed(session_data,
+            'poll_uid', str, default=None))
 
     def dump(self):
         return {
@@ -89,7 +110,7 @@ class PollParticipant(object):
             'sent_messages': serialize_messages(self.sent_messages),
             'received_messages': serialize_messages(self.received_messages),
             'retries': self.retries,
-            'poll_uid': self.poll_uid,
+            'poll_uid': self.get_poll_uid(),
         }
 
     def clean_dump(self):

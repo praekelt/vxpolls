@@ -44,7 +44,7 @@ class PollApplication(ApplicationWorker):
         poll = self.pm.get_poll_for_participant(self.poll_id, participant)
         # store the uid so we get this one on the next time around
         # even if the content changes.
-        participant.poll_uid = poll.uid
+        participant.set_poll_uid(poll.uid)
         participant.questions_per_session = poll.batch_size
         if participant.has_unanswered_question:
             self.on_message(participant, poll, message)

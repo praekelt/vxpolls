@@ -56,7 +56,7 @@ class PollManager(object):
         return participant
 
     def get_poll_for_participant(self, poll_id, participant):
-        return self.get(poll_id, participant.poll_uid)
+        return self.get(poll_id, participant.get_poll_uid())
 
     def save_participant(self, participant):
         participant.updated_at = time.time()

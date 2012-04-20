@@ -42,3 +42,15 @@ class MultiPollApplication(PollApplication):
                     'questions': self.questions_dict.get(p, []),
                     'batch_size': self.batch_size,
                     })
+
+    def consume_user_message(self, message):
+        participant = self.pm.get_participant(message.user())
+        poll = self.pm.get_poll_for_participant(self.poll_id, participant)
+        # store the uid so we get this one on the next time around
+        # even if the content changes.
+        participant.set_poll_uid(poll.uid)
+        participant.questions_per_session = poll.batch_size
+        if participant.has_unanswered_question:
+            self.on_message(participant, poll, message)
+        else:
+            self.init_session(participant, poll, message)

@@ -195,7 +195,7 @@ class PollManagerVersioningTestCase(BasePollApplicationTestCase):
         [response] = self.get_dispatched_messages()
         self.assertResponse(response, self.default_questions[0]['copy'])
         participant, poll = self.get_participant_and_poll(msg.user())
-        self.assertEqual(participant.poll_uid, poll.uid)
+        self.assertEqual(participant.get_poll_uid(), poll.uid)
 
         # update the poll with new content but the system should
         # still remember that we're working with an older version

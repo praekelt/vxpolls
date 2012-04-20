@@ -89,6 +89,7 @@ def _field_for(key):
             required=False),
         'poll_id': forms.CharField(required=True, widget=forms.HiddenInput),
         'transport_name': forms.CharField(required=True, widget=forms.HiddenInput),
+        'worker_name': forms.CharField(required=False, widget=forms.HiddenInput),
         'survey_completed_response': forms.CharField(
             label='All Completed response',
             help_text='The copy that is sent at the end of the session.',

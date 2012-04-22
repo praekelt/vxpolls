@@ -47,7 +47,8 @@ class MultiPollApplication(PollApplication):
         participant = self.pm.get_participant(message.user())
         #for k,v in participant.dump().items():
             #print k, v
-        poll = self.pm.get_poll_for_participant((self.poll_id_list+[None])[0],
+        poll = self.pm.get_poll_for_participant(
+                (participant.poll_id_list+self.poll_id_list+[None])[0],
                                                 participant)
         #print poll.__dict__
         # store the uid so we get this one on the next time around

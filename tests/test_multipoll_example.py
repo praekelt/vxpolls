@@ -51,7 +51,7 @@ class BaseMultiPollApplicationTestCase(ApplicationTestCase):
         return self.app.pm.get_poll_for_participant(poll_id, participant)
 
     def get_participant_and_poll(self, user_id, poll_id=None):
-        poll_id = poll_id or (self.poll_id_list+[None])[0]
+        poll_id = poll_id or (self.poll_id_list + [None])[0]
         participant = self.app.pm.get_participant(user_id)
         return participant, self.get_poll(poll_id, participant)
 
@@ -60,6 +60,7 @@ class BaseMultiPollApplicationTestCase(ApplicationTestCase):
 
     def assertEvent(self, response, event):
         self.assertEqual(response['session_event'], event)
+
 
 class MultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
 
@@ -94,7 +95,7 @@ class MultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
         participant.set_last_question_index(0)
         participant.set_poll_id('register')
         participant.set_poll_id('register')
-        participant.set_poll_id('week0')  #No such poll
+        participant.set_poll_id('week0')  # No such poll
         participant.set_poll_id('week1')
         participant.set_poll_id('week1')
         self.app.pm.save_participant(participant)

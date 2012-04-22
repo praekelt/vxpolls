@@ -9,18 +9,23 @@ def typed(dictionary, key, formatter, default=None):
         return formatter(value)
     return default
 
+
 def deserialize_messages(json_data):
     message_json_data = json.loads(json_data)
     return [TransportUserMessage.from_json(data) for data in message_json_data]
 
+
 def serialize_messages(messages):
     return json.dumps([message.to_json() for message in messages])
+
 
 def deserialize(json_data):
     return json.loads(json_data)
 
+
 def serialize(data):
     return json.dumps(data)
+
 
 class PollParticipant(object):
 
@@ -47,21 +52,21 @@ class PollParticipant(object):
             self.last_question_index_list.append(index)
 
     def get_last_question_index(self):
-        return ([None]+self.last_question_index_list)[-1]
+        return ([None] + self.last_question_index_list)[-1]
 
     def set_poll_id(self, id):
         if id != self.get_poll_id():
             self.poll_id_list.append(id)
 
     def get_poll_id(self):
-        return ([None]+self.poll_id_list)[-1]
+        return ([None] + self.poll_id_list)[-1]
 
     def set_poll_uid(self, uid):
         if uid != self.get_poll_uid():
             self.poll_uid_list.append(uid)
 
     def get_poll_uid(self):
-        return ([None]+self.poll_uid_list)[-1]
+        return ([None] + self.poll_uid_list)[-1]
 
     def __eq__(self, other):
         if isinstance(other, PollParticipant):
@@ -113,7 +118,8 @@ class PollParticipant(object):
             'interactions': self.interactions,
             'opted_in': self.opted_in,
             'age': self.age,
-            'last_question_index_list': serialize(self.last_question_index_list),
+            'last_question_index_list': serialize(
+                                            self.last_question_index_list),
             'has_unanswered_question': self.has_unanswered_question,
             'updated_at': self.updated_at,
             'sent_messages': serialize_messages(self.sent_messages),
@@ -142,4 +148,3 @@ class PollParticipant(object):
     def __repr__(self):
         return '<PollParticipant %s, %s, %s>' % (
             self.user_id, self.has_completed_batch(), self.interactions)
-

@@ -45,7 +45,8 @@ class MultiPollApplication(PollApplication):
 
     def consume_user_message(self, message):
         participant = self.pm.get_participant(message.user())
-        poll = self.pm.get_poll_for_participant(self.poll_id, participant)
+        poll = self.pm.get_poll_for_participant((self.poll_id_list+[None])[0],
+                                                participant)
         # store the uid so we get this one on the next time around
         # even if the content changes.
         participant.set_poll_uid(poll.uid)

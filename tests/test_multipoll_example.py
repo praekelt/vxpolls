@@ -24,7 +24,14 @@ class BaseMultiPollApplicationTestCase(ApplicationTestCase):
                 'copy': 'What is your favorite fruit?',
                 'valid_responses': ['apple', 'orange'],
                 }],
-            'week1': [],
+            'week1': [{
+                'copy': 'Red or blue?',
+                'valid_responses': ['red', 'blue'],
+                },
+                {
+                'copy': 'Tall or short?',
+                'valid_responses': ['tall', 'short'],
+                 }],
             'week2': [],
             'week3': [],
             }
@@ -85,14 +92,14 @@ class MultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
         participant, poll = self.get_participant_and_poll(msg.user())
         participant.has_unanswered_question = True
         participant.set_last_question_index(0)
-        participant.set_poll_id('register')
+        participant.set_poll_id('week1')
         self.app.pm.save_participant(participant)
         # send to the app
         yield self.dispatch(msg)
         [response] = self.get_dispatched_messages()
         # check we get the next question and that its not a session close event
         self.assertResponse(response,
-                        self.default_questions_dict['register'][1]['copy'])
+                        self.default_questions_dict['week1'][1]['copy'])
         self.assertEvent(response, None)
 
     @inlineCallbacks

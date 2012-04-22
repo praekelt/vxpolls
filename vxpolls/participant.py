@@ -39,7 +39,6 @@ class PollParticipant(object):
         self.continue_session = True
         self.poll_id_list = []
         self.poll_uid_list = []
-        self.polls = []
         if session_data:
             self.load(session_data)
 

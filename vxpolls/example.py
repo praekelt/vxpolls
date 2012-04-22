@@ -41,11 +41,7 @@ class PollApplication(ApplicationWorker):
 
     def consume_user_message(self, message):
         participant = self.pm.get_participant(message.user())
-        #print participant.__dict__
-        for k,v in participant.dump().items():
-            print k, v
         poll = self.pm.get_poll_for_participant(self.poll_id, participant)
-        print poll.__dict__
         # store the uid so we get this one on the next time around
         # even if the content changes.
         participant.set_poll_uid(poll.uid)

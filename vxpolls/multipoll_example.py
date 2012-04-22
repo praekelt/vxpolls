@@ -47,12 +47,15 @@ class MultiPollApplication(PollApplication):
         participant = self.pm.get_participant(message.user())
         #for k,v in participant.dump().items():
             #print k, v
+        print participant.poll_id_list
         poll = self.pm.get_poll_for_participant(
                 (participant.poll_id_list[-1:]+self.poll_id_list+[None])[0],
                                                 participant)
         #print poll.__dict__
         # store the uid so we get this one on the next time around
         # even if the content changes.
+        participant.set_poll_id(poll.poll_id)
+        print participant.poll_id_list
         participant.set_poll_uid(poll.uid)
         participant.questions_per_session = poll.batch_size
         if participant.has_unanswered_question:

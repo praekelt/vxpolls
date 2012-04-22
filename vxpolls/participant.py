@@ -114,6 +114,8 @@ class PollParticipant(object):
             'retries', int, 0)
         self.poll_uid_list = typed(session_data,
             'poll_uid_list', deserialize, default=[])
+        self.poll_id_list = typed(session_data,
+            'poll_id_list', deserialize, default=[])
 
     def dump(self):
         return {
@@ -128,6 +130,7 @@ class PollParticipant(object):
             'received_messages': serialize_messages(self.received_messages),
             'retries': self.retries,
             'poll_uid_list': serialize(self.poll_uid_list),
+            'poll_id_list': serialize(self.poll_id_list),
         }
 
     def clean_dump(self):

@@ -85,6 +85,7 @@ class MultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
         participant, poll = self.get_participant_and_poll(msg.user())
         participant.has_unanswered_question = True
         participant.set_last_question_index(0)
+        participant.set_poll_id('register')
         self.app.pm.save_participant(participant)
         # send to the app
         yield self.dispatch(msg)

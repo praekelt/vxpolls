@@ -43,34 +43,25 @@ class PollParticipant(object):
             self.load(session_data)
 
     def set_last_question_index(self, index):
-        if index == self.get_last_question_index():
-            pass  # no need to update so don't grow list
-        self.last_question_index_list.append(index)
+        if index != self.get_last_question_index():
+            self.last_question_index_list.append(index)
 
     def get_last_question_index(self):
-        if len(self.last_question_index_list) == 0:
-            return None
-        return self.last_question_index_list[-1]
+        return ([None]+self.last_question_index_list)[-1]
 
     def set_poll_id(self, id):
-        if id == self.get_poll_id():
-            pass  # no need to update so don't grow list
-        self.poll_id_list.append(id)
+        if id != self.get_poll_id():
+            self.poll_id_list.append(id)
 
     def get_poll_id(self):
-        if len(self.poll_id_list) == 0:
-            return None
-        return self.poll_id_list[-1]
+        return ([None]+self.poll_id_list)[-1]
 
     def set_poll_uid(self, uid):
-        if uid == self.get_poll_uid():
-            pass  # no need to update so don't grow list
-        self.poll_uid_list.append(uid)
+        if uid != self.get_poll_uid():
+            self.poll_uid_list.append(uid)
 
     def get_poll_uid(self):
-        if len(self.poll_uid_list) == 0:
-            return None
-        return self.poll_uid_list[-1]
+        return ([None]+self.poll_uid_list)[-1]
 
     def __eq__(self, other):
         if isinstance(other, PollParticipant):

@@ -92,8 +92,15 @@ class MultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
         participant, poll = self.get_participant_and_poll(msg.user())
         participant.has_unanswered_question = True
         participant.set_last_question_index(0)
+        participant.set_poll_id('register')
+        participant.set_poll_id('register')
+        participant.set_poll_id('week0')  #No such poll
+        participant.set_poll_id('week1')
         participant.set_poll_id('week1')
         self.app.pm.save_participant(participant)
+        retrieved_participant = self.app.pm.get_participant(msg.user())
+        self.assertEqual(['register', 'week0', 'week1'],
+                retrieved_participant.poll_id_list)
         # send to the app
         yield self.dispatch(msg)
         [response] = self.get_dispatched_messages()

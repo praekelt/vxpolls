@@ -74,7 +74,7 @@ class PollApplicationTestCase(BasePollApplicationTestCase):
         # prime the participant
         participant, poll = self.get_participant_and_poll(msg.user())
         participant.has_unanswered_question = True
-        participant.last_question_index = 0
+        participant.set_last_question_index(0)
         self.app.pm.save_participant(participant)
         # send to the app
         yield self.dispatch(msg)
@@ -90,7 +90,7 @@ class PollApplicationTestCase(BasePollApplicationTestCase):
         # prime the participant
         participant, poll = self.get_participant_and_poll(msg.user())
         participant.has_unanswered_question = True
-        participant.last_question_index = 2
+        participant.set_last_question_index(2)
         self.app.pm.save_participant(participant)
         # send to the app
         yield self.dispatch(msg)
@@ -105,7 +105,7 @@ class PollApplicationTestCase(BasePollApplicationTestCase):
         # prime the participant
         participant = self.app.pm.get_participant(msg.user())
         participant.has_unanswered_question = True
-        participant.last_question_index = 1
+        participant.set_last_question_index(1)
         self.app.pm.save_participant(participant)
 
         # send to app
@@ -123,7 +123,7 @@ class PollApplicationTestCase(BasePollApplicationTestCase):
         participant = self.app.pm.get_participant(msg.user())
         participant.has_unanswered_question = True
         participant.interactions = 1
-        participant.last_question_index = 1
+        participant.set_last_question_index(1)
         self.app.pm.save_participant(participant)
 
         # send to app
@@ -151,7 +151,7 @@ class PollApplicationTestCase(BasePollApplicationTestCase):
         msg = self.mkmsg_in(content=None)
         participant, poll = self.get_participant_and_poll(msg.user())
         participant.has_unanswered_question = False
-        participant.last_question_index = 2
+        participant.set_last_question_index(2)
         self.app.pm.save_participant(participant)
         yield self.dispatch(msg)
         [response] = self.get_dispatched_messages()

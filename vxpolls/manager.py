@@ -123,12 +123,12 @@ class Poll(object):
         return ':'.join(parts)
 
     def get_last_question(self, participant):
-        index = participant.last_question_index
+        index = participant.get_last_question_index()
         if index is not None:
             return self.get_question(index)
 
     def set_last_question(self, participant, question):
-        participant.last_question_index = question.index
+        participant.set_last_question_index(question.index)
 
     def get_next_question(self, participant, last_index=None):
         if last_index is None:

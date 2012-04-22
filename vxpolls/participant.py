@@ -48,8 +48,8 @@ class PollParticipant(object):
             self.load(session_data)
 
     def set_last_question_index(self, index):
-        if index != self.get_last_question_index():
-            self.last_question_index_list.append(index)
+        #if index != self.get_last_question_index():
+        self.last_question_index_list.append(index)
 
     def get_last_question_index(self):
         return ([None] + self.last_question_index_list)[-1]

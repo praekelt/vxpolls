@@ -62,6 +62,19 @@ class MultiPollApplication(PollApplication):
         else:
             self.init_session(participant, poll, message)
 
+    def on_message(self, participant, poll, message):
+        # receive a message as part of a live session
+        content = message['content']
+        error_message = poll.submit_answer(participant, content)
+        if error_message:
+            self.reply_to(message, error_message)
+        else:
+            if poll.has_more_questions_for(participant):
+                next_question = poll.get_next_question(participant)
+                self.reply_to(message, self.ask_question(participant, poll, next_question))
+            else:
+                self.end_session(participant, poll, message)
+
     def end_session(self, participant, poll, message):
         if poll.poll_id == 'register':
             batch_completed_response = self.registration_partial_response
@@ -80,5 +93,9 @@ class MultiPollApplication(PollApplication):
             self.reply_to(message, survey_completed_response,
                 continue_session=False)
             self.pm.save_participant(participant)
-            # Archive for demo purposes so we can redial in and start over.
-            self.pm.archive(participant)
+            # Move on to the next poll if possible
+            self.next_poll_or_archive(participant)
+
+    def next_poll_or_archive(self, participant):
+        # Archive for demo purposes so we can redial in and start over.
+        self.pm.archive(participant)

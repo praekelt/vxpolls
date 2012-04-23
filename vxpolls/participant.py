@@ -48,7 +48,9 @@ class PollParticipant(object):
             self.load(session_data)
 
     def set_last_question_index(self, index):
-        #if index != self.get_last_question_index():
+        #if index != self.get_last_question_index():  TODO aggregate id, uid &
+                                                    # last question index into
+                                                    # one dict
         self.last_question_index_list.append(index)
 
     def get_last_question_index(self):

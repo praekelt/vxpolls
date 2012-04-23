@@ -101,10 +101,9 @@ class MultiPollApplication(PollApplication):
         next_poll_id = (self.poll_id_list+[None])[
                                 self.poll_id_list.index(poll.poll_id) + 1]
         if next_poll_id:
-            print participant.__dict__['poll_id_list']
             participant.set_poll_id(next_poll_id)
-            print participant.__dict__['poll_id_list']
-            participant.set_last_question_index(0)
+            participant.set_poll_uid(None)
+            participant.set_last_question_index(None)
             self.pm.save_participant(participant)
         else:
             self.pm.archive(participant)

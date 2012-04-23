@@ -86,29 +86,6 @@ class MultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
                         self.default_questions_dict['register'][1]['copy'])
 
     @inlineCallbacks
-    def test_clone_participant(self):
-        msg = self.mkmsg_in(content=None)
-        yield self.dispatch(msg)
-        [response] = self.get_dispatched_messages()
-        participant, poll = self.get_participant_and_poll(msg.user())
-        participant.age = 23
-        self.assertResponse(response,
-                        self.default_questions_dict['register'][0]['copy'])
-        self.assertEvent(response, None)
-        next_question = poll.get_next_question(participant)
-        self.assertEqual(next_question.copy,
-                        self.default_questions_dict['register'][1]['copy'])
-        clone = self.app.pm.clone_participant(participant, "clone_id")
-        self.assertEqual(participant.age, clone.age)
-        clone.age = 27
-        self.app.pm.save_participant(clone)
-        clone = self.app.pm.get_participant("clone_id")
-        self.assertEqual(clone.age, 27)
-        self.assertEqual(participant.age, 23)
-
-
-
-    @inlineCallbacks
     def test_continuation_of_session(self):
         # create the inbound message
         msg = self.mkmsg_in(content='red')

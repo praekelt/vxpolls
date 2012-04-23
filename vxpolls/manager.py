@@ -56,13 +56,19 @@ class PollManager(object):
         return participant
 
     def get_poll_for_participant(self, poll_id, participant):
-        print poll_id
+        #print poll_id
         return self.get(poll_id, participant.get_poll_uid())
 
     def save_participant(self, participant):
         participant.updated_at = time.time()
         self.session_manager.save_session(participant.user_id,
                                     participant.clean_dump())
+
+    def clone_participant(self, participant, new_id):
+        participant.updated_at = time.time()
+        self.session_manager.save_session(new_id,
+                                    participant.clean_dump())
+        return self.get_participant(new_id)
 
     def active_participants(self):
         return [PollParticipant(user_id, session) for user_id, session
@@ -101,7 +107,7 @@ class PollManager(object):
 class Poll(object):
     def __init__(self, r_server, poll_id, uid, questions, batch_size=None,
         r_prefix='poll'):
-        print "Poll __init__"
+        #print "Poll __init__"
         self.r_server = r_server
         self.poll_id = poll_id
         self.uid = uid

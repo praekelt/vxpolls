@@ -124,3 +124,30 @@ class MultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
         [response] = self.get_dispatched_messages()
         self.assertResponse(response, self.app.registration_completed_response)
         self.assertEvent(response, 'close')
+
+    @inlineCallbacks
+    def test_finish_one_poll_then_start_another(self):
+        # create the inbound message
+        msg = self.mkmsg_in(content='apple')
+        # prime the participant
+        participant, poll = self.get_participant_and_poll(msg.user())
+        participant.has_unanswered_question = True
+        participant.set_last_question_index(2)
+        self.app.pm.save_participant(participant)
+        # send to the app
+        yield self.dispatch(msg)
+        [response] = self.get_dispatched_messages()
+        self.assertResponse(response, self.app.registration_completed_response)
+        self.assertEvent(response, 'close')
+
+        msg = self.mkmsg_in(content='any input')
+        yield self.dispatch(msg)
+        responses = self.get_dispatched_messages()
+        self.assertResponse(responses[-1],
+                self.default_questions_dict['week1'][0]['copy'])
+
+        msg = self.mkmsg_in(content='red')
+        yield self.dispatch(msg)
+        responses = self.get_dispatched_messages()
+        self.assertResponse(responses[-1],
+                self.default_questions_dict['week1'][1]['copy'])

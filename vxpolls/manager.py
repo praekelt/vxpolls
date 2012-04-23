@@ -56,6 +56,7 @@ class PollManager(object):
         return participant
 
     def get_poll_for_participant(self, poll_id, participant):
+        print poll_id
         return self.get(poll_id, participant.get_poll_uid())
 
     def save_participant(self, participant):
@@ -100,6 +101,7 @@ class PollManager(object):
 class Poll(object):
     def __init__(self, r_server, poll_id, uid, questions, batch_size=None,
         r_prefix='poll'):
+        print "Poll __init__"
         self.r_server = r_server
         self.poll_id = poll_id
         self.uid = uid

@@ -94,8 +94,17 @@ class MultiPollApplication(PollApplication):
                 continue_session=False)
             self.pm.save_participant(participant)
             # Move on to the next poll if possible
-            self.next_poll_or_archive(participant)
+            self.next_poll_or_archive(participant, poll)
 
-    def next_poll_or_archive(self, participant):
+    def next_poll_or_archive(self, participant, poll):
         # Archive for demo purposes so we can redial in and start over.
-        self.pm.archive(participant)
+        next_poll_id = (self.poll_id_list+[None])[
+                                self.poll_id_list.index(poll.poll_id) + 1]
+        if next_poll_id:
+            print participant.__dict__['poll_id_list']
+            participant.set_poll_id(next_poll_id)
+            print participant.__dict__['poll_id_list']
+            participant.set_last_question_index(0)
+            self.pm.save_participant(participant)
+        else:
+            self.pm.archive(participant)

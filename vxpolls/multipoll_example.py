@@ -48,15 +48,7 @@ class MultiPollApplication(PollApplication):
         poll_id = participant.get_poll_id()
         if poll_id is None:
             poll_id = (self.poll_id_list+[None])[0]
-        #for k,v in participant.dump().items():
-            #print k, v
-        #print participant.poll_id_list
-        poll = self.pm.get_poll_for_participant(
-                #(participant.poll_id_list[-1:]+self.poll_id_list+[None])[0],
-                                                #participant)
-                                                poll_id,
-                                                participant)
-        #print poll.__dict__
+        poll = self.pm.get_poll_for_participant(poll_id, participant)
         # store the uid so we get this one on the next time around
         # even if the content changes.
         participant.set_poll_id(poll.poll_id)

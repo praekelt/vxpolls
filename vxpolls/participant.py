@@ -44,8 +44,20 @@ class PollParticipant(object):
         self.continue_session = True
         self.poll_id_list = []
         self.poll_uid_list = []
+        self.polls = [{"poll_id":None, "uid":None, "last_question_index":None}]
         if session_data:
             self.load(session_data)
+
+    def current_poll(self):
+        return self.polls[-1]
+
+    def new_poll(self, poll_id, uid=None, index=None):
+        new_poll = {
+                "poll_id": poll_id,
+                "uid": uid,
+                "last_question_index": last_question_index,
+                }
+        self.polls.append(new_poll)
 
     def set_last_question_index(self, index):
         #if index != self.get_last_question_index():  TODO aggregate id, uid &

@@ -48,10 +48,10 @@ class PollParticipant(object):
         if session_data:
             self.load(session_data)
 
-    def current_poll(self):
+    def get_current_poll(self):
         return self.polls[-1]
 
-    def new_poll(self, poll_id, uid=None, index=None):
+    def append_new_poll(self, poll_id, uid=None, index=None):
         new_poll = {
                 "poll_id": poll_id,
                 "uid": uid,

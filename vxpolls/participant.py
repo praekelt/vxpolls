@@ -74,7 +74,10 @@ class PollParticipant(object):
                 #self.poll_id_list[-1] = id
             #else:
                 #self.poll_id_list.append(id)
-            self.append_new_poll(id)
+            if False or self.get_poll_id() is None:
+                self.get_current_poll()['poll_id'] = id
+            else:
+                self.append_new_poll(id)
 
     def get_poll_id(self):
         return self.get_current_poll()['poll_id']

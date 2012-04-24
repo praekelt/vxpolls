@@ -41,7 +41,6 @@ class PollParticipant(object):
         self.received_messages = []
         self.retries = 0
         self.continue_session = True
-        self.poll_uid_list = []
         self.polls = [{"poll_id":None, "uid":None, "last_question_index":None}]
         if session_data:
             self.load(session_data)
@@ -74,14 +73,10 @@ class PollParticipant(object):
         return self.get_current_poll()['poll_id']
 
     def set_poll_uid(self, uid):
-        if uid != self.get_poll_uid():
-            if len(self.poll_uid_list) and self.poll_uid_list[-1] is None:
-                self.poll_uid_list[-1] = uid
-            else:
-                self.poll_uid_list.append(uid)
+        self.get_current_poll()['uid'] = uid
 
     def get_poll_uid(self):
-        return ([None] + self.poll_uid_list)[-1]
+        return self.get_current_poll()['uid']
 
     def __eq__(self, other):
         if isinstance(other, PollParticipant):
@@ -120,8 +115,6 @@ class PollParticipant(object):
             'received_messages', deserialize_messages, default=[])
         self.retries = typed(session_data,
             'retries', int, 0)
-        self.poll_uid_list = typed(session_data,
-            'poll_uid_list', deserialize, default=[])
         self.polls = typed(session_data,
             'polls', deserialize, default=[])
 
@@ -136,7 +129,6 @@ class PollParticipant(object):
             'sent_messages': serialize_messages(self.sent_messages),
             'received_messages': serialize_messages(self.received_messages),
             'retries': self.retries,
-            'poll_uid_list': serialize(self.poll_uid_list),
             'polls': serialize(self.polls),
         }
 

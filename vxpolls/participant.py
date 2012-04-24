@@ -36,7 +36,6 @@ class PollParticipant(object):
         self.interactions = 0
         self.opted_in = False
         self.age = None
-        self.last_question_index_list = []
         self.has_unanswered_question = False
         self.sent_messages = []
         self.received_messages = []
@@ -59,13 +58,10 @@ class PollParticipant(object):
         self.polls.append(new_poll)
 
     def set_last_question_index(self, index):
-        #if index != self.get_last_question_index():  TODO aggregate id, uid &
-                                                    # last question index into
-                                                    # one dict
-        self.last_question_index_list.append(index)
+        self.get_current_poll()['last_question_index'] = index
 
     def get_last_question_index(self):
-        return ([None] + self.last_question_index_list)[-1]
+        return self.get_current_poll()['last_question_index']
 
     def set_poll_id(self, id):
         if id != self.get_poll_id():
@@ -114,8 +110,6 @@ class PollParticipant(object):
             'opted_in', lambda v: v == 'True')
         self.age = typed(session_data,
             'age', int)
-        self.last_question_index_list = typed(session_data,
-            'last_question_index_list', deserialize, default=[])
         self.has_unanswered_question = typed(session_data,
             'has_unanswered_question', lambda v: v == 'True')
         self.updated_at = typed(session_data,
@@ -137,8 +131,6 @@ class PollParticipant(object):
             'interactions': self.interactions,
             'opted_in': self.opted_in,
             'age': self.age,
-            'last_question_index_list': serialize(
-                                            self.last_question_index_list),
             'has_unanswered_question': self.has_unanswered_question,
             'updated_at': self.updated_at,
             'sent_messages': serialize_messages(self.sent_messages),

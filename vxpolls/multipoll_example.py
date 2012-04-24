@@ -47,7 +47,7 @@ class MultiPollApplication(PollApplication):
         participant = self.pm.get_participant(message.user())
         poll_id = participant.get_poll_id()
         if poll_id is None:
-            poll_id = (self.poll_id_list+[None])[0]
+            poll_id = (self.poll_id_list + [None])[0]
         poll = self.pm.get_poll_for_participant(poll_id, participant)
         # store the uid so we get this one on the next time around
         # even if the content changes.
@@ -68,7 +68,8 @@ class MultiPollApplication(PollApplication):
         else:
             if poll.has_more_questions_for(participant):
                 next_question = poll.get_next_question(participant)
-                self.reply_to(message, self.ask_question(participant, poll, next_question))
+                self.reply_to(message, self.ask_question(participant, poll,
+                                                            next_question))
             else:
                 self.end_session(participant, poll, message)
 
@@ -95,7 +96,7 @@ class MultiPollApplication(PollApplication):
 
     def next_poll_or_archive(self, participant, poll):
         # Archive for demo purposes so we can redial in and start over.
-        next_poll_id = (self.poll_id_list+[None])[
+        next_poll_id = (self.poll_id_list + [None])[
                                 self.poll_id_list.index(poll.poll_id) + 1]
         if next_poll_id:
             participant.set_poll_id(next_poll_id)

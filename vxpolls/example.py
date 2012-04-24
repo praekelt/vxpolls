@@ -60,7 +60,8 @@ class PollApplication(ApplicationWorker):
         else:
             if poll.has_more_questions_for(participant):
                 next_question = poll.get_next_question(participant)
-                self.reply_to(message, self.ask_question(participant, poll, next_question))
+                self.reply_to(message, self.ask_question(participant, poll,
+                                                            next_question))
             else:
                 self.end_session(participant, poll, message)
 
@@ -83,7 +84,8 @@ class PollApplication(ApplicationWorker):
         # brand new session
         if poll.has_more_questions_for(participant):
             next_question = poll.get_next_question(participant)
-            self.reply_to(message, self.ask_question(participant, poll, next_question))
+            self.reply_to(message, self.ask_question(participant, poll,
+                                                        next_question))
         else:
             self.end_session(participant, poll, message)
 

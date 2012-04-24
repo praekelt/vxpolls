@@ -97,7 +97,7 @@ class MultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
         participant.set_poll_id('week0')  # No such poll
         participant.set_poll_id('week1')
         participant.set_poll_id('week1')
-        # Need to set last question index after setting poll
+        # Need to set last question index only after setting poll
         participant.set_last_question_index(0)
         self.app.pm.save_participant(participant)
         retrieved_participant = self.app.pm.get_participant(msg.user())

@@ -9,6 +9,7 @@ from vumi import log
 from vxpolls.participant import PollParticipant
 from vxpolls.results import ResultManager
 
+
 class PollManager(object):
     def __init__(self, r_server, r_prefix='poll_manager'):
         self.r_server = r_server
@@ -202,6 +203,7 @@ class Poll(object):
             return PollQuestion(index, **self.questions[index])
         return None
 
+
 class PollQuestion(object):
     def __init__(self, index, copy, label=None, valid_responses=[], checks={}):
         self.index = index
@@ -222,4 +224,3 @@ class PollQuestion(object):
     def __repr__(self):
         return '<PollQuestion copy: %s, responses: %s>' % (
             repr(self.copy), repr(self.valid_responses))
-

@@ -42,7 +42,7 @@ class PollParticipant(object):
         self.received_messages = []
         self.retries = 0
         self.continue_session = True
-        self.poll_id_list = []
+        #self.poll_id_list = []
         self.poll_uid_list = []
         self.polls = [{"poll_id":None, "uid":None, "last_question_index":None}]
         if session_data:
@@ -51,7 +51,7 @@ class PollParticipant(object):
     def get_current_poll(self):
         return self.polls[-1]
 
-    def append_new_poll(self, poll_id, uid=None, index=None):
+    def append_new_poll(self, poll_id, uid=None, last_question_index=None):
         new_poll = {
                 "poll_id": poll_id,
                 "uid": uid,
@@ -70,13 +70,15 @@ class PollParticipant(object):
 
     def set_poll_id(self, id):
         if id != self.get_poll_id():
-            if len(self.poll_id_list) and self.poll_id_list[-1] is None:
-                self.poll_id_list[-1] = id
-            else:
-                self.poll_id_list.append(id)
+            #if len(self.poll_id_list) and self.poll_id_list[-1] is None:
+                #self.poll_id_list[-1] = id
+            #else:
+                #self.poll_id_list.append(id)
+            self.append_new_poll(id)
 
     def get_poll_id(self):
-        return ([None] + self.poll_id_list)[-1]
+        return self.get_current_poll()['poll_id']
+        #return ([None] + self.poll_id_list)[-1]
 
     def set_poll_uid(self, uid):
         if uid != self.get_poll_uid():
@@ -129,8 +131,10 @@ class PollParticipant(object):
             'retries', int, 0)
         self.poll_uid_list = typed(session_data,
             'poll_uid_list', deserialize, default=[])
-        self.poll_id_list = typed(session_data,
-            'poll_id_list', deserialize, default=[])
+        #self.poll_id_list = typed(session_data,
+            #'poll_id_list', deserialize, default=[])
+        self.polls = typed(session_data,
+            'polls', deserialize, default=[])
 
     def dump(self):
         return {
@@ -146,7 +150,8 @@ class PollParticipant(object):
             'received_messages': serialize_messages(self.received_messages),
             'retries': self.retries,
             'poll_uid_list': serialize(self.poll_uid_list),
-            'poll_id_list': serialize(self.poll_id_list),
+            #'poll_id_list': serialize(self.poll_id_list),
+            'polls': serialize(self.polls),
         }
 
     def clean_dump(self):

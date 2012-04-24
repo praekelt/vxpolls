@@ -42,7 +42,6 @@ class PollParticipant(object):
         self.received_messages = []
         self.retries = 0
         self.continue_session = True
-        #self.poll_id_list = []
         self.poll_uid_list = []
         self.polls = [{"poll_id":None, "uid":None, "last_question_index":None}]
         if session_data:
@@ -129,8 +128,6 @@ class PollParticipant(object):
             'retries', int, 0)
         self.poll_uid_list = typed(session_data,
             'poll_uid_list', deserialize, default=[])
-        #self.poll_id_list = typed(session_data,
-            #'poll_id_list', deserialize, default=[])
         self.polls = typed(session_data,
             'polls', deserialize, default=[])
 
@@ -148,7 +145,6 @@ class PollParticipant(object):
             'received_messages': serialize_messages(self.received_messages),
             'retries': self.retries,
             'poll_uid_list': serialize(self.poll_uid_list),
-            #'poll_id_list': serialize(self.poll_id_list),
             'polls': serialize(self.polls),
         }
 

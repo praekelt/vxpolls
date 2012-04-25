@@ -108,3 +108,10 @@ class MultiPollApplication(PollApplication):
             self.pm.save_participant(participant)
             return True
         return False
+
+    def try_go_to_specific_poll(self, participant, poll_id):
+        if poll_id in self.poll_id_list:
+            participant.set_poll_id(poll_id)
+            self.pm.save_participant(participant)
+            return True
+        return False

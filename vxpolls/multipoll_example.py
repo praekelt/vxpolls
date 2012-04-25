@@ -95,13 +95,16 @@ class MultiPollApplication(PollApplication):
             self.next_poll_or_archive(participant, poll)
 
     def next_poll_or_archive(self, participant, poll):
-        # Archive for demo purposes so we can redial in and start over.
+        if not self.try_go_to_next_poll(participant):
+            # Archive for demo purposes so we can redial in and start over.
+            self.archive(participant)
+
+    def try_go_to_next_poll(self, participant):
+        current_poll_id = participant.get_poll_id()
         next_poll_id = (self.poll_id_list + [None])[
-                                self.poll_id_list.index(poll.poll_id) + 1]
+                                self.poll_id_list.index(current_poll_id) + 1]
         if next_poll_id:
             participant.set_poll_id(next_poll_id)
-            participant.set_poll_uid(None)
-            participant.set_last_question_index(None)
             self.pm.save_participant(participant)
-        else:
-            self.pm.archive(participant)
+            return True
+        return False

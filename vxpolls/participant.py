@@ -42,8 +42,15 @@ class PollParticipant(object):
         self.retries = 0
         self.continue_session = True
         self.polls = [{"poll_id":None, "uid":None, "last_question_index":None}]
+        self.labels = {}
         if session_data:
             self.load(session_data)
+
+    def set_label(self, label, answer):
+        self.labels[label] = answer
+
+    def get_label(self, label):
+        return self.labels.get(label)
 
     def get_current_poll(self):
         return self.polls[-1]
@@ -64,8 +71,10 @@ class PollParticipant(object):
 
     def set_poll_id(self, id):
         if id != self.get_poll_id():
-            if False or self.get_poll_id() is None:
+            if self.get_poll_id() is None:
                 self.get_current_poll()['poll_id'] = id
+                self.get_current_poll()['uid'] = None
+                self.get_current_poll()['last_question_index'] = None
             else:
                 self.append_new_poll(id)
 
@@ -117,6 +126,8 @@ class PollParticipant(object):
             'retries', int, 0)
         self.polls = typed(session_data,
             'polls', deserialize, default=[])
+        self.labels = typed(session_data,
+            'labels', deserialize, default=[])
 
     def dump(self):
         return {
@@ -130,6 +141,7 @@ class PollParticipant(object):
             'received_messages': serialize_messages(self.received_messages),
             'retries': self.retries,
             'polls': serialize(self.polls),
+            'labels': serialize(self.labels),
         }
 
     def clean_dump(self):

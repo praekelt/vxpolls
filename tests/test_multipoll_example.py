@@ -33,7 +33,18 @@ class BaseMultiPollApplicationTestCase(ApplicationTestCase):
                 'valid_responses': ['tall', 'short'],
                  }],
             'week2': [],
-            'week3': [],
+            'week3': [{
+                'copy': '1 or 2?',
+                'valid_responses': ['1', '2'],
+                },
+                {
+                'copy': '3 or 4?',
+                'valid_responses': ['3', '4'],
+                },
+                {
+                'copy': '5 or 6?',
+                'valid_responses': ['5', '6'],
+                }],
             }
 
     @inlineCallbacks
@@ -118,6 +129,7 @@ class MultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
         # prime the participant
         participant, poll = self.get_participant_and_poll(msg.user())
         participant.has_unanswered_question = True
+        participant.set_poll_id('register')
         participant.set_last_question_index(2)
         self.app.pm.save_participant(participant)
         # send to the app
@@ -133,8 +145,11 @@ class MultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
         # prime the participant
         participant, poll = self.get_participant_and_poll(msg.user())
         participant.has_unanswered_question = True
+        #participant.set_label('jump_to_poll', 'week3')
+        participant.set_poll_id('register')
         participant.set_last_question_index(2)
         self.app.pm.save_participant(participant)
+        participant = self.app.pm.get_participant(msg.user())
         # send to the app
         yield self.dispatch(msg)
         [response] = self.get_dispatched_messages()
@@ -152,3 +167,29 @@ class MultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
         responses = self.get_dispatched_messages()
         self.assertResponse(responses[-1],
                 self.default_questions_dict['week1'][1]['copy'])
+
+    @inlineCallbacks
+    def test_jump_to_another_poll(self):
+        # create the inbound message
+        msg = self.mkmsg_in(content='apple')
+        # prime the participant
+        participant, poll = self.get_participant_and_poll(msg.user())
+        participant.has_unanswered_question = True
+        participant.set_label('jump_to_poll', 'week3')
+        participant.set_poll_id('register')
+        participant.set_last_question_index(2)
+        self.app.pm.save_participant(participant)
+        participant = self.app.pm.get_participant(msg.user())
+        # send to the app
+
+        msg = self.mkmsg_in(content='any input')
+        yield self.dispatch(msg)
+        responses = self.get_dispatched_messages()
+        self.assertResponse(responses[-1],
+                self.default_questions_dict['week3'][0]['copy'])
+
+        msg = self.mkmsg_in(content='1')
+        yield self.dispatch(msg)
+        responses = self.get_dispatched_messages()
+        self.assertResponse(responses[-1],
+                self.default_questions_dict['week3'][1]['copy'])

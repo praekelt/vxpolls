@@ -37,7 +37,6 @@ class MultiPollApplication(PollApplication):
         self.pm = PollManager(self.r_server)
         if not self.pm.exists(self.poll_id_list):
             for p in self.poll_id_list:
-                #print p, self.questions_dict.get(p, [])
                 self.pm.register(p, {
                     'questions': self.questions_dict.get(p, []),
                     'batch_size': self.batch_size,
@@ -45,6 +44,7 @@ class MultiPollApplication(PollApplication):
 
     def consume_user_message(self, message):
         participant = self.pm.get_participant(message.user())
+        self.update_current_poll(participant)
         poll_id = participant.get_poll_id()
         if poll_id is None:
             poll_id = (self.poll_id_list + [None])[0]
@@ -110,8 +110,16 @@ class MultiPollApplication(PollApplication):
         return False
 
     def try_go_to_specific_poll(self, participant, poll_id):
-        if poll_id in self.poll_id_list:
+        current_poll_id = participant.get_poll_id()
+        if poll_id in self.poll_id_list and poll_id != current_poll_id:
             participant.set_poll_id(poll_id)
+            participant.set_poll_uid(None)
+            participant.set_last_question_index(0)
             self.pm.save_participant(participant)
             return True
         return False
+
+    def update_current_poll(self, participant):
+        new_poll = participant.get_label('jump_to_poll')
+        if new_poll:
+            self.try_go_to_specific_poll(participant, new_poll)

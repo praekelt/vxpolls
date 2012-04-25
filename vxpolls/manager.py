@@ -186,6 +186,7 @@ class Poll(object):
         if poll_question.answer(answer):
             self.results_manager.add_result(self.poll_id, participant.user_id,
                 poll_question.label, answer)
+            participant.set_label(poll_question.label, answer)
             participant.has_unanswered_question = False
             participant.interactions += 1
         else:

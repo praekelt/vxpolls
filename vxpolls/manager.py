@@ -160,9 +160,10 @@ class Poll(object):
 
         state = self.results_manager.get_user(self.poll_id,
                         participant.user_id)
+        extended_state = dict(state, **participant.labels)
 
         def equals(key, value):
-            return unicode(state[key]) == unicode(value)
+            return unicode(extended_state[key]) == unicode(value)
 
         operations_dispatcher = {
             'equal': equals

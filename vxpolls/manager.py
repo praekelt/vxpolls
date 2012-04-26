@@ -165,8 +165,33 @@ class Poll(object):
         def equals(key, value):
             return unicode(extended_state[key]) == unicode(value)
 
+        def not_equals(key, value):
+            return unicode(extended_state[key]) != unicode(value)
+
+        def exists(key, value=None):
+            return unicode(extended_state[key]) is not None
+
+        def less(key, value):
+            return unicode(extended_state[key]) < unicode(value)
+
+        def less_equal(key, value):
+            return unicode(extended_state[key]) <= unicode(value)
+
+        def greater(key, value):
+            return unicode(extended_state[key]) > unicode(value)
+
+        def greater_equal(key, value):
+            return unicode(extended_state[key]) >= unicode(value)
+
+
         operations_dispatcher = {
-            'equal': equals
+            'equal': equals,
+            'not equal': not_equals,
+            'exists': exists,
+            'less': less,
+            'less or equal': less_equal,
+            'greater': greater,
+            'greater or equal': greater_equal,
         }
 
         if not question.checks:

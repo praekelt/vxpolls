@@ -75,10 +75,6 @@ class BaseMultiPollApplicationTestCase(ApplicationTestCase):
 
 class MultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
 
-    def test_pass(self):
-        #print self.__dict__
-        pass
-
     @inlineCallbacks
     def test_initial_connect(self):
         msg = self.mkmsg_in(content=None)
@@ -193,3 +189,98 @@ class MultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
         responses = self.get_dispatched_messages()
         self.assertResponse(responses[-1],
                 self.default_questions_dict['week3'][1]['copy'])
+
+
+class LongMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
+
+    poll_id_list = [
+            'register',
+            'week1',
+            'week2',
+            'week3',
+            'week4',
+            'week5',
+            'week6',
+            'week7',
+            'week8',
+            'week9',
+            'week10',
+            ]
+
+    default_questions_dict = {
+            'register': [{
+                'copy': 'Name?',
+                'valid_responses': [],
+                },
+                {
+                'copy': 'Week?',
+                'valid_responses': ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10'],
+                'label': 'jump_to_week',
+                },
+                {
+                'copy': 'SMS?',
+                'valid_responses': ['yes', 'no'],
+                }],
+
+            'week1': [{
+                'copy': 'Ask this once regardless of answer',
+                'label': 'ask_once_1',
+                },
+                {
+                'copy': 'Ask this until answer is yes',
+                'valid_responses': ['yes', 'no'],
+                'label': 'ask_until_1',
+                },
+                {
+                'copy': 'Skip week2?',
+                'valid_responses': ['yes', 'no'],
+                'label': 'skip_week2',
+                }],
+
+            'week2': [{
+                    'copy': 'some question',
+                }],
+
+            'week3': [{
+                'copy': 'Ask this once regardless of answer',
+                'label': 'ask_once_1',
+                },
+                {
+                'copy': '1 or 2?',
+                'valid_responses': ['1', '2'],
+                },
+                {
+                'copy': '3 or 4?',
+                'valid_responses': ['3', '4'],
+                },
+                {
+                'copy': '5 or 6?',
+                'valid_responses': ['5', '6'],
+                }],
+
+            'week4': [{
+                'copy': 'Ask this until answer is yes',
+                'valid_responses': ['yes', 'no'],
+                'label': 'ask_until_1',
+                }],
+
+            'week5': [{
+                'copy': 'Ask this once regardless of answer',
+                'label': 'ask_once_1',
+                },
+                {
+                'copy': 'Ask this until answer is yes',
+                'valid_responses': ['yes', 'no'],
+                'label': 'ask_until_1',
+                }],
+
+            'week6': [],
+            'week7': [],
+            'week8': [],
+            'week9': [],
+            'week10': [],
+            }
+
+    def test_pass(self):
+        #print self.__dict__
+        pass

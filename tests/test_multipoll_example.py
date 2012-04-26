@@ -223,6 +223,22 @@ class LongMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
                 }],
 
             'week1': [{
+                    'copy': 'Week1 question',
+                }],
+
+            'week2': [{
+                    'copy': 'Week2 question',
+                }],
+
+            'week3': [{
+                    'copy': 'Week3 question',
+                }],
+
+            'week4': [{
+                    'copy': 'Week4 question',
+                }],
+
+            'week5': [{
                 'copy': 'Ask this once regardless of answer',
                 'label': 'ask_once_1',
                 'checks': {
@@ -243,11 +259,11 @@ class LongMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
                 'label': 'skip_week2',
                 }],
 
-            'week2': [{
-                    'copy': 'some question',
+            'week6': [{
+                    'copy': 'Week6 question',
                 }],
 
-            'week3': [{
+            'week7': [{
                 'copy': 'Ask this once regardless of answer',
                 'label': 'ask_once_1',
                 'checks': {
@@ -267,7 +283,7 @@ class LongMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
                 'valid_responses': ['5', '6'],
                 }],
 
-            'week4': [{
+            'week8': [{
                 'copy': 'Ask this until answer is yes',
                 'valid_responses': ['yes', 'no'],
                 'label': 'ask_until_1',
@@ -276,7 +292,7 @@ class LongMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
                     },
                 }],
 
-            'week5': [{
+            'week9': [{
                 'copy': 'Ask this once regardless of answer',
                 'label': 'ask_once_1',
                 'checks': {
@@ -292,10 +308,6 @@ class LongMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
                     },
                 }],
 
-            'week6': [],
-            'week7': [],
-            'week8': [],
-            'week9': [],
             'week10': [],
             }
 

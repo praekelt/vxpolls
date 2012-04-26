@@ -225,11 +225,17 @@ class LongMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
             'week1': [{
                 'copy': 'Ask this once regardless of answer',
                 'label': 'ask_once_1',
+                'checks': {
+                    'exists': {'ask_once_1': ''}
+                    },
                 },
                 {
                 'copy': 'Ask this until answer is yes',
                 'valid_responses': ['yes', 'no'],
                 'label': 'ask_until_1',
+                'checks': {
+                    'equal': {'ask_until_1': 'yes'}
+                    },
                 },
                 {
                 'copy': 'Skip week2?',
@@ -244,6 +250,9 @@ class LongMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
             'week3': [{
                 'copy': 'Ask this once regardless of answer',
                 'label': 'ask_once_1',
+                'checks': {
+                    'exists': {'ask_once_1': ''}
+                    },
                 },
                 {
                 'copy': '1 or 2?',
@@ -262,16 +271,25 @@ class LongMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
                 'copy': 'Ask this until answer is yes',
                 'valid_responses': ['yes', 'no'],
                 'label': 'ask_until_1',
+                'checks': {
+                    'equal': {'ask_until_1': 'yes'}
+                    },
                 }],
 
             'week5': [{
                 'copy': 'Ask this once regardless of answer',
                 'label': 'ask_once_1',
+                'checks': {
+                    'exists': {'ask_once_1': ''}
+                    },
                 },
                 {
                 'copy': 'Ask this until answer is yes',
                 'valid_responses': ['yes', 'no'],
                 'label': 'ask_until_1',
+                'checks': {
+                    'equal': {'ask_until_1': 'yes'}
+                    },
                 }],
 
             'week6': [],

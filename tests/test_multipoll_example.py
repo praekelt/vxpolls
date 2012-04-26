@@ -242,7 +242,7 @@ class LongMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
                 'copy': 'Ask this once regardless of answer',
                 'label': 'ask_once_1',
                 'checks': {
-                    'exists': {'ask_once_1': ''}
+                    'not exists': {'ask_once_1': ''}
                     },
                 },
                 {
@@ -254,9 +254,9 @@ class LongMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
                     },
                 },
                 {
-                'copy': 'Skip week2?',
+                'copy': 'Skip week 6?',
                 'valid_responses': ['yes', 'no'],
-                'label': 'skip_week2',
+                'label': 'skip_week6',
                 }],
 
             'week6': [{
@@ -267,7 +267,7 @@ class LongMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
                 'copy': 'Ask this once regardless of answer',
                 'label': 'ask_once_1',
                 'checks': {
-                    'exists': {'ask_once_1': ''}
+                    'not exists': {'ask_once_1': ''}
                     },
                 },
                 {
@@ -296,7 +296,7 @@ class LongMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
                 'copy': 'Ask this once regardless of answer',
                 'label': 'ask_once_1',
                 'checks': {
-                    'exists': {'ask_once_1': ''}
+                    'not exists': {'ask_once_1': ''}
                     },
                 },
                 {
@@ -326,14 +326,35 @@ class LongMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
             ('answered once',self.default_questions_dict['week5'][1]['copy']),
             ('no',self.app.batch_completed_response),
             ('Any input',self.default_questions_dict['week5'][2]['copy']),
+            # try invalid response
+            ('qe?',self.default_questions_dict['week5'][2]['copy']),
+            # now try valid response
+            ('yes',self.app.survey_completed_response),
+            # should skip ['week7'][0] --- label: ask_once_1 exists
+            ('Any input',self.default_questions_dict['week7'][1]['copy']),
+            ('1',self.default_questions_dict['week7'][2]['copy']),
+            # try invalid response
+            ('5',self.default_questions_dict['week7'][2]['copy']),
+            # now try valid response
+            ('3',self.app.batch_completed_response),
+            ('Any input',self.default_questions_dict['week7'][3]['copy']),
+            ('5',self.app.survey_completed_response),
+            # will ask ['week8'][0] --- label: ask_until_1 is still not yes
+            ('Any input',self.default_questions_dict['week8'][0]['copy']),
+            ('yes',self.app.survey_completed_response),
+            # week9 should now skip all questions
+            ('Any input',self.app.survey_completed_response),
+            # and week10 has none
+            ('Any input',self.app.survey_completed_response),
             ]
 
+        #print ''
         for io in inputs_and_expected_response:
             msg = self.mkmsg_in(content=io[0])
             yield self.dispatch(msg)
             responses = self.get_dispatched_messages()
             output = responses[-1]['content']
             event = responses[-1].get('session_event')
-            #print '\n\t', io[0], '->', output, '(%s)' % event, '[%s]' % io[1]
+            #print '\t', io[0], '->', output, '(%s)' % event, '[%s]' % io[1]
             self.assertEqual(output, io[1])
 

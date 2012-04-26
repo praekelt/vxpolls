@@ -97,7 +97,7 @@ class MultiPollApplication(PollApplication):
     def next_poll_or_archive(self, participant, poll):
         if not self.try_go_to_next_poll(participant):
             # Archive for demo purposes so we can redial in and start over.
-            self.archive(participant)
+            self.pm.archive(participant)
 
     def try_go_to_next_poll(self, participant):
         current_poll_id = participant.get_poll_id()
@@ -128,6 +128,10 @@ class MultiPollApplication(PollApplication):
         if new_poll and participant.get_poll_id() != 'register':
             self.try_go_to_specific_poll(participant, 'week%s' % new_poll)
             participant.set_label('jump_to_week', None)
+
+        if participant.get_label('skip_week6') == 'yes' \
+            and participant.get_poll_id() == 'week6':
+                self.try_go_to_next_poll(participant)
 
         #print participant.labels
         #print participant.polls

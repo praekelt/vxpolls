@@ -171,6 +171,9 @@ class Poll(object):
         def exists(key, value=None):
             return unicode(extended_state[key]) is not None
 
+        def not_exists(key, value=None):
+            return extended_state.get(key) is None
+
         def less(key, value):
             return unicode(extended_state[key]) < unicode(value)
 
@@ -188,6 +191,7 @@ class Poll(object):
             'equal': equals,
             'not equal': not_equals,
             'exists': exists,
+            'not exists': not_exists,
             'less': less,
             'less or equal': less_equal,
             'greater': greater,

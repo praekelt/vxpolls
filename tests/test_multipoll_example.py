@@ -164,31 +164,31 @@ class MultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
         self.assertResponse(responses[-1],
                 self.default_questions_dict['week1'][1]['copy'])
 
-    @inlineCallbacks
-    def test_jump_to_another_poll(self):
-        # create the inbound message
-        msg = self.mkmsg_in(content='apple')
-        # prime the participant
-        participant, poll = self.get_participant_and_poll(msg.user())
-        participant.has_unanswered_question = True
-        participant.set_label('jump_to_poll', 'week3')
-        participant.set_poll_id('register')
-        participant.set_last_question_index(2)
-        self.app.pm.save_participant(participant)
-        participant = self.app.pm.get_participant(msg.user())
-        # send to the app
+    #@inlineCallbacks
+    #def test_jump_to_another_poll(self):
+        ## create the inbound message
+        #msg = self.mkmsg_in(content='apple')
+        ## prime the participant
+        #participant, poll = self.get_participant_and_poll(msg.user())
+        #participant.has_unanswered_question = True
+        #participant.set_label('jump_to_poll', 'week3')
+        #participant.set_poll_id('register')
+        #participant.set_last_question_index(2)
+        #self.app.pm.save_participant(participant)
+        #participant = self.app.pm.get_participant(msg.user())
+        ## send to the app
 
-        msg = self.mkmsg_in(content='any input')
-        yield self.dispatch(msg)
-        responses = self.get_dispatched_messages()
-        self.assertResponse(responses[-1],
-                self.default_questions_dict['week3'][0]['copy'])
+        #msg = self.mkmsg_in(content='any input')
+        #yield self.dispatch(msg)
+        #responses = self.get_dispatched_messages()
+        #self.assertResponse(responses[-1],
+                #self.default_questions_dict['week3'][0]['copy'])
 
-        msg = self.mkmsg_in(content='1')
-        yield self.dispatch(msg)
-        responses = self.get_dispatched_messages()
-        self.assertResponse(responses[-1],
-                self.default_questions_dict['week3'][1]['copy'])
+        #msg = self.mkmsg_in(content='1')
+        #yield self.dispatch(msg)
+        #responses = self.get_dispatched_messages()
+        #self.assertResponse(responses[-1],
+                #self.default_questions_dict['week3'][1]['copy'])
 
 
 class LongMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
@@ -250,7 +250,7 @@ class LongMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
                 'valid_responses': ['yes', 'no'],
                 'label': 'ask_until_1',
                 'checks': {
-                    'equal': {'ask_until_1': 'yes'}
+                    'not equal': {'ask_until_1': 'yes'}
                     },
                 },
                 {
@@ -288,7 +288,7 @@ class LongMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
                 'valid_responses': ['yes', 'no'],
                 'label': 'ask_until_1',
                 'checks': {
-                    'equal': {'ask_until_1': 'yes'}
+                    'not equal': {'ask_until_1': 'yes'}
                     },
                 }],
 
@@ -304,13 +304,36 @@ class LongMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
                 'valid_responses': ['yes', 'no'],
                 'label': 'ask_until_1',
                 'checks': {
-                    'equal': {'ask_until_1': 'yes'}
+                    'not equal': {'ask_until_1': 'yes'}
                     },
                 }],
 
             'week10': [],
             }
 
-    def test_pass(self):
-        #print self.__dict__
-        pass
+    @inlineCallbacks
+    def test_a_series_of_interactions(self):
+
+        inputs_and_expected_response = [
+            ('Any input',self.default_questions_dict['register'][0]['copy']),
+            ('David',self.default_questions_dict['register'][1]['copy']),
+            ('4',self.app.registration_partial_response),
+            ('Any input',self.default_questions_dict['register'][2]['copy']),
+            ('yes',self.app.registration_completed_response),
+            ('Any input',self.default_questions_dict['week4'][0]['copy']),
+            ('Any input',self.app.survey_completed_response),
+            ('Any input',self.default_questions_dict['week5'][0]['copy']),
+            ('answered once',self.default_questions_dict['week5'][1]['copy']),
+            ('no',self.app.batch_completed_response),
+            ('Any input',self.default_questions_dict['week5'][2]['copy']),
+            ]
+
+        for io in inputs_and_expected_response:
+            msg = self.mkmsg_in(content=io[0])
+            yield self.dispatch(msg)
+            responses = self.get_dispatched_messages()
+            output = responses[-1]['content']
+            event = responses[-1].get('session_event')
+            #print '\n\t', io[0], '->', output, '(%s)' % event, '[%s]' % io[1]
+            self.assertEqual(output, io[1])
+

@@ -113,13 +113,21 @@ class MultiPollApplication(PollApplication):
         current_poll_id = participant.get_poll_id()
         if poll_id in self.poll_id_list and poll_id != current_poll_id:
             participant.set_poll_id(poll_id)
-            participant.set_poll_uid(None)
-            participant.set_last_question_index(0)
+            #participant.set_poll_uid(None)
+            #participant.set_last_question_index(None)
             self.pm.save_participant(participant)
             return True
         return False
 
     def update_current_poll(self, participant):
-        new_poll = participant.get_label('jump_to_poll')
-        if new_poll:
-            self.try_go_to_specific_poll(participant, new_poll)
+        #new_poll = participant.get_label('jump_to_poll')
+        #if new_poll:
+            #self.try_go_to_specific_poll(participant, new_poll)
+
+        new_poll = participant.get_label('jump_to_week')
+        if new_poll and participant.get_poll_id() != 'register':
+            self.try_go_to_specific_poll(participant, 'week%s' % new_poll)
+            participant.set_label('jump_to_week', None)
+
+        #print participant.labels
+        #print participant.polls

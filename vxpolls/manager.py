@@ -124,7 +124,7 @@ class Poll(object):
         for index, question_data in enumerate(self.questions):
             question = PollQuestion(index, **question_data)
             self.results_manager.register_question(self.poll_id,
-                question.label, question.valid_responses)
+                question.label_or_copy(), question.valid_responses)
 
     def r_key(self, *args):
         parts = [self.r_prefix]
@@ -185,8 +185,9 @@ class Poll(object):
         assert poll_question, 'Need a question to submit an answer for'
         if poll_question.answer(answer):
             self.results_manager.add_result(self.poll_id, participant.user_id,
-                poll_question.label, answer)
-            participant.set_label(poll_question.label, answer)
+                poll_question.label_or_copy(), answer)
+            if poll_question.label is not None:
+                participant.set_label(poll_question.label, answer)
             participant.has_unanswered_question = False
             participant.interactions += 1
         else:
@@ -209,10 +210,13 @@ class PollQuestion(object):
     def __init__(self, index, copy, label=None, valid_responses=[], checks={}):
         self.index = index
         self.copy = copy
-        self.label = label or copy
+        self.label = label
         self.valid_responses = [unicode(a) for a in valid_responses]
         self.checks = checks
         self.answered = False
+
+    def label_or_copy(self):
+        return self.label or self.copy
 
     def answer(self, answer):
         if self.valid_responses and (answer not in self.valid_responses):

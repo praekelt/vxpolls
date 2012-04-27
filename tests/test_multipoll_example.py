@@ -141,7 +141,6 @@ class MultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
         # prime the participant
         participant, poll = self.get_participant_and_poll(msg.user())
         participant.has_unanswered_question = True
-        #participant.set_label('jump_to_poll', 'week3')
         participant.set_poll_id('register')
         participant.set_last_question_index(2)
         self.app.pm.save_participant(participant)
@@ -164,31 +163,27 @@ class MultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
         self.assertResponse(responses[-1],
                 self.default_questions_dict['week1'][1]['copy'])
 
-    #@inlineCallbacks
-    #def test_jump_to_another_poll(self):
-        ## create the inbound message
-        #msg = self.mkmsg_in(content='apple')
-        ## prime the participant
-        #participant, poll = self.get_participant_and_poll(msg.user())
-        #participant.has_unanswered_question = True
-        #participant.set_label('jump_to_poll', 'week3')
-        #participant.set_poll_id('register')
-        #participant.set_last_question_index(2)
-        #self.app.pm.save_participant(participant)
-        #participant = self.app.pm.get_participant(msg.user())
-        ## send to the app
+    @inlineCallbacks
+    def test_finish_one_poll_then_start_another(self):
+        msg = self.mkmsg_in(content='any input')
+        # prime the participant
+        participant, poll = self.get_participant_and_poll(msg.user())
+        participant.set_poll_id('register')
+        participant.set_label('jump_to_poll', 'week3')
+        self.app.pm.save_participant(participant)
+        participant = self.app.pm.get_participant(msg.user())
 
-        #msg = self.mkmsg_in(content='any input')
-        #yield self.dispatch(msg)
-        #responses = self.get_dispatched_messages()
-        #self.assertResponse(responses[-1],
-                #self.default_questions_dict['week3'][0]['copy'])
+        msg = self.mkmsg_in(content='any input')
+        yield self.dispatch(msg)
+        responses = self.get_dispatched_messages()
+        self.assertResponse(responses[-1],
+                self.default_questions_dict['week3'][0]['copy'])
 
-        #msg = self.mkmsg_in(content='1')
-        #yield self.dispatch(msg)
-        #responses = self.get_dispatched_messages()
-        #self.assertResponse(responses[-1],
-                #self.default_questions_dict['week3'][1]['copy'])
+        msg = self.mkmsg_in(content='1')
+        yield self.dispatch(msg)
+        responses = self.get_dispatched_messages()
+        self.assertResponse(responses[-1],
+                self.default_questions_dict['week3'][1]['copy'])
 
 
 class LongMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):

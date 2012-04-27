@@ -24,8 +24,9 @@ class CheckWidget(forms.MultiWidget):
 
     def format_output(self, widgets):
         return mark_safe(u' '.join([
+            u'value of',
             widgets[0],
-            u'<label>equals</label>',
+            u' equals ',
             widgets[1],
         ]))
 
@@ -39,7 +40,7 @@ class CheckWidget(forms.MultiWidget):
 
 class CheckField(forms.MultiValueField):
 
-    widget = CheckWidget(attrs={'class': 'txtbox'})
+    widget = CheckWidget(attrs={'class': 'span1'})
 
     def __init__(self, *args, **kwargs):
         fields = (

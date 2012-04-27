@@ -55,6 +55,7 @@ def _field_for(key):
     """
     try:
         [_, key_number, key_type] = key.split('--')
+        key_number = int(key_number) + 1
     except ValueError:
         key_type = key
         key_number = None
@@ -71,27 +72,27 @@ def _field_for(key):
         'batch_size': forms.IntegerField(required=False,
             widget=forms.HiddenInput),
         'valid_responses': fields.CSVField(
-            label='Question %s valid responses' % (key_number,),
+            label='Question %s valid responses (comma separated)' % (key_number,),
             help_text='Only comma separated values are allowed.',
             required=False),
         'copy': forms.CharField(
-            label='Question %s text' % (key_number,),
+            label='Question %s copy' % (key_number,),
             help_text='The actual copy that is sent to the phone.',
             required=False, widget=forms.Textarea),
         'label': forms.CharField(
-            label='Question %s is stored as' % (key_number,),
+            label='Question %s is stored in the database as:' % (key_number,),
             help_text='What to refer and store this value as in the database.',
-            widget=forms.TextInput(attrs={'class': 'txtbox'}),
+            widget=forms.TextInput(attrs={'class': 'input-medium'}),
             required=False),
         'checks': fields.CheckField(
-            label='Question %s should only be asked if' % (key_number,),
+            label='Question %s should only be asked if the stored' % (key_number,),
             help_text='Skip this question unless the value of the given label matches the answer given.',
             required=False),
         'poll_id': forms.CharField(required=True, widget=forms.HiddenInput),
         'transport_name': forms.CharField(required=True, widget=forms.HiddenInput),
         'worker_name': forms.CharField(required=False, widget=forms.HiddenInput),
         'survey_completed_response': forms.CharField(
-            label='All Completed response',
+            label='Closing copy at survey completion',
             help_text='The copy that is sent at the end of the session.',
             required=False, widget=forms.Textarea),
         'batch_completed_response': forms.CharField(
@@ -123,7 +124,6 @@ class VxpollForm(forms.BaseForm):
         total_num_questions = max([int(key.split('--')[1])
                                     for key in questions]) + 1
         results = []
-        pprint(self.cleaned_data)
         for index in range(total_num_questions):
             copy_key = 'question--%s--copy' % (index,)
             if self.cleaned_data.get(copy_key):
@@ -134,8 +134,6 @@ class VxpollForm(forms.BaseForm):
                     if data:
                         question[key] = data
                 results.append(question)
-            else:
-                print 'nothing', copy_key, self.cleaned_data.get(copy_key)
         return results
 
 
@@ -157,13 +155,18 @@ def make_form_class(config_data, base_class):
     def sort_on_key_index(key):
         try:
             parts = key.split('--')
+            if parts[2] == 'copy':
+                return '%saa' % (parts[1],)
             return '%s%s' % (parts[1], parts[2])
         except IndexError:
-            return 0
+            # For all non-question fields make sure they are
+            # last
+            return 'ZZ%s' % (key,)
 
     base_fields = SortedDict([
         (key, _field_for(key)) for key in sorted(keys, key=sort_on_key_index)
     ])
+
     return type('DynamicVxpollForm', (base_class,), {
         'base_fields': base_fields,
     })
@@ -178,7 +181,9 @@ def make_form(**kwargs):
 
     config_data = kwargs.pop('initial', {})
     initial_questions = config_data.pop('questions', [])
-    initial_questions.append(_normalize_question({}))
+    extra = kwargs.pop('extra', 1)
+    for i in range(extra):
+        initial_questions.append(_normalize_question({}))
     questions = _roll_up_questions(initial_questions)
     config_data.update(questions)
     form_class = make_form_class(config_data, base_class=base_class)

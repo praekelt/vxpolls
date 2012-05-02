@@ -1,6 +1,7 @@
 # -*- test-case-name: tests.test_multipull_example -*-
 # -*- coding: utf8 -*-
 
+from datetime import date, timedelta
 
 from vumi.tests.utils import FakeRedis
 #from vumi.application.base import ApplicationWorker
@@ -141,5 +142,8 @@ class MultiPollApplication(PollApplication):
             if poll_question.label == 'jump_to_week':
                 participant.set_label(poll_question.label,
                                         'week%s' % answer)
+                participant.set_label('expected_date', (date.today()
+                        + timedelta(weeks=20 - int(answer))).isoformat())
+                #print participant.get_label('expected_date')
 
     custom_answer_logic = custom_answer_logic_function

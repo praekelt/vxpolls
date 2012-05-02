@@ -213,13 +213,13 @@ class Poll(object):
     def submit_answer(self, participant, answer, custom_answer_logic=None):
         poll_question = self.get_last_question(participant)
         assert poll_question, 'Need a question to submit an answer for'
-        if custom_answer_logic:
-            custom_answer_logic(participant, answer, poll_question)
         if poll_question.answer(answer):
             self.results_manager.add_result(self.poll_id, participant.user_id,
                 poll_question.label_or_copy(), answer)
             if poll_question.label is not None:
                 participant.set_label(poll_question.label, answer)
+                if custom_answer_logic:
+                    custom_answer_logic(participant, answer, poll_question)
             participant.has_unanswered_question = False
             participant.interactions += 1
         else:

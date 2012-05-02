@@ -23,6 +23,8 @@ class MultiPollApplication(PollApplication):
     survey_completed_response = 'You have completed this weeks questions '\
                                 'please dial in again next week for more.'
 
+    custom_answer_logic = None
+
     def validate_config(self):
         self.questions_dict = self.config.get('questions_dict', {})
         self.r_config = self.config.get('redis_config', {})
@@ -62,7 +64,8 @@ class MultiPollApplication(PollApplication):
     def on_message(self, participant, poll, message):
         # receive a message as part of a live session
         content = message['content']
-        error_message = poll.submit_answer(participant, content)
+        error_message = poll.submit_answer(participant, content,
+                                            self.custom_answer_logic)
         if error_message:
             self.reply_to(message, error_message)
         else:
@@ -131,3 +134,14 @@ class MultiPollApplication(PollApplication):
         if participant.get_label('skip_week6') == 'yes' \
             and participant.get_poll_id() == 'week6':
                 self.try_go_to_next_poll(participant)
+
+    def custom_answer_logic_function(self, participant, answer, poll_question):
+        #print "%s.%s(%s, %s, %s)" % (
+                #self,
+                #'custom_answer_logic',
+                #participant,
+                #answer,
+                #poll_question)
+        pass
+
+    custom_answer_logic = custom_answer_logic_function

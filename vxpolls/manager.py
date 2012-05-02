@@ -210,9 +210,11 @@ class Poll(object):
 
         return False
 
-    def submit_answer(self, participant, answer):
+    def submit_answer(self, participant, answer, custom_answer_logic=None):
         poll_question = self.get_last_question(participant)
         assert poll_question, 'Need a question to submit an answer for'
+        if custom_answer_logic:
+            custom_answer_logic(participant, answer, poll_question)
         if poll_question.answer(answer):
             self.results_manager.add_result(self.poll_id, participant.user_id,
                 poll_question.label_or_copy(), answer)

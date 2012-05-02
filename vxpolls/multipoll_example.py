@@ -128,7 +128,7 @@ class MultiPollApplication(PollApplication):
 
         new_poll = participant.get_label('jump_to_week')
         if new_poll and participant.get_poll_id() != 'register':
-            self.try_go_to_specific_poll(participant, 'week%s' % new_poll)
+            self.try_go_to_specific_poll(participant, new_poll)
             participant.set_label('jump_to_week', None)
 
         if participant.get_label('skip_week6') == 'yes' \
@@ -136,12 +136,10 @@ class MultiPollApplication(PollApplication):
                 self.try_go_to_next_poll(participant)
 
     def custom_answer_logic_function(self, participant, answer, poll_question):
-        #print "%s.%s(%s, %s, %s)" % (
-                #self,
-                #'custom_answer_logic',
-                #participant,
-                #answer,
-                #poll_question)
-        pass
+        label_value = participant.get_label(poll_question.label)
+        if label_value is not None:
+            if poll_question.label == 'jump_to_week':
+                participant.set_label(poll_question.label,
+                                        'week%s' % answer)
 
     custom_answer_logic = custom_answer_logic_function

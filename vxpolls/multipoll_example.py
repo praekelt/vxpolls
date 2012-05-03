@@ -131,7 +131,7 @@ class MultiPollApplication(PollApplication):
             if expected is not None:
                 expected = datetime.strptime(expected, "%Y-%m-%d").date()
                 today = date.today()
-                week_delta = (expected - date.today()).days/7
+                week_delta = (expected - date.today()).days / 7
                 new_week = 'week%s' % week_delta
                 if current_week[:4] == 'week' \
                         and int(current_week[4:]) < week_delta:

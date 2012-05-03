@@ -186,7 +186,6 @@ class Poll(object):
         def greater_equal(key, value):
             return unicode(extended_state[key]) >= unicode(value)
 
-
         operations_dispatcher = {
             'equal': equals,
             'not equal': not_equals,

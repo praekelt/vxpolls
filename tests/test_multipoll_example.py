@@ -210,7 +210,7 @@ class LongMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
                 'valid_responses': [],
                 },
                 {
-                'copy': 'Week?',
+                'copy': 'Week?',  # Will trigger a jump to week (20 - answer)
                 'valid_responses': ['1', '2', '3', '4', '5',
                                     '6', '7', '8', '9', '10',
                                     '11', '12', '13', '14', '15',
@@ -317,6 +317,9 @@ class LongMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
         inputs_and_expected = [
             ('Any input', self.default_questions_dict['register'][0]['copy']),
             ('David', self.default_questions_dict['register'][1]['copy']),
+            # Answering 16 for the next question will trigger a jump to
+            # week (20-16) = week4 using a derived date parameter
+            # saved in the Participant via custom app logic
             ('16', self.app.registration_partial_response),
             ('Any input', self.default_questions_dict['register'][2]['copy']),
             ('yes', self.app.registration_completed_response),

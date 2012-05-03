@@ -161,5 +161,6 @@ class MultiPollApplication(PollApplication):
                 expected_date = (date.today()
                         + timedelta(weeks=20 - int(answer))).isoformat()
                 participant.set_label('expected_date', expected_date)
+                participant.set_label('weeks_till', None)
 
     custom_answer_logic = custom_answer_logic_function

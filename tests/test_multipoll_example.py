@@ -358,5 +358,6 @@ class LongMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
         archived = self.app.pm.get_archive(self.mkmsg_in(content='').user())
         self.assertEqual(archived[-1].labels.get('expected_date'),
                 (date.today()
-                    + timedelta(weeks=20
+                    + timedelta(weeks=8
                         - int(inputs_and_expected[2][0]))).isoformat())
+        #print archived[-1].labels

@@ -1,7 +1,7 @@
 # -*- test-case-name: tests.test_multipull_example -*-
 # -*- coding: utf8 -*-
 
-from datetime import date, timedelta
+from datetime import datetime, date, timedelta
 
 from vumi.tests.utils import FakeRedis
 #from vumi.application.base import ApplicationWorker
@@ -47,7 +47,7 @@ class MultiPollApplication(PollApplication):
 
     def consume_user_message(self, message):
         participant = self.pm.get_participant(message.user())
-        self.update_current_poll(participant)
+        self.custom_poll_logic_function(participant)
         poll_id = participant.get_poll_id()
         if poll_id is None:
             poll_id = (self.poll_id_list + [None])[0]
@@ -121,16 +121,31 @@ class MultiPollApplication(PollApplication):
             return True
         return False
 
-    def update_current_poll(self, participant):
+    def custom_poll_logic_function(self, participant):
         new_poll = participant.get_label('jump_to_poll')
         if new_poll:
             self.try_go_to_specific_poll(participant, new_poll)
             participant.set_label('jump_to_poll', None)
 
-        new_poll = participant.get_label('jump_to_week')
-        if new_poll and participant.get_poll_id() != 'register':
+        def expected_date_to_week(current_week, expected):
+            if expected is not None:
+                expected = datetime.strptime(expected, "%Y-%m-%d").date()
+                today = date.today()
+                week_delta = (expected - date.today()).days/7
+                new_week = 'week%s' % week_delta
+                if current_week[:4] == 'week' \
+                        and int(current_week[4:]) < week_delta:
+                    return new_week
+            return None
+
+        #new_poll = participant.get_label('jump_to_week')
+        #if new_poll and participant.get_poll_id() != 'register':
+            #self.try_go_to_specific_poll(participant, new_poll)
+            #participant.set_label('jump_to_week', None)
+        new_poll = expected_date_to_week(participant.get_poll_id(),
+                                        participant.get_label('expected_date'))
+        if new_poll:
             self.try_go_to_specific_poll(participant, new_poll)
-            participant.set_label('jump_to_week', None)
 
         if participant.get_label('skip_week6') == 'yes' \
             and participant.get_poll_id() == 'week6':
@@ -142,7 +157,8 @@ class MultiPollApplication(PollApplication):
             if poll_question.label == 'jump_to_week':
                 participant.set_label(poll_question.label,
                                         'week%s' % answer)
-                participant.set_label('expected_date', (date.today()
-                        + timedelta(weeks=20 - int(answer))).isoformat())
+                expected_date = (date.today()
+                        + timedelta(weeks=8 - int(answer))).isoformat()
+                participant.set_label('expected_date', expected_date)
 
     custom_answer_logic = custom_answer_logic_function

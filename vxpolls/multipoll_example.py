@@ -138,10 +138,10 @@ class MultiPollApplication(PollApplication):
                     return new_week
             return None
 
-        #new_poll = participant.get_label('jump_to_week')
-        #if new_poll and participant.get_poll_id() != 'register':
-            #self.try_go_to_specific_poll(participant, new_poll)
-            #participant.set_label('jump_to_week', None)
+        new_poll = participant.get_label('jump_to_week')
+        if new_poll and participant.get_poll_id() != 'register':
+            self.try_go_to_specific_poll(participant, new_poll)
+            participant.set_label('jump_to_week', None)
 
         new_poll = expected_date_to_week(participant.get_poll_id(),
                                         participant.get_label('expected_date'))

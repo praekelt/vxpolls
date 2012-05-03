@@ -348,18 +348,15 @@ class LongMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
             ('Any input', self.app.survey_completed_response),
             ]
 
-        #print ''
         for io in inputs_and_expected:
             msg = self.mkmsg_in(content=io[0])
             yield self.dispatch(msg)
             responses = self.get_dispatched_messages()
             output = responses[-1]['content']
             event = responses[-1].get('session_event')
-            #print '\t', io[0], '->', output, '(%s)' % event, '[%s]' % io[1]
             self.assertEqual(output, io[1])
         archived = self.app.pm.get_archive(self.mkmsg_in(content='').user())
         self.assertEqual(archived[-1].labels.get('expected_date'),
                 (date.today()
                     + timedelta(weeks=20
                         - int(inputs_and_expected[2][0]))).isoformat())
-        #print archived[-1].labels

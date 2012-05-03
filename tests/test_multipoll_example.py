@@ -212,8 +212,10 @@ class LongMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
                 {
                 'copy': 'Week?',
                 'valid_responses': ['1', '2', '3', '4', '5',
-                                    '6', '7', '8', '9', '10'],
-                'label': 'jump_to_week',
+                                    '6', '7', '8', '9', '10',
+                                    '11', '12', '13', '14', '15',
+                                    '16', '17', '18', '19', '20'],
+                'label': 'weeks_till',
                 },
                 {
                 'copy': 'SMS?',
@@ -315,7 +317,7 @@ class LongMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
         inputs_and_expected = [
             ('Any input', self.default_questions_dict['register'][0]['copy']),
             ('David', self.default_questions_dict['register'][1]['copy']),
-            ('4', self.app.registration_partial_response),
+            ('16', self.app.registration_partial_response),
             ('Any input', self.default_questions_dict['register'][2]['copy']),
             ('yes', self.app.registration_completed_response),
             ('Any input', self.default_questions_dict['week4'][0]['copy']),
@@ -358,6 +360,6 @@ class LongMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
         archived = self.app.pm.get_archive(self.mkmsg_in(content='').user())
         self.assertEqual(archived[-1].labels.get('expected_date'),
                 (date.today()
-                    + timedelta(weeks=8
+                    + timedelta(weeks=20
                         - int(inputs_and_expected[2][0]))).isoformat())
         #print archived[-1].labels

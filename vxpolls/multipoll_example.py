@@ -142,6 +142,7 @@ class MultiPollApplication(PollApplication):
         #if new_poll and participant.get_poll_id() != 'register':
             #self.try_go_to_specific_poll(participant, new_poll)
             #participant.set_label('jump_to_week', None)
+
         new_poll = expected_date_to_week(participant.get_poll_id(),
                                         participant.get_label('expected_date'))
         if new_poll:
@@ -154,11 +155,11 @@ class MultiPollApplication(PollApplication):
     def custom_answer_logic_function(self, participant, answer, poll_question):
         label_value = participant.get_label(poll_question.label)
         if label_value is not None:
-            if poll_question.label == 'jump_to_week':
+            if poll_question.label == 'weeks_till':
                 participant.set_label(poll_question.label,
                                         'week%s' % answer)
                 expected_date = (date.today()
-                        + timedelta(weeks=8 - int(answer))).isoformat()
+                        + timedelta(weeks=20 - int(answer))).isoformat()
                 participant.set_label('expected_date', expected_date)
 
     custom_answer_logic = custom_answer_logic_function

@@ -24,7 +24,7 @@ class PollApplication(ApplicationWorker):
         self.dashboard_port = int(self.config.get('dashboard_port', 8000))
         self.dashboard_prefix = self.config.get('dashboard_path_prefix', '/')
         self.poll_prefix = self.config.get('poll_prefix', 'poll_manager')
-        self.poll_id = self.config.get('poll_id', self.generate_unique_id())
+        self.poll_id = self.config.get('poll_id') or self.generate_unique_id()
 
     def generate_unique_id(self):
         return hashlib.md5(json.dumps(self.config)).hexdigest()
@@ -64,7 +64,8 @@ class PollApplication(ApplicationWorker):
         else:
             if poll.has_more_questions_for(participant):
                 next_question = poll.get_next_question(participant)
-                self.reply_to(message, self.ask_question(participant, poll, next_question))
+                reply = self.ask_question(participant, poll, next_question)
+                self.reply_to(message, reply)
             else:
                 self.end_session(participant, poll, message)
 
@@ -73,7 +74,6 @@ class PollApplication(ApplicationWorker):
         participant.has_unanswered_question = False
         next_question = poll.get_next_question(participant)
         config = self.pm.get_config(poll.poll_id)
-        print config
         if next_question:
             response = config.get('batch_completed_response',
                                     self.batch_completed_response)

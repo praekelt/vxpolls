@@ -8,6 +8,7 @@ from vumi.application import SessionManager
 from vxpolls.participant import PollParticipant
 from vxpolls.results import ResultManager
 
+
 class PollManager(object):
     def __init__(self, r_server, r_prefix='poll_manager'):
         self.r_server = r_server
@@ -76,17 +77,22 @@ class PollManager(object):
         return participant
 
     def get_poll_for_participant(self, poll_id, participant):
-        return self.get(poll_id, participant.poll_uid)
+        return self.get(poll_id, participant.get_poll_uid())
 
     def save_participant(self, participant):
         participant.updated_at = time.time()
         self.session_manager.save_session(participant.user_id,
                                     participant.clean_dump())
 
-    def active_participants(self, poll_id):
+    def clone_participant(self, participant, new_id):
+        participant.updated_at = time.time()
+        self.session_manager.save_session(new_id,
+                                    participant.clean_dump())
+        return self.get_participant(new_id)
+
+    def active_participants(self):
         return [PollParticipant(user_id, session) for user_id, session
-                 in self.session_manager.active_sessions()
-                 if session.get('poll_id') == poll_id]
+                 in self.session_manager.active_sessions()]
 
     def inactive_participant_user_ids(self):
         archive_key = self.r_key('archive')
@@ -121,6 +127,7 @@ class PollManager(object):
 class Poll(object):
     def __init__(self, r_server, poll_id, uid, questions, batch_size=None,
         r_prefix='poll'):
+        #print "Poll __init__"
         self.r_server = r_server
         self.poll_id = poll_id
         self.uid = uid
@@ -136,7 +143,7 @@ class Poll(object):
         for index, question_data in enumerate(self.questions):
             question = PollQuestion(index, **question_data)
             self.results_manager.register_question(self.poll_id,
-                question.label, question.valid_responses)
+                question.label_or_copy(), question.valid_responses)
 
     def r_key(self, *args):
         parts = [self.r_prefix]
@@ -144,12 +151,12 @@ class Poll(object):
         return ':'.join(parts)
 
     def get_last_question(self, participant):
-        index = participant.last_question_index
+        index = participant.get_last_question_index()
         if index is not None:
             return self.get_question(index)
 
     def set_last_question(self, participant, question):
-        participant.last_question_index = question.index
+        participant.set_last_question_index(question.index)
 
     def get_next_question(self, participant, last_index=None):
         if last_index is None:
@@ -172,12 +179,41 @@ class Poll(object):
 
         state = self.results_manager.get_user(self.poll_id,
                         participant.user_id)
+        extended_state = dict(state, **participant.labels)
 
         def equals(key, value):
-            return unicode(state[key]) == unicode(value)
+            return unicode(extended_state[key]) == unicode(value)
+
+        def not_equals(key, value):
+            return unicode(extended_state[key]) != unicode(value)
+
+        def exists(key, value=None):
+            return unicode(extended_state[key]) is not None
+
+        def not_exists(key, value=None):
+            return extended_state.get(key) is None
+
+        def less(key, value):
+            return unicode(extended_state[key]) < unicode(value)
+
+        def less_equal(key, value):
+            return unicode(extended_state[key]) <= unicode(value)
+
+        def greater(key, value):
+            return unicode(extended_state[key]) > unicode(value)
+
+        def greater_equal(key, value):
+            return unicode(extended_state[key]) >= unicode(value)
 
         operations_dispatcher = {
-            'equal': equals
+            'equal': equals,
+            'not equal': not_equals,
+            'exists': exists,
+            'not exists': not_exists,
+            'less': less,
+            'less or equal': less_equal,
+            'greater': greater,
+            'greater or equal': greater_equal,
         }
 
         if not question.checks:
@@ -192,12 +228,16 @@ class Poll(object):
 
         return False
 
-    def submit_answer(self, participant, answer):
+    def submit_answer(self, participant, answer, custom_answer_logic=None):
         poll_question = self.get_last_question(participant)
         assert poll_question, 'Need a question to submit an answer for'
         if poll_question.answer(answer):
             self.results_manager.add_result(self.poll_id, participant.user_id,
-                poll_question.label, answer)
+                poll_question.label_or_copy(), answer)
+            if poll_question.label is not None:
+                participant.set_label(poll_question.label, answer)
+                if custom_answer_logic:
+                    custom_answer_logic(participant, answer, poll_question)
             participant.has_unanswered_question = False
             participant.interactions += 1
         else:
@@ -215,14 +255,18 @@ class Poll(object):
             return PollQuestion(index, **self.questions[index])
         return None
 
+
 class PollQuestion(object):
     def __init__(self, index, copy, label=None, valid_responses=[], checks={}):
         self.index = index
         self.copy = copy
-        self.label = label or copy
+        self.label = label
         self.valid_responses = [unicode(a) for a in valid_responses]
         self.checks = checks
         self.answered = False
+
+    def label_or_copy(self):
+        return self.label or self.copy
 
     def answer(self, answer):
         if self.valid_responses and (answer not in self.valid_responses):
@@ -235,4 +279,3 @@ class PollQuestion(object):
     def __repr__(self):
         return '<PollQuestion copy: %s, responses: %s>' % (
             repr(self.copy), repr(self.valid_responses))
-

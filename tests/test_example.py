@@ -1,6 +1,7 @@
 from twisted.internet.defer import inlineCallbacks
 
 from vumi.application.tests.test_base import ApplicationTestCase
+from vumi.tests.utils import FakeRedis
 
 from vxpolls.example import PollApplication
 
@@ -27,6 +28,8 @@ class BasePollApplicationTestCase(ApplicationTestCase):
     @inlineCallbacks
     def setUp(self):
         yield super(BasePollApplicationTestCase, self).setUp()
+        self.r_server = FakeRedis()
+        self.patch(PollApplication, 'get_redis', lambda *a: self.r_server)
         self.config = {
             'poll_id': self.poll_id,
             'questions': self.default_questions,
@@ -74,7 +77,7 @@ class PollApplicationTestCase(BasePollApplicationTestCase):
         # prime the participant
         participant, poll = self.get_participant_and_poll(msg.user())
         participant.has_unanswered_question = True
-        participant.last_question_index = 0
+        participant.set_last_question_index(0)
         self.app.pm.save_participant(participant)
         # send to the app
         yield self.dispatch(msg)
@@ -90,7 +93,7 @@ class PollApplicationTestCase(BasePollApplicationTestCase):
         # prime the participant
         participant, poll = self.get_participant_and_poll(msg.user())
         participant.has_unanswered_question = True
-        participant.last_question_index = 2
+        participant.set_last_question_index(2)
         self.app.pm.save_participant(participant)
         # send to the app
         yield self.dispatch(msg)
@@ -105,7 +108,7 @@ class PollApplicationTestCase(BasePollApplicationTestCase):
         # prime the participant
         participant = self.app.pm.get_participant(msg.user())
         participant.has_unanswered_question = True
-        participant.last_question_index = 1
+        participant.set_last_question_index(1)
         self.app.pm.save_participant(participant)
 
         # send to app
@@ -123,7 +126,7 @@ class PollApplicationTestCase(BasePollApplicationTestCase):
         participant = self.app.pm.get_participant(msg.user())
         participant.has_unanswered_question = True
         participant.interactions = 1
-        participant.last_question_index = 1
+        participant.set_last_question_index(1)
         self.app.pm.save_participant(participant)
 
         # send to app
@@ -151,7 +154,7 @@ class PollApplicationTestCase(BasePollApplicationTestCase):
         msg = self.mkmsg_in(content=None)
         participant, poll = self.get_participant_and_poll(msg.user())
         participant.has_unanswered_question = False
-        participant.last_question_index = 2
+        participant.set_last_question_index(2)
         self.app.pm.save_participant(participant)
         yield self.dispatch(msg)
         [response] = self.get_dispatched_messages()
@@ -175,7 +178,9 @@ class PollManagerVersioningTestCase(BasePollApplicationTestCase):
         self.app.pm.register(self.poll_id, {
             'questions': self.updated_questions
         })
-        msg = self.mkmsg_in(content=None)
+        msg = self.mkmsg_in(content=None, helper_metadata={
+            'poll_id': self.poll_id,
+        })
         yield self.dispatch(msg)
         [response] = self.get_dispatched_messages()
         # make sure we get the first question as a response
@@ -195,7 +200,7 @@ class PollManagerVersioningTestCase(BasePollApplicationTestCase):
         [response] = self.get_dispatched_messages()
         self.assertResponse(response, self.default_questions[0]['copy'])
         participant, poll = self.get_participant_and_poll(msg.user())
-        self.assertEqual(participant.poll_uid, poll.uid)
+        self.assertEqual(participant.get_poll_uid(), poll.uid)
 
         # update the poll with new content but the system should
         # still remember that we're working with an older version

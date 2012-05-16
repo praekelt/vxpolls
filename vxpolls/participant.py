@@ -16,6 +16,15 @@ def deserialize_messages(json_data):
 def serialize_messages(messages):
     return json.dumps([message.to_json() for message in messages])
 
+
+def deserialize(json_data):
+    return json.loads(json_data)
+
+
+def serialize(data):
+    return json.dumps(data)
+
+
 class PollParticipant(object):
 
     def __init__(self, user_id, session_data=None):
@@ -25,16 +34,56 @@ class PollParticipant(object):
         self.interactions = 0
         self.opted_in = False
         self.age = None
-        self.last_question_index = None
         self.has_unanswered_question = False
         self.sent_messages = []
         self.received_messages = []
         self.retries = 0
         self.continue_session = True
-        self.poll_uid = None
-        self.poll_id = None
+        self.polls = [{"poll_id":None, "uid":None, "last_question_index":None}]
+        self.labels = {}
         if session_data:
             self.load(session_data)
+
+    def set_label(self, label, answer):
+        self.labels[label] = answer
+
+    def get_label(self, label):
+        return self.labels.get(label)
+
+    def get_current_poll(self):
+        return self.polls[-1]
+
+    def append_new_poll(self, poll_id, uid=None, last_question_index=None):
+        new_poll = {
+                "poll_id": poll_id,
+                "uid": uid,
+                "last_question_index": last_question_index,
+                }
+        self.polls.append(new_poll)
+
+    def set_last_question_index(self, index):
+        self.get_current_poll()['last_question_index'] = index
+
+    def get_last_question_index(self):
+        return self.get_current_poll()['last_question_index']
+
+    def set_poll_id(self, id):
+        if id != self.get_poll_id():
+            if self.get_poll_id() is None:
+                self.get_current_poll()['poll_id'] = id
+                self.get_current_poll()['uid'] = None
+                self.get_current_poll()['last_question_index'] = None
+            else:
+                self.append_new_poll(id)
+
+    def get_poll_id(self):
+        return self.get_current_poll()['poll_id']
+
+    def set_poll_uid(self, uid):
+        self.get_current_poll()['uid'] = uid
+
+    def get_poll_uid(self):
+        return self.get_current_poll()['uid']
 
     def __eq__(self, other):
         if isinstance(other, PollParticipant):
@@ -63,8 +112,6 @@ class PollParticipant(object):
             'opted_in', lambda v: v == 'True')
         self.age = typed(session_data,
             'age', int)
-        self.last_question_index = typed(session_data,
-            'last_question_index', int)
         self.has_unanswered_question = typed(session_data,
             'has_unanswered_question', lambda v: v == 'True')
         self.updated_at = typed(session_data,
@@ -75,10 +122,10 @@ class PollParticipant(object):
             'received_messages', deserialize_messages, default=[])
         self.retries = typed(session_data,
             'retries', int, 0)
-        self.poll_uid = typed(session_data,
-            'poll_uid', str, default=None)
-        self.poll_id = typed(session_data,
-            'poll_id', str, default=None)
+        self.polls = typed(session_data,
+            'polls', deserialize, default=[])
+        self.labels = typed(session_data,
+            'labels', deserialize, default=[])
 
     def dump(self):
         return {
@@ -86,14 +133,13 @@ class PollParticipant(object):
             'interactions': self.interactions,
             'opted_in': self.opted_in,
             'age': self.age,
-            'last_question_index': self.last_question_index,
             'has_unanswered_question': self.has_unanswered_question,
             'updated_at': self.updated_at,
             'sent_messages': serialize_messages(self.sent_messages),
             'received_messages': serialize_messages(self.received_messages),
             'retries': self.retries,
-            'poll_uid': self.poll_uid,
-            'poll_id': self.poll_id,
+            'polls': serialize(self.polls),
+            'labels': serialize(self.labels),
         }
 
     def clean_dump(self):

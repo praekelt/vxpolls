@@ -7,10 +7,10 @@ from twisted.internet.defer import inlineCallbacks, returnValue
 from twisted.web.client import getPage
 
 from vxpolls.manager import PollManager
-from vxpolls.results import ResultManager
 from vxpolls.dashboard import PollDashboardServer
 
 from vumi.tests.utils import FakeRedis
+
 
 class PollDashboardTestCase(TestCase):
 
@@ -62,18 +62,21 @@ class PollDashboardTestCase(TestCase):
         yield self.service.stopService()
 
     @inlineCallbacks
-    def get_route_json(self, route):
-        data = yield getPage(self.url + route, timeout=1)
+    def get_route_json(self, route, **kwargs):
+        data = yield getPage(self.url + route + '?' + urllib.urlencode(kwargs),
+                                timeout=1)
         returnValue(json.loads(data))
 
     @inlineCallbacks
-    def get_route_csv(self, route):
-        data = yield getPage(self.url + route, timeout=1)
+    def get_route_csv(self, route, **kwargs):
+        data = yield getPage(self.url + route + '?' + urllib.urlencode(kwargs),
+                                timeout=1)
         returnValue(csv.reader(data))
 
     def submit_answers(self, *answers, **kwargs):
         for answer in answers:
-            participant = self.poll_manager.get_participant(kwargs.get('user_id', 'user_id'))
+            participant = self.poll_manager.get_participant(
+                            kwargs.get('user_id', 'user_id'))
             question = self.poll.get_next_question(participant)
             self.poll.set_last_question(participant, question)
             error_message = self.poll.submit_answer(participant, answer)
@@ -83,17 +86,17 @@ class PollDashboardTestCase(TestCase):
 
     @inlineCallbacks
     def test_question_output(self):
-        data = yield self.get_route_json("results?%s" % urllib.urlencode({
-            'collection_id': self.poll_id,
-            'question': 'What is your favorite colour?'
-        }))
+        data = yield self.get_route_json("results",
+            collection_id=self.poll_id,
+            question='What is your favorite colour?',
+        )
         self.assertEqual(data, {
             "type": "standard",
             "percentage": "hide",
             "item": [
-                { "label": "blue".title(), "value": 0},
-                { "label": "green".title(), "value": 0},
-                { "label": "red".title(), "value": 0},
+                {"label": "blue".title(), "value": 0},
+                {"label": "green".title(), "value": 0},
+                {"label": "red".title(), "value": 0},
             ]
         })
 

@@ -6,7 +6,7 @@ from twisted.web.server import Site, NOT_DONE_YET
 from twisted.web.resource import Resource
 from twisted.web import http
 from twisted.internet import reactor
-from twisted.internet.defer import inlineCallbacks, returnValue
+from twisted.internet.defer import inlineCallbacks
 
 
 class GeckoboardResourceBase(Resource):
@@ -33,6 +33,7 @@ class GeckoboardResourceBase(Resource):
     def get_data(self, request):
         raise NotImplementedError("Sub-classes should implement get_data")
 
+
 class PollResultsResource(GeckoboardResourceBase):
 
     def get_data(self, request):
@@ -52,24 +53,28 @@ class PollResultsResource(GeckoboardResourceBase):
             ], key=lambda d: d['value'], reverse=True)
         }
 
+
 class PollActiveResource(GeckoboardResourceBase):
 
     def get_data(self, request):
         poll_manager = self.poll_manager
+        active_count = len(poll_manager.active_participants())
+        inactive_count = len(poll_manager.inactive_participant_user_ids())
         return {
             "item": sorted([
                 {
                     "label": "Active",
-                    "value": len(poll_manager.active_participants()),
+                    "value": active_count,
                     "colour": "#4F993C",
                 },
                 {
                     "label": "Inactive",
-                    "value": len(poll_manager.inactive_participant_user_ids()),
+                    "value": inactive_count,
                     "colour": "#992E2D",
                 },
             ], key=lambda d: d['value'], reverse=True)
         }
+
 
 class PollCompletedResource(GeckoboardResourceBase):
 
@@ -96,6 +101,7 @@ class PollCompletedResource(GeckoboardResourceBase):
             ], key=lambda d: d['value'], reverse=True)
         }
 
+
 class PollResultsCSVResource(Resource):
 
     isLeaf = True
@@ -113,6 +119,7 @@ class PollResultsCSVResource(Resource):
         request.finish()
         return NOT_DONE_YET
 
+
 class PollUsersCSVResource(Resource):
 
     isLeaf = True
@@ -129,6 +136,7 @@ class PollUsersCSVResource(Resource):
         request.write(results.getvalue())
         request.finish()
         return NOT_DONE_YET
+
 
 class InstructionsResource(Resource):
 

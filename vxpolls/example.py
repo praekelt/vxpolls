@@ -4,7 +4,6 @@ import hashlib
 import json
 import redis
 
-from vumi.tests.utils import FakeRedis
 from vumi.application.base import ApplicationWorker
 
 from vxpolls.manager import PollManager
@@ -30,13 +29,16 @@ class PollApplication(ApplicationWorker):
         return hashlib.md5(json.dumps(self.config)).hexdigest()
 
     def setup_application(self):
-        self.r_server = redis.Redis(**self.r_config)
+        self.r_server = self.get_redis()
         self.pm = PollManager(self.r_server, self.poll_prefix)
         if not self.pm.exists(self.poll_id):
             self.pm.register(self.poll_id, {
                 'questions': self.questions,
                 'batch_size': self.batch_size,
             })
+
+    def get_redis(self):
+        return redis.Redis(**self.r_config)
 
     def teardown_application(self):
         self.pm.stop()
@@ -47,7 +49,7 @@ class PollApplication(ApplicationWorker):
         poll = self.pm.get_poll_for_participant(poll_id, participant)
         # store the uid so we get this one on the next time around
         # even if the content changes.
-        participant.poll_uid = poll.uid
+        participant.set_poll_uid(poll.uid)
         participant.poll_id = poll_id
         participant.questions_per_session = poll.batch_size
         if participant.has_unanswered_question:
@@ -84,7 +86,7 @@ class PollApplication(ApplicationWorker):
                                     self.survey_completed_response)
             self.reply_to(message, response, continue_session=False)
             participant.poll_id = None
-            participant.poll_uid = None
+            participant.set_poll_uid(None)
             self.pm.save_participant(participant)
             # Archive for demo purposes so we can redial in and start over.
             self.pm.archive(participant)

@@ -148,3 +148,15 @@ class MultiLevelPollManagerTestCase(TestCase):
         next_question_copy = 'Orange, Yellow or Black?'
         next_question = self.poll.get_next_question(self.participant)
         self.assertEqual(next_question.copy, next_question_copy)
+
+    def test_clone_participant(self):
+        self.participant.age = 23
+        clone = self.poll_manager.clone_participant(self.participant,
+                                                            "clone_id")
+        self.poll_manager.save_participant(clone)
+        self.assertEqual(self.participant.age, clone.age)
+        clone.age = 27
+        self.poll_manager.save_participant(clone)
+        retrieved_clone = self.poll_manager.get_participant("clone_id")
+        self.assertEqual(retrieved_clone.age, 27)
+        self.assertEqual(self.participant.age, 23)

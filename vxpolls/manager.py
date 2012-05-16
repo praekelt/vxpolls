@@ -52,6 +52,9 @@ class PollManager(object):
         else:
             return None
 
+    def get_session_key(self, poll_id, user_id):
+        return '%s-%s' % (poll_id, user_id)
+
     def get_config(self, poll_id, uid=None):
         uid = uid or self.get_latest_uid(poll_id)
         if uid:
@@ -71,17 +74,19 @@ class PollManager(object):
         return Poll(self.r_server, poll_id, uid, version['questions'],
                 version.get('batch_size'), r_prefix=self.r_key('poll'))
 
-    def get_participant(self, user_id):
-        session_data = self.session_manager.load_session(user_id)
+    def get_participant(self, poll_id, user_id):
+        session_key = self.get_session_key(poll_id, user_id)
+        session_data = self.session_manager.load_session(session_key)
         participant = PollParticipant(user_id, session_data)
         return participant
 
     def get_poll_for_participant(self, poll_id, participant):
         return self.get(poll_id, participant.get_poll_uid())
 
-    def save_participant(self, participant):
+    def save_participant(self, poll_id, participant):
         participant.updated_at = time.time()
-        self.session_manager.save_session(participant.user_id,
+        session_key = self.get_session_key(poll_id, participant.user_id)
+        self.session_manager.save_session(session_key,
                                     participant.clean_dump())
 
     def clone_participant(self, participant, new_id):
@@ -90,31 +95,34 @@ class PollManager(object):
                                     participant.clean_dump())
         return self.get_participant(new_id)
 
-    def active_participants(self):
-        return [PollParticipant(user_id, session) for user_id, session
-                 in self.session_manager.active_sessions()]
+    def active_participants(self, poll_id):
+        active_sessions = self.session_manager.active_sessions(poll_id)
+        return [PollParticipant(session.get('user_id'), session)
+                for session_id, session in active_sessions]
 
-    def inactive_participant_user_ids(self):
+    def inactive_participant_session_keys(self):
         archive_key = self.r_key('archive')
         return self.r_server.smembers(archive_key)
 
-    def archive(self, participant):
+    def archive(self, poll_id, participant):
         user_id = participant.user_id
+        session_key = self.get_session_key(poll_id, user_id)
         archive_key = self.r_key('archive')
-        self.r_server.sadd(archive_key, user_id)
+        self.r_server.sadd(archive_key, session_key)
 
-        session_archive_key = self.r_key('session_archive', user_id)
+        session_archive_key = self.r_key('session_archive', session_key)
         self.r_server.zadd(session_archive_key, **{
             json.dumps(participant.clean_dump()): participant.updated_at,
         })
-        self.session_manager.clear_session(user_id)
+        self.session_manager.clear_session(session_key)
 
     def get_all_archives(self):
         for user_id in self.inactive_participant_user_ids():
             yield self.get_archive(user_id)
 
-    def get_archive(self, user_id):
-        archive_key = self.r_key('session_archive', user_id)
+    def get_archive(self, poll_id, user_id):
+        session_key = self.get_session_key(poll_id, user_id)
+        archive_key = self.r_key('session_archive', session_key)
         archived_sessions = self.r_server.zrange(archive_key, 0, -1,
                                                     desc=True)
         return [PollParticipant(user_id, json.loads(data)) for
@@ -127,7 +135,6 @@ class PollManager(object):
 class Poll(object):
     def __init__(self, r_server, poll_id, uid, questions, batch_size=None,
         r_prefix='poll'):
-        #print "Poll __init__"
         self.r_server = r_server
         self.poll_id = poll_id
         self.uid = uid
@@ -279,3 +286,4 @@ class PollQuestion(object):
     def __repr__(self):
         return '<PollQuestion copy: %s, responses: %s>' % (
             repr(self.copy), repr(self.valid_responses))
+

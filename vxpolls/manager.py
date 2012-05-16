@@ -4,7 +4,6 @@ import json
 import hashlib
 
 from vumi.application import SessionManager
-from vumi import log
 
 from vxpolls.participant import PollParticipant
 from vxpolls.results import ResultManager
@@ -25,11 +24,14 @@ class PollManager(object):
         return hashlib.md5(json.dumps(version)).hexdigest()
 
     def exists(self, poll_id):
-        key = self.r_key('versions', poll_id)
-        return self.r_server.exists(key)
+        self.r_server.sismember(self.r_key('polls'), poll_id)
+
+    def polls(self):
+        return self.r_server.smembers(self.r_key('polls'))
 
     def set(self, poll_id, version):
         uid = self.generate_unique_id(version)
+        self.r_server.sadd(self.r_key('polls'), poll_id)
         self.r_server.hset(self.r_key('versions', poll_id), uid,
                             json.dumps(version))
         key = self.r_key('version_timestamps', poll_id)
@@ -41,12 +43,30 @@ class PollManager(object):
     def register(self, poll_id, version):
         return self.get(poll_id, uid=self.set(poll_id, version))
 
-    def get(self, poll_id, uid=None):
-        versions_key = self.r_key('versions', poll_id)
+    def get_latest_uid(self, poll_id):
         timestamps_key = self.r_key('version_timestamps', poll_id)
         uids = self.r_server.zrange(timestamps_key, 0, -1, desc=True)
-        uid = uid or uids[0]
-        version = json.loads(self.r_server.hget(versions_key, uid))
+        if uids:
+            return uids[0]
+        else:
+            return None
+
+    def get_config(self, poll_id, uid=None):
+        uid = uid or self.get_latest_uid(poll_id)
+        if uid:
+            versions_key = self.r_key('versions', poll_id)
+            return json.loads(self.r_server.hget(versions_key, uid))
+        else:
+            return {}
+
+    def uid_exists(self, poll_id, uid):
+        versions_key = self.r_key('versions', poll_id)
+        return self.r_server.hexists(versions_key, uid)
+
+    def get(self, poll_id, uid=None):
+        if not self.uid_exists(poll_id, uid):
+            uid = self.get_latest_uid(poll_id)
+        version = self.get_config(poll_id, uid)
         return Poll(self.r_server, poll_id, uid, version['questions'],
                 version.get('batch_size'), r_prefix=self.r_key('poll'))
 
@@ -63,9 +83,10 @@ class PollManager(object):
         self.session_manager.save_session(participant.user_id,
                                     participant.clean_dump())
 
-    def active_participants(self):
+    def active_participants(self, poll_id):
         return [PollParticipant(user_id, session) for user_id, session
-                 in self.session_manager.active_sessions()]
+                 in self.session_manager.active_sessions()
+                 if session.get('poll_id') == poll_id]
 
     def inactive_participant_user_ids(self):
         archive_key = self.r_key('archive')

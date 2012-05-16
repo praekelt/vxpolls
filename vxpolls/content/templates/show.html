@@ -1,0 +1,12 @@
+<form action="" method="post">
+    {{form.errors}}
+    <table>
+        {{form}}
+        <tr>
+            <td>
+                <input type="submit">
+            </td>
+        </tr>
+    </table>
+    {% csrf_token %}
+</form>

@@ -2,11 +2,12 @@
 # -*- coding: utf8 -*-
 import hashlib
 import json
+import redis
 
 from vumi.tests.utils import FakeRedis
 from vumi.application.base import ApplicationWorker
 
-from vxpolls import PollManager
+from vxpolls.manager import PollManager
 
 
 class PollApplication(ApplicationWorker):
@@ -22,14 +23,15 @@ class PollApplication(ApplicationWorker):
         self.batch_size = self.config.get('batch_size', 5)
         self.dashboard_port = int(self.config.get('dashboard_port', 8000))
         self.dashboard_prefix = self.config.get('dashboard_path_prefix', '/')
-        self.poll_id = self.config.get('poll_id', self.generate_unique_id())
+        self.poll_prefix = self.config.get('poll_prefix', 'poll_manager')
+        self.poll_id = self.config.get('poll_id') or self.generate_unique_id()
 
     def generate_unique_id(self):
         return hashlib.md5(json.dumps(self.config)).hexdigest()
 
     def setup_application(self):
-        self.r_server = FakeRedis(**self.r_config)
-        self.pm = PollManager(self.r_server)
+        self.r_server = redis.Redis(**self.r_config)
+        self.pm = PollManager(self.r_server, self.poll_prefix)
         if not self.pm.exists(self.poll_id):
             self.pm.register(self.poll_id, {
                 'questions': self.questions,
@@ -41,10 +43,12 @@ class PollApplication(ApplicationWorker):
 
     def consume_user_message(self, message):
         participant = self.pm.get_participant(message.user())
-        poll = self.pm.get_poll_for_participant(self.poll_id, participant)
+        poll_id = message['helper_metadata'].get('poll_id', self.poll_id)
+        poll = self.pm.get_poll_for_participant(poll_id, participant)
         # store the uid so we get this one on the next time around
         # even if the content changes.
         participant.poll_uid = poll.uid
+        participant.poll_id = poll_id
         participant.questions_per_session = poll.batch_size
         if participant.has_unanswered_question:
             self.on_message(participant, poll, message)
@@ -60,7 +64,8 @@ class PollApplication(ApplicationWorker):
         else:
             if poll.has_more_questions_for(participant):
                 next_question = poll.get_next_question(participant)
-                self.reply_to(message, self.ask_question(participant, poll, next_question))
+                reply = self.ask_question(participant, poll, next_question)
+                self.reply_to(message, reply)
             else:
                 self.end_session(participant, poll, message)
 
@@ -68,13 +73,18 @@ class PollApplication(ApplicationWorker):
         participant.interactions = 0
         participant.has_unanswered_question = False
         next_question = poll.get_next_question(participant)
+        config = self.pm.get_config(poll.poll_id)
         if next_question:
-            self.reply_to(message, self.batch_completed_response,
-                continue_session=False)
+            response = config.get('batch_completed_response',
+                                    self.batch_completed_response)
+            self.reply_to(message, response, continue_session=False)
             self.pm.save_participant(participant)
         else:
-            self.reply_to(message, self.survey_completed_response,
-                continue_session=False)
+            response = config.get('survey_completed_response',
+                                    self.survey_completed_response)
+            self.reply_to(message, response, continue_session=False)
+            participant.poll_id = None
+            participant.poll_uid = None
             self.pm.save_participant(participant)
             # Archive for demo purposes so we can redial in and start over.
             self.pm.archive(participant)

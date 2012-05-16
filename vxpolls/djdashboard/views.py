@@ -4,33 +4,34 @@ from django.conf import settings
 import json
 import redis
 
-from vxpolls import PollManager
-from vxpolls.manager import PollQuestion
+from vxpolls.manager import PollManager
 
 
 vxpolls_redis_config = settings.VXPOLLS_REDIS_CONFIG
-vxpolls_questions = [PollQuestion(idx, **params) for idx, params
-                        in enumerate(settings.VXPOLLS_QUESTIONS)]
 redis = redis.Redis(**vxpolls_redis_config)
 
-poll_manager = PollManager(redis, settings.VXPOLLS_POLL_ID, settings.VXPOLLS_QUESTIONS)
-results_manager = poll_manager.results_manager
+poll_manager = PollManager(redis, settings.VXPOLLS_PREFIX)
 
 def json_response(obj):
     return HttpResponse(json.dumps(obj), content_type='application/javascript')
 
 def home(request):
     return render(request, 'djdashboard/home.html', {
-        'collections': settings.VXPOLLS_COLLECTIONS,
-        'questions': vxpolls_questions,
+        'poll_ids': poll_manager.polls(),
     })
 
-def active(request):
+def show(request, poll_id):
+    return render(request, 'djdashboard/show.html', {
+        'poll_id': poll_id,
+        'poll': poll_manager.get(poll_id)
+    })
+
+def active(request, poll_id):
     return json_response({
         "item": sorted([
             {
                 "label": "Active",
-                "value": len(poll_manager.active_participants()),
+                "value": len(poll_manager.active_participants(poll_id)),
                 "colour": "#4F993C",
             },
             {
@@ -41,14 +42,14 @@ def active(request):
         ], key=lambda d: d['value'], reverse=True)
     })
 
-def results(request):
-    collection_id = request.GET.get('collection_id')
-    if collection_id not in settings.VXPOLLS_COLLECTIONS:
-        raise Http404('Collection not found')
+def results(request, poll_id):
+    if poll_id not in poll_manager.polls():
+        raise Http404('Poll not found')
 
+    poll = poll_manager.get(poll_id)
     question = request.GET['question'].decode('utf8')
-    results = results_manager.get_results_for_question(
-                                collection_id, question)
+    results = poll.results_manager.get_results_for_question(
+                                poll_id, question)
     return json_response({
         "type": "standard",
         "percentage": "hide",
@@ -60,12 +61,12 @@ def results(request):
         ], key=lambda d: d['value'], reverse=True)
     })
 
-def completed(request):
-    collection_id = request.GET.get('collection_id')
-    if collection_id not in settings.VXPOLLS_COLLECTIONS:
-        raise Http404('Collection not found')
+def completed(request, poll_id):
+    if poll_id not in poll_manager.polls():
+        raise Http404('Poll not found')
 
-    collection_results = results_manager.get_results(collection_id)
+    poll = poll_manager.get(poll_id)
+    collection_results = poll.results_manager.get_results(poll_id)
     results = collection_results.get('completed', {})
     return json_response({
         "item": sorted([
@@ -82,18 +83,18 @@ def completed(request):
         ], key=lambda d: d['value'], reverse=True)
     })
 
-def export_results(request):
-    collection_id = request.GET.get('collection_id')
-    if collection_id not in settings.VXPOLLS_COLLECTIONS:
-        raise Http404('Collection not found')
+def export_results(request, poll_id):
+    if poll_id not in poll_manager.polls():
+        raise Http404('Poll not found')
 
-    results = results_manager.get_results_as_csv(collection_id)
+    poll = poll_manager.get(poll_id)
+    results = poll.results_manager.get_results_as_csv(poll_id)
     return HttpResponse(results.getvalue(), content_type='application/csv')
 
-def export_users(request):
-    collection_id = request.GET.get('collection_id')
-    if collection_id not in settings.VXPOLLS_COLLECTIONS:
-        raise Http404('Collection not found')
+def export_users(request, poll_id):
+    if poll_id not in poll_manager.polls():
+        raise Http404('Poll not found')
 
-    results = results_manager.get_users_as_csv(collection_id)
+    poll = poll_manager.get(poll_id)
+    results = poll.results_manager.get_users_as_csv(poll_id)
     return HttpResponse(results.getvalue(), content_type='application/csv')

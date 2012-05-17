@@ -43,7 +43,7 @@ class BasePollApplicationTestCase(ApplicationTestCase):
 
     def get_participant_and_poll(self, user_id, poll_id=None):
         poll_id = poll_id or self.poll_id
-        participant = self.app.pm.get_participant(user_id)
+        participant = self.app.pm.get_participant(poll_id, user_id)
         return participant, self.get_poll(poll_id, participant)
 
     def assertResponse(self, response, content):
@@ -78,7 +78,7 @@ class PollApplicationTestCase(BasePollApplicationTestCase):
         participant, poll = self.get_participant_and_poll(msg.user())
         participant.has_unanswered_question = True
         participant.set_last_question_index(0)
-        self.app.pm.save_participant(participant)
+        self.app.pm.save_participant(self.poll_id, participant)
         # send to the app
         yield self.dispatch(msg)
         [response] = self.get_dispatched_messages()
@@ -94,7 +94,7 @@ class PollApplicationTestCase(BasePollApplicationTestCase):
         participant, poll = self.get_participant_and_poll(msg.user())
         participant.has_unanswered_question = True
         participant.set_last_question_index(2)
-        self.app.pm.save_participant(participant)
+        self.app.pm.save_participant(self.poll_id, participant)
         # send to the app
         yield self.dispatch(msg)
         [response] = self.get_dispatched_messages()
@@ -106,10 +106,10 @@ class PollApplicationTestCase(BasePollApplicationTestCase):
         # create the inbound init message
         msg = self.mkmsg_in(content=None)
         # prime the participant
-        participant = self.app.pm.get_participant(msg.user())
+        participant = self.app.pm.get_participant(self.poll_id, msg.user())
         participant.has_unanswered_question = True
         participant.set_last_question_index(1)
-        self.app.pm.save_participant(participant)
+        self.app.pm.save_participant(self.poll_id, participant)
 
         # send to app
         yield self.dispatch(msg)
@@ -123,11 +123,11 @@ class PollApplicationTestCase(BasePollApplicationTestCase):
     def test_batching_session(self):
         msg = self.mkmsg_in(content='orange')
         # prime the participant
-        participant = self.app.pm.get_participant(msg.user())
+        participant = self.app.pm.get_participant(self.poll_id, msg.user())
         participant.has_unanswered_question = True
         participant.interactions = 1
         participant.set_last_question_index(1)
-        self.app.pm.save_participant(participant)
+        self.app.pm.save_participant(self.poll_id, participant)
 
         # send to app
         yield self.dispatch(msg)
@@ -155,7 +155,7 @@ class PollApplicationTestCase(BasePollApplicationTestCase):
         participant, poll = self.get_participant_and_poll(msg.user())
         participant.has_unanswered_question = False
         participant.set_last_question_index(2)
-        self.app.pm.save_participant(participant)
+        self.app.pm.save_participant(self.poll_id, participant)
         yield self.dispatch(msg)
         [response] = self.get_dispatched_messages()
         self.assertResponse(response, self.app.survey_completed_response)

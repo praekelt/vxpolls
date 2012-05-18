@@ -35,6 +35,7 @@ class MultiPollApplication(PollApplication):
         self.poll_prefix = self.config.get('poll_prefix', 'poll_manager')
         self.poll_id_list = self.config.get('poll_id_list',
                                             [self.generate_unique_id()])
+        self.poll_name_list = self.config.get('poll_name_list', [])
 
     def setup_application(self):
         self.r_server = FakeRedis(**self.r_config)

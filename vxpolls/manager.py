@@ -78,6 +78,7 @@ class PollManager(object):
         session_key = self.get_session_key(poll_id, user_id)
         session_data = self.session_manager.load_session(session_key)
         participant = PollParticipant(user_id, session_data)
+        participant.set_poll_id(poll_id)
         return participant
 
     def get_poll_for_participant(self, poll_id, participant):
@@ -98,9 +99,10 @@ class PollManager(object):
 
     def active_participants(self, poll_id):
         active_sessions = self.session_manager.active_sessions()
-        return [PollParticipant(session.get('user_id'), session)
-                for session_id, session in active_sessions
-                if session['poll_id'] == poll_id]
+        all_participants = [PollParticipant(session.get('user_id'), session)
+                            for session_id, session in active_sessions]
+        return [participant for participant in all_participants
+                    if participant.get_poll_id() == poll_id]
 
     def inactive_participant_session_keys(self):
         archive_key = self.r_key('archive')

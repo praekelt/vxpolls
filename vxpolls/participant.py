@@ -9,9 +9,11 @@ def typed(dictionary, key, formatter, default=None):
         return formatter(value)
     return default
 
+
 def deserialize_messages(json_data):
     message_json_data = json.loads(json_data)
     return [TransportUserMessage.from_json(data) for data in message_json_data]
+
 
 def serialize_messages(messages):
     return json.dumps([message.to_json() for message in messages])
@@ -67,14 +69,14 @@ class PollParticipant(object):
     def get_last_question_index(self):
         return self.get_current_poll()['last_question_index']
 
-    def set_poll_id(self, id):
-        if id != self.get_poll_id():
+    def set_poll_id(self, poll_id):
+        if poll_id != self.get_poll_id():
             if self.get_poll_id() is None:
-                self.get_current_poll()['poll_id'] = id
+                self.get_current_poll()['poll_id'] = poll_id
                 self.get_current_poll()['uid'] = None
                 self.get_current_poll()['last_question_index'] = None
             else:
-                self.append_new_poll(id)
+                self.append_new_poll(poll_id)
 
     def get_poll_id(self):
         return self.get_current_poll()['poll_id']

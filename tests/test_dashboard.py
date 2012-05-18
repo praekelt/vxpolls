@@ -75,14 +75,14 @@ class PollDashboardTestCase(TestCase):
 
     def submit_answers(self, *answers, **kwargs):
         for answer in answers:
-            participant = self.poll_manager.get_participant(self.poll.poll_id,
+            participant = self.poll_manager.get_participant(self.poll_id,
                             kwargs.get('user_id', 'user_id'))
             question = self.poll.get_next_question(participant)
             self.poll.set_last_question(participant, question)
             error_message = self.poll.submit_answer(participant, answer)
             if error_message:
                 raise ValueError(error_message)
-            self.poll_manager.save_participant(self.poll.poll_id, participant)
+            self.poll_manager.save_participant(self.poll_id, participant)
 
     @inlineCallbacks
     def test_question_output(self):

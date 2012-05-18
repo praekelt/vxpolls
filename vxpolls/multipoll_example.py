@@ -32,12 +32,13 @@ class MultiPollApplication(PollApplication):
         self.batch_size = self.config.get('batch_size', 5)
         self.dashboard_port = int(self.config.get('dashboard_port', 8000))
         self.dashboard_prefix = self.config.get('dashboard_path_prefix', '/')
+        self.poll_prefix = self.config.get('poll_prefix', 'poll_manager')
         self.poll_id_list = self.config.get('poll_id_list',
                                             [self.generate_unique_id()])
 
     def setup_application(self):
         self.r_server = FakeRedis(**self.r_config)
-        self.pm = PollManager(self.r_server)
+        self.pm = PollManager(self.r_server, self.poll_prefix)
         for poll_id in self.poll_id_list:
             if not self.pm.exists(poll_id):
                 self.pm.register(poll_id, {

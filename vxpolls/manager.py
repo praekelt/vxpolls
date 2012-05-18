@@ -89,16 +89,18 @@ class PollManager(object):
         self.session_manager.save_session(session_key,
                                     participant.clean_dump())
 
-    def clone_participant(self, participant, new_id):
+    def clone_participant(self, participant, poll_id, new_id):
         participant.updated_at = time.time()
-        self.session_manager.save_session(new_id,
+        session_key = self.get_session_key(poll_id, new_id)
+        self.session_manager.save_session(session_key,
                                     participant.clean_dump())
-        return self.get_participant(new_id)
+        return self.get_participant(poll_id, new_id)
 
     def active_participants(self, poll_id):
-        active_sessions = self.session_manager.active_sessions(poll_id)
+        active_sessions = self.session_manager.active_sessions()
         return [PollParticipant(session.get('user_id'), session)
-                for session_id, session in active_sessions]
+                for session_id, session in active_sessions
+                if session['poll_id'] == poll_id]
 
     def inactive_participant_session_keys(self):
         archive_key = self.r_key('archive')

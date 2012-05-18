@@ -26,10 +26,12 @@ class PollManagerTestCase(TestCase):
     def setUp(self):
         self.r_server = FakeRedis()
         self.poll_manager = PollManager(self.r_server)
-        self.poll = self.poll_manager.register('poll-id', {
+        self.poll_id = 'poll-id'
+        self.poll = self.poll_manager.register(self.poll_id, {
             'questions': self.default_questions
         })
-        self.participant = self.poll_manager.get_participant('user_id')
+        self.participant = self.poll_manager.get_participant(self.poll_id,
+            'user_id')
 
     @inlineCallbacks
     def tearDown(self):
@@ -101,10 +103,12 @@ class MultiLevelPollManagerTestCase(TestCase):
     def setUp(self):
         self.r_server = FakeRedis()
         self.poll_manager = PollManager(self.r_server)
-        self.poll = self.poll_manager.register('poll-id', {
+        self.poll_id = 'poll-id'
+        self.poll = self.poll_manager.register(self.poll_id, {
             'questions': self.default_questions,
         })
-        self.participant = self.poll_manager.get_participant('user_id')
+        self.participant = self.poll_manager.get_participant(self.poll_id,
+            'user_id')
 
     @inlineCallbacks
     def tearDown(self):
@@ -152,11 +156,12 @@ class MultiLevelPollManagerTestCase(TestCase):
     def test_clone_participant(self):
         self.participant.age = 23
         clone = self.poll_manager.clone_participant(self.participant,
-                                                            "clone_id")
-        self.poll_manager.save_participant(clone)
+                                                    self.poll_id, "clone_id")
+        self.poll_manager.save_participant(self.poll_id, clone)
         self.assertEqual(self.participant.age, clone.age)
         clone.age = 27
-        self.poll_manager.save_participant(clone)
-        retrieved_clone = self.poll_manager.get_participant("clone_id")
+        self.poll_manager.save_participant(self.poll_id, clone)
+        retrieved_clone = self.poll_manager.get_participant(self.poll_id,
+                                                                "clone_id")
         self.assertEqual(retrieved_clone.age, 27)
         self.assertEqual(self.participant.age, 23)

@@ -75,14 +75,14 @@ class PollDashboardTestCase(TestCase):
 
     def submit_answers(self, *answers, **kwargs):
         for answer in answers:
-            participant = self.poll_manager.get_participant(
+            participant = self.poll_manager.get_participant(self.poll.poll_id,
                             kwargs.get('user_id', 'user_id'))
             question = self.poll.get_next_question(participant)
             self.poll.set_last_question(participant, question)
             error_message = self.poll.submit_answer(participant, answer)
             if error_message:
                 raise ValueError(error_message)
-            self.poll_manager.save_participant(participant)
+            self.poll_manager.save_participant(self.poll.poll_id, participant)
 
     @inlineCallbacks
     def test_question_output(self):
@@ -106,7 +106,7 @@ class PollDashboardTestCase(TestCase):
             {'colour': '#4F993C', 'label': 'Active', 'value': 0},
             {'colour': '#992E2D', 'label': 'Inactive', 'value': 0},
         ]
-        data = yield self.get_route_json('active')
+        data = yield self.get_route_json('active', poll_id=self.poll_id)
         self.assertEqual(data, {
             "item": starting_output,
         })
@@ -120,7 +120,7 @@ class PollDashboardTestCase(TestCase):
             'value': 1,
         }
 
-        data = yield self.get_route_json('active')
+        data = yield self.get_route_json('active', poll_id=self.poll_id)
         self.assertEqual(data, {
             "item": updated_output,
         })

@@ -363,3 +363,236 @@ class LongMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
                 (date.today()
                     + timedelta(weeks=20
                         - int(inputs_and_expected[2][0]))).isoformat())
+
+
+class CustomMultiPollApplication(MultiPollApplication):
+
+    registration_partial_response = 'You have done part of the registration '\
+                                    'process, dail in again to complete '\
+                                    'your registration.'
+    registration_completed_response = 'Thank you.'
+
+    batch_completed_response = 'You have completed the first batch of '\
+                                'this weeks questions, dial in again to '\
+                                'complete the rest.'
+    survey_completed_response = 'You have completed this weeks questions '\
+                                'please dial in again next week for more.'
+
+    def custom_poll_logic_function(self, participant):
+        pass
+
+    def custom_answer_logic_function(self, participant, answer, poll_question):
+        label_value = participant.get_label(poll_question.label)
+        if label_value is not None:
+            if poll_question.label == 'X_MONTH' \
+                    and label_value == '0':
+                participant.set_label('STATUS', '4')
+            if poll_question.label == 'Y_AGE' \
+                    and label_value == '11':
+                participant.set_label('STATUS', '5')
+
+    custom_answer_logic = custom_answer_logic_function
+
+
+class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
+
+    application_class = CustomMultiPollApplication
+
+    @inlineCallbacks
+    def setUp(self):
+        yield super(BaseMultiPollApplicationTestCase, self).setUp()
+        self.config = {
+            'poll_id_list': self.poll_id_list,
+            'questions_dict': self.default_questions_dict,
+            'transport_name': self.transport_name,
+            'batch_size': 9,
+        }
+        self.app = yield self.get_application(self.config)
+
+    poll_id_list = [
+            'register',
+            'week1',
+            'week2',
+            'week3',
+            'week4',
+            'week5',
+            'week6',
+            'week7',
+            'week8',
+            'week9',
+            'week10',
+            ]
+
+    default_questions_dict = {
+            'register': [{
+                'copy': "Are you X or do you have Y ?\n" \
+                        "1. X\n" \
+                        "2. Y\n" \
+                        "3. Don't know",
+                'valid_responses': ['1', '2', '3'],
+                'label': 'STATUS',
+                },
+                {
+                'checks': {'equal': {'STATUS': '3'}},
+                'copy': "Follow-up to don't know\n" \
+                        "1. More",
+                'valid_responses': [],
+                'label': '',
+                },
+                {
+                'checks': {'equal': {'STATUS': '3'}},
+                'copy': "Second follow-up to don't know\n" \
+                        "1. End",
+                'valid_responses': [],
+                'label': '',
+                },
+                {
+                'checks': {'equal': {'STATUS': '1'}},
+                'copy': "What month is X ?\n" \
+                        "1. Jan\n" \
+                        "2. Feb\n" \
+                        "3. Mar\n" \
+                        "4. Apr\n" \
+                        "5. May\n" \
+                        "6. Jun\n" \
+                        "7. Jul\n" \
+                        "8. Aug\n" \
+                        "9. Sep\n" \
+                        "10. Oct\n" \
+                        "11. Nov\n" \
+                        "12. Dec\n" \
+                        "0. Don't Know",
+                'valid_responses': [ '0', '1', '2', '3', '4', '5', '6',
+                                    '7', '8', '9', '10', '11', '12'],
+                'label': 'X_MONTH',
+                },
+                {
+                'checks': {'equal': {'X_MONTH': '0'}},
+                'copy': "Please find out ?\n" \
+                        "1. End",
+                'valid_responses': [],
+                'label': '',
+                },
+                {
+                'checks': {'equal': {'STATUS': '1'}},
+                'copy': "Do you want Z messages ?\n" \
+                        "1. Yes\n" \
+                        "2. No",
+                'valid_responses': [ '1', '2'],
+                'label': 'Z_MESSAGES',
+                },
+                {
+                'checks': {'equal': {'STATUS': '1'}},
+                'copy': "Thank you, come back later\n" \
+                        "1. End",
+                'valid_responses': [],
+                'label': '',
+                },
+                {
+                'checks': {'equal': {'STATUS': '2'}},
+                'copy': "How many months old Y ?\n" \
+                        "1. 1\n" \
+                        "2. 2\n" \
+                        "3. 3\n" \
+                        "4. 4\n" \
+                        "5. 5\n" \
+                        "6. 6\n" \
+                        "7. 7\n" \
+                        "8. 8\n" \
+                        "9. 9\n" \
+                        "10. 10\n" \
+                        "11. 11 or more.",
+                'valid_responses': [ '1', '2', '3', '4', '5', '6',
+                                    '7', '8', '9', '10', '11'],
+                'label': 'Y_AGE',
+                },
+                {
+                'checks': {'equal': {'Y_AGE': '11'}},
+                'copy': "Sorry, bye\n" \
+                        "1. End",
+                'valid_responses': [],
+                'label': '',
+                },
+                {
+                'checks': {'equal': {'STATUS': '2'}},
+                'copy': "Do you want Z messages ?\n" \
+                        "1. Yes\n" \
+                        "2. No",
+                'valid_responses': [ '1', '2'],
+                'label': 'Z_MESSAGES',
+                },
+                {
+                'checks': {'equal': {'STATUS': '2'}},
+                'copy': "Thank you, come back later\n" \
+                        "1. End",
+                'valid_responses': [],
+                'label': '',
+                }],
+            }
+
+    @inlineCallbacks
+    def run_inputs(self, inputs_and_expected):
+        for io in inputs_and_expected:
+            msg = self.mkmsg_in(content=io[0])
+            yield self.dispatch(msg)
+            responses = self.get_dispatched_messages()
+            output = responses[-1]['content']
+            event = responses[-1].get('session_event')
+            #print "\n>", msg['content'], "\n", output
+            self.assertEqual(output, io[1])
+
+    @inlineCallbacks
+    def test_register_3(self):
+        inputs_and_expected = [
+            ('Any input', self.default_questions_dict['register'][0]['copy']),
+            ('3', self.default_questions_dict['register'][1]['copy']),
+            ('Any input', self.default_questions_dict['register'][2]['copy']),
+            ('Any input', self.app.registration_completed_response),
+            ]
+        yield self.run_inputs(inputs_and_expected)
+
+
+    @inlineCallbacks
+    def test_register_1(self):
+        inputs_and_expected = [
+            ('Any input', self.default_questions_dict['register'][0]['copy']),
+            ('1', self.default_questions_dict['register'][3]['copy']),
+            ('7', self.default_questions_dict['register'][5]['copy']),
+            ('1', self.default_questions_dict['register'][6]['copy']),
+            ('Any input', self.app.registration_completed_response),
+            ]
+        yield self.run_inputs(inputs_and_expected)
+
+
+    @inlineCallbacks
+    def test_register_1_dont_know(self):
+        inputs_and_expected = [
+            ('Any input', self.default_questions_dict['register'][0]['copy']),
+            ('1', self.default_questions_dict['register'][3]['copy']),
+            ('0', self.default_questions_dict['register'][4]['copy']),
+            ('Any input', self.app.registration_completed_response),
+            ]
+        yield self.run_inputs(inputs_and_expected)
+
+
+    @inlineCallbacks
+    def test_register_2(self):
+        inputs_and_expected = [
+            ('Any input', self.default_questions_dict['register'][0]['copy']),
+            ('2', self.default_questions_dict['register'][7]['copy']),
+            ('3', self.default_questions_dict['register'][9]['copy']),
+            ('1', self.default_questions_dict['register'][10]['copy']),
+            ('Any input', self.app.registration_completed_response),
+            ]
+        yield self.run_inputs(inputs_and_expected)
+
+
+    @inlineCallbacks
+    def test_register_2_too_old(self):
+        inputs_and_expected = [
+            ('Any input', self.default_questions_dict['register'][0]['copy']),
+            ('2', self.default_questions_dict['register'][7]['copy']),
+            ('11', self.default_questions_dict['register'][8]['copy']),
+            ('Any input', self.app.registration_completed_response),
+            ]
+        yield self.run_inputs(inputs_and_expected)

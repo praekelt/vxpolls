@@ -390,20 +390,20 @@ class CustomMultiPollApplication(MultiPollApplication):
     def custom_answer_logic_function(self, participant, answer, poll_question):
         def months_to_week(month):
             m = int(month)
-            return (m-1)*4+1
+            return (m - 1) * 4 + 1
+
         def month_of_year_to_week(month):
             m = int(month)
             current_date = date.today()
             current_date = date(2012, 5, 21)  # For testing
             present_month = current_date.month
             present_day = current_date.day
-            month_delta = (m + 12.5 - present_month - present_day/30.0) % 12
+            month_delta = (m + 12.5 - present_month - present_day / 30.0) % 12
             if month_delta > 8:
                 month_delta = 8
             start_week = int(round(40 - month_delta * 4))
             return start_week
 
-            return (m-1)*4+1
         label_value = participant.get_label(poll_question.label)
         if label_value is not None:
             if poll_question.label == 'EXPECTED_MONTH' \
@@ -415,12 +415,13 @@ class CustomMultiPollApplication(MultiPollApplication):
                         poll_id = "WEEK%s" % month_of_year_to_week(label_value)
                         participant.set_label('JUMP_TO_POLL', poll_id)
             if poll_question.label == 'INITIAL_AGE' \
-                    and label_value == '11':
+                    and label_value == '6':  # max age for demo should be 5
+                    #and label_value == '11':
                 participant.set_label('USER_STATUS', '5')
                 self.poll_id_list = self.poll_id_list[:1]
-            # max age for demo should be 5
             if poll_question.label == 'INITIAL_AGE' \
-                    and label_value != '11':
+                    and label_value != '6':  # max age for demo should be 5
+                    #and label_value != '11':
                         poll_id = "POST%s" % months_to_week(label_value)
                         participant.set_label('JUMP_TO_POLL', poll_id)
 
@@ -541,7 +542,7 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
                         "11. Nov\n" \
                         "12. Dec\n" \
                         "0. Don't Know",
-                'valid_responses': [ '0', '1', '2', '3', '4', '5', '6',
+                'valid_responses': ['0', '1', '2', '3', '4', '5', '6',
                                     '7', '8', '9', '10', '11', '12'],
                 'label': 'EXPECTED_MONTH',
                 },
@@ -557,7 +558,7 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
                 'copy': "Do you want Z messages ?\n" \
                         "1. Yes\n" \
                         "2. No",
-                'valid_responses': [ '1', '2'],
+                'valid_responses': ['1', '2'],
                 'label': 'HIV_MESSAGES',
                 },
                 {
@@ -575,18 +576,21 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
                         "3. 3\n" \
                         "4. 4\n" \
                         "5. 5\n" \
-                        "6. 6\n" \
-                        "7. 7\n" \
-                        "8. 8\n" \
-                        "9. 9\n" \
-                        "10. 10\n" \
-                        "11. 11 or more.",
-                'valid_responses': [ '1', '2', '3', '4', '5', '6',
-                                    '7', '8', '9', '10', '11'],
+                        #"6. 6\n" \
+                        #"7. 7\n" \
+                        #"8. 8\n" \
+                        #"9. 9\n" \
+                        #"10. 10\n" \
+                        #"11. 11 or more.",
+                #'valid_responses': [ '1', '2', '3', '4', '5', '6',
+                                    #'7', '8', '9', '10', '11'],
+                        "6. 6 or more.",
+                'valid_responses': ['1', '2', '3', '4', '5', '6'],
                 'label': 'INITIAL_AGE',
                 },
                 {
-                'checks': {'equal': {'INITIAL_AGE': '11'}},
+                #'checks': {'equal': {'INITIAL_AGE': '11'}},
+                'checks': {'equal': {'INITIAL_AGE': '6'}},
                 'copy': "Sorry, bye\n" \
                         "1. End",
                 'valid_responses': [],
@@ -597,7 +601,7 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
                 'copy': "Do you want Z messages ?\n" \
                         "1. Yes\n" \
                         "2. No",
-                'valid_responses': [ '1', '2'],
+                'valid_responses': ['1', '2'],
                 'label': 'HIV_MESSAGES',
                 },
                 {
@@ -611,7 +615,7 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
 
     def make_quizzes(prefix, start, finish):
         string = "{"
-        for i in range(start, finish+1):
+        for i in range(start, finish + 1):
             if i % 2 != 0:
                 string = string + """
                 "%(p)s%(i)s": [
@@ -748,7 +752,6 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
             ]
         yield self.run_inputs(inputs_and_expected)
 
-
     @inlineCallbacks
     def test_register_1(self):
         inputs_and_expected = [
@@ -759,7 +762,6 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
             ('Any input', self.app.registration_completed_response),
             ]
         yield self.run_inputs(inputs_and_expected)
-
 
     @inlineCallbacks
     def test_register_1_dont_know(self):
@@ -776,7 +778,6 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
         # And confirm re-run is possible
         yield self.run_inputs(inputs_and_expected)
 
-
     @inlineCallbacks
     def test_register_2(self):
         inputs_and_expected = [
@@ -788,13 +789,14 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
             ]
         yield self.run_inputs(inputs_and_expected)
 
-
     @inlineCallbacks
     def test_register_2_too_old(self):
         inputs_and_expected = [
             ('Any input', self.default_questions_dict['register'][0]['copy']),
             ('2', self.default_questions_dict['register'][7]['copy']),
-            ('11', self.default_questions_dict['register'][8]['copy']),
+            #('11', self.default_questions_dict['register'][8]['copy']),
+            # max age for demo should be 5
+            ('6', self.default_questions_dict['register'][8]['copy']),
             ('Any input', self.app.registration_completed_response),
             ]
         yield self.run_inputs(inputs_and_expected)

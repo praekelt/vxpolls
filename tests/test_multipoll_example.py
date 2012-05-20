@@ -391,12 +391,29 @@ class CustomMultiPollApplication(MultiPollApplication):
         def months_to_week(month):
             m = int(month)
             return (m-1)*4+1
+        def month_of_year_to_week(month):
+            m = int(month)
+            current_date = date.today()
+            current_date = date(2012, 5, 21)  # For testing
+            present_month = current_date.month
+            present_day = current_date.day
+            month_delta = (m + 12.5 - present_month - present_day/30.0) % 12
+            if month_delta > 8:
+                month_delta = 8
+            start_week = int(round(40 - month_delta * 4))
+            return start_week
+
+            return (m-1)*4+1
         label_value = participant.get_label(poll_question.label)
         if label_value is not None:
             if poll_question.label == 'EXPECTED_MONTH' \
                     and label_value == '0':
                 participant.set_label('USER_STATUS', '4')
                 self.poll_id_list = self.poll_id_list[:1]
+            if poll_question.label == 'EXPECTED_MONTH' \
+                    and label_value != '0':
+                        poll_id = "WEEK%s" % month_of_year_to_week(label_value)
+                        participant.set_label('JUMP_TO_POLL', poll_id)
             if poll_question.label == 'INITIAL_AGE' \
                     and label_value == '11':
                 participant.set_label('USER_STATUS', '5')
@@ -704,6 +721,10 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
     default_questions_dict.update(make_quizzes("POST", 1, 20))
     pp = pprint.PrettyPrinter(indent=4)
     #pp.pprint(default_questions_dict)
+    #i = 0
+    #for k, v in default_questions_dict.iteritems():
+        #i = i + len(v)
+    #print "QUESTIONS", i
 
     @inlineCallbacks
     def run_inputs(self, inputs_and_expected, do_print=False):
@@ -805,3 +826,108 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
             ('Any input', self.app.survey_completed_response),
             ]
         yield self.run_inputs(inputs_and_expected, False)
+
+    @inlineCallbacks
+    def test_full_2_hiv_to_archive(self):
+        inputs_and_expected = [
+            ('Any input', self.default_questions_dict['register'][0]['copy']),
+            ('2', self.default_questions_dict['register'][7]['copy']),
+            ('5', self.default_questions_dict['register'][9]['copy']),
+            ('1', self.default_questions_dict['register'][10]['copy']),
+            ('Any input', self.app.registration_completed_response),
+
+            ('Any input', self.default_questions_dict['POST17'][0]['copy']),
+            ('2', self.default_questions_dict['POST17'][2]['copy']),
+            ('Any input', self.default_questions_dict['POST17'][3]['copy']),
+            ('1', self.default_questions_dict['POST17'][4]['copy']),
+            ('Any input', self.app.survey_completed_response),
+
+            ('Any input', self.default_questions_dict['POST18'][0]['copy']),
+            ('2', self.default_questions_dict['POST18'][2]['copy']),
+            ('Any input', self.default_questions_dict['POST18'][6]['copy']),
+            ('1', self.default_questions_dict['POST18'][7]['copy']),
+            ('Any input', self.app.survey_completed_response),
+
+            ('Any input', self.default_questions_dict['POST19'][0]['copy']),
+            ('2', self.default_questions_dict['POST19'][2]['copy']),
+            ('Any input', self.default_questions_dict['POST19'][3]['copy']),
+            ('1', self.default_questions_dict['POST19'][4]['copy']),
+            ('Any input', self.app.survey_completed_response),
+
+            ('Any input', self.default_questions_dict['POST20'][0]['copy']),
+            ('2', self.default_questions_dict['POST20'][2]['copy']),
+            ('Any input', self.default_questions_dict['POST20'][6]['copy']),
+            ('1', self.default_questions_dict['POST20'][7]['copy']),
+            ('Any input', self.app.survey_completed_response),
+            ]
+        yield self.run_inputs(inputs_and_expected, False)
+        # Check participant is archived
+        archived = self.app.pm.get_archive(self.mkmsg_in(content='').user())
+        self.assertEqual(archived[-1].labels.get('USER_STATUS'), '2')
+        # And confirm re-run is possible
+        yield self.run_inputs(inputs_and_expected)
+
+    @inlineCallbacks
+    def test_full_1_no_hiv(self):
+        inputs_and_expected = [
+            ('Any input', self.default_questions_dict['register'][0]['copy']),
+            ('1', self.default_questions_dict['register'][3]['copy']),
+            ('6', self.default_questions_dict['register'][5]['copy']),
+            ('2', self.default_questions_dict['register'][6]['copy']),
+            ('Any input', self.app.registration_completed_response),
+
+            ('Any input', self.default_questions_dict['WEEK37'][0]['copy']),
+            ('1', self.default_questions_dict['WEEK37'][1]['copy']),
+            ('Any input', self.default_questions_dict['WEEK37'][3]['copy']),
+            ('1', self.default_questions_dict['WEEK37'][4]['copy']),
+            ('Any input', self.app.survey_completed_response),
+
+            ('Any input', self.default_questions_dict['WEEK38'][0]['copy']),
+            ('1', self.default_questions_dict['WEEK38'][1]['copy']),
+            ('Any input', self.default_questions_dict['WEEK38'][3]['copy']),
+            ('1', self.default_questions_dict['WEEK38'][4]['copy']),
+            ('Any input', self.app.survey_completed_response),
+
+            ('Any input', self.default_questions_dict['WEEK39'][0]['copy']),
+            ('1', self.default_questions_dict['WEEK39'][1]['copy']),
+            ('Any input', self.default_questions_dict['WEEK39'][3]['copy']),
+            ('1', self.default_questions_dict['WEEK39'][4]['copy']),
+            ('Any input', self.app.survey_completed_response),
+
+            ('Any input', self.default_questions_dict['WEEK40'][0]['copy']),
+            ('1', self.default_questions_dict['WEEK40'][1]['copy']),
+            ('Any input', self.default_questions_dict['WEEK40'][3]['copy']),
+            ('1', self.default_questions_dict['WEEK40'][4]['copy']),
+            ('Any input', self.app.survey_completed_response),
+
+            ('Any input', self.default_questions_dict['POST1'][0]['copy']),
+            ('1', self.default_questions_dict['POST1'][1]['copy']),
+            ('Any input', self.default_questions_dict['POST1'][3]['copy']),
+            ('1', self.default_questions_dict['POST1'][4]['copy']),
+            ('Any input', self.app.survey_completed_response),
+
+            ('Any input', self.default_questions_dict['POST2'][0]['copy']),
+            ('1', self.default_questions_dict['POST2'][1]['copy']),
+            ('Any input', self.default_questions_dict['POST2'][3]['copy']),
+            ('1', self.default_questions_dict['POST2'][4]['copy']),
+            ('Any input', self.app.survey_completed_response),
+
+            ('Any input', self.default_questions_dict['POST3'][0]['copy']),
+            ('1', self.default_questions_dict['POST3'][1]['copy']),
+            ('Any input', self.default_questions_dict['POST3'][3]['copy']),
+            ('1', self.default_questions_dict['POST3'][4]['copy']),
+            ('Any input', self.app.survey_completed_response),
+
+            ('Any input', self.default_questions_dict['POST4'][0]['copy']),
+            ('1', self.default_questions_dict['POST4'][1]['copy']),
+            ('Any input', self.default_questions_dict['POST4'][3]['copy']),
+            ('1', self.default_questions_dict['POST4'][4]['copy']),
+            ('Any input', self.app.survey_completed_response),
+
+            ('Any input', self.default_questions_dict['POST5'][0]['copy']),
+            ('1', self.default_questions_dict['POST5'][1]['copy']),
+            ('Any input', self.default_questions_dict['POST5'][3]['copy']),
+            ('1', self.default_questions_dict['POST5'][4]['copy']),
+            ('Any input', self.app.survey_completed_response),
+            ]
+        yield self.run_inputs(inputs_and_expected)

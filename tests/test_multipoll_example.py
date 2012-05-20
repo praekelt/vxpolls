@@ -1,3 +1,5 @@
+import json
+import pprint
 from datetime import date, timedelta
 
 from twisted.internet.defer import inlineCallbacks
@@ -411,19 +413,28 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
 
     poll_id_list = [
             'register',
-            'week1',
-            'week2',
-            'week3',
-            'week4',
             'week5',
             'week6',
             'week7',
             'week8',
             'week9',
             'week10',
+            'week11',
+            'week12',
+            'week13',
+            'week14',
+            'week15',
+            'week16',
+            'week17',
+            'week18',
+            'week19',
+            'week20',
+            'week21',
+            'week22',
+            'week23',
             ]
 
-    default_questions_dict = {
+    register_questions_dict = {
             'register': [{
                 'copy': "Are you X or do you have Y ?\n" \
                         "1. X\n" \
@@ -529,6 +540,119 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
                 'label': '',
                 }],
             }
+
+    def make_quizzes(prefix, start, finish):
+        string = "{"
+        for i in range(start, finish+1):
+            if i % 2 != 0:
+                string = string + """
+                "%(p)s%(i)s": [
+                    {
+                    "copy": "%(p)s %(i)s Question 1 ?\\n1. Yes\\n2. No",
+                    "valid_responses": [ "1", "2"],
+                    "label": "%(p)s_%(i)s_QUESTION_1"
+                    },
+                    {
+                    "checks": {"equal": {"%(p)s_%(i)s_QUESTION_1": "1"}},
+                    "copy": "%(p)s %(i)s Question 1 Answer to 1\\n1. Continue",
+                    "valid_responses": [],
+                    "label": ""
+                    },
+                    {
+                    "checks": {"equal": {"%(p)s_%(i)s_QUESTION_1": "2"}},
+                    "copy": "%(p)s %(i)s Question 1 Answer to 2\\n1. Continue",
+                    "valid_responses": [],
+                    "label": ""
+                    },
+
+                    {
+                    "copy": "%(p)s %(i)s Question 2 ?\\n1. Yes\\n2. No",
+                    "valid_responses": [ "1", "2"],
+                    "label": "%(p)s_%(i)s_QUESTION_2"
+                    },
+                    {
+                    "checks": {"equal": {"%(p)s_%(i)s_QUESTION_2": "1"}},
+                    "copy": "%(p)s %(i)s Question 2 Answer to 1\\n1. Continue",
+                    "valid_responses": [],
+                    "label": ""
+                    },
+                    {
+                    "checks": {"equal": {"%(p)s_%(i)s_QUESTION_2": "2"}},
+                    "copy": "%(p)s %(i)s Question 2 Answer to 2\\n1. Continue",
+                    "valid_responses": [],
+                    "label": ""
+                    }
+                    ],""" % {"p": prefix, "i": i}
+
+            else:
+                string = string + """
+                "%(p)s%(i)s": [
+                    {
+                    "copy": "%(p)s %(i)s Question 1 ?\\n1. Yes\\n2. No",
+                    "valid_responses": [ "1", "2"],
+                    "label": "%(p)s_%(i)s_QUESTION_1"
+                    },
+                    {
+                    "checks": {"equal": {"%(p)s_%(i)s_QUESTION_1": "1"}},
+                    "copy": "%(p)s %(i)s Question 1 Answer to 1\\n1. Continue",
+                    "valid_responses": [],
+                    "label": ""
+                    },
+                    {
+                    "checks": {"equal": {"%(p)s_%(i)s_QUESTION_1": "2"}},
+                    "copy": "%(p)s %(i)s Question 1 Answer to 2\\n1. Continue",
+                    "valid_responses": [],
+                    "label": ""
+                    },
+
+                    {
+                    "checks": {"equal": {"Z_MESSAGES": "2"}},
+                    "copy": "%(p)s %(i)s Question 2 ?\\n1. Yes\\n2. No",
+                    "valid_responses": [ "1", "2"],
+                    "label": "%(p)s_%(i)s_QUESTION_2"
+                    },
+                    {
+                    "checks": {"equal": {"%(p)s_%(i)s_QUESTION_2": "1"}},
+                    "copy": "%(p)s %(i)s Question 2 Answer to 1\\n1. Continue",
+                    "valid_responses": [],
+                    "label": ""
+                    },
+                    {
+                    "checks": {"equal": {"%(p)s_%(i)s_QUESTION_2": "2"}},
+                    "copy": "%(p)s %(i)s Question 2 Answer to 2\\n1. Continue",
+                    "valid_responses": [],
+                    "label": ""
+                    },
+
+                    {
+                    "checks": {"equal": {"Z_MESSAGES": "1"}},
+                    "copy": "%(p)s %(i)s Question 3 ?\\n1. Yes\\n2. No",
+                    "valid_responses": [ "1", "2"],
+                    "label": "%(p)s_%(i)s_QUESTION_3"
+                    },
+                    {
+                    "checks": {"equal": {"%(p)s_%(i)s_QUESTION_3": "1"}},
+                    "copy": "%(p)s %(i)s Question 3 Answer to 1\\n1. Continue",
+                    "valid_responses": [],
+                    "label": ""
+                    },
+                    {
+                    "checks": {"equal": {"%(p)s_%(i)s_QUESTION_3": "2"}},
+                    "copy": "%(p)s %(i)s Question 3 Answer to 2\\n1. Continue",
+                    "valid_responses": [],
+                    "label": ""
+                    }
+                    ],""" % {"p": prefix, "i": i}
+        string = string[:-1]
+        string = string + "\n}"
+        return json.loads(string)
+
+    default_questions_dict = {}
+    default_questions_dict.update(register_questions_dict)
+    default_questions_dict.update(make_quizzes("WEEK", 5, 40))
+    default_questions_dict.update(make_quizzes("POST", 1, 20))
+    #pp = pprint.PrettyPrinter(indent=4)
+    #pp.pprint(default_questions_dict)
 
     @inlineCallbacks
     def run_inputs(self, inputs_and_expected):

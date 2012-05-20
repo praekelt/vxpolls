@@ -396,9 +396,12 @@ class CustomMultiPollApplication(MultiPollApplication):
             if poll_question.label == 'EXPECTED_MONTH' \
                     and label_value == '0':
                 participant.set_label('USER_STATUS', '4')
+                self.poll_id_list = self.poll_id_list[:1]
             if poll_question.label == 'INITIAL_AGE' \
                     and label_value == '11':
                 participant.set_label('USER_STATUS', '5')
+                self.poll_id_list = self.poll_id_list[:1]
+            # max age for demo should be 5
             if poll_question.label == 'INITIAL_AGE' \
                     and label_value != '11':
                         poll_id = "POST%s" % months_to_week(label_value)
@@ -746,6 +749,11 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
             ('Any input', self.app.registration_completed_response),
             ]
         yield self.run_inputs(inputs_and_expected)
+        # Check abortive registration is archived
+        archived = self.app.pm.get_archive(self.mkmsg_in(content='').user())
+        self.assertEqual(archived[-1].labels.get('USER_STATUS'), '4')
+        # And confirm re-run is possible
+        yield self.run_inputs(inputs_and_expected)
 
 
     @inlineCallbacks
@@ -768,6 +776,11 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
             ('11', self.default_questions_dict['register'][8]['copy']),
             ('Any input', self.app.registration_completed_response),
             ]
+        yield self.run_inputs(inputs_and_expected)
+        # Check abortive registration is archived
+        archived = self.app.pm.get_archive(self.mkmsg_in(content='').user())
+        self.assertEqual(archived[-1].labels.get('USER_STATUS'), '5')
+        # And confirm re-run is possible
         yield self.run_inputs(inputs_and_expected)
 
     @inlineCallbacks

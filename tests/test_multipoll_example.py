@@ -413,25 +413,62 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
 
     poll_id_list = [
             'register',
-            'week5',
-            'week6',
-            'week7',
-            'week8',
-            'week9',
-            'week10',
-            'week11',
-            'week12',
-            'week13',
-            'week14',
-            'week15',
-            'week16',
-            'week17',
-            'week18',
-            'week19',
-            'week20',
-            'week21',
-            'week22',
-            'week23',
+            'WEEK5',
+            'WEEK6',
+            'WEEK7',
+            'WEEK8',
+            'WEEK9',
+            'WEEK10',
+            'WEEK11',
+            'WEEK12',
+            'WEEK13',
+            'WEEK14',
+            'WEEK15',
+            'WEEK16',
+            'WEEK17',
+            'WEEK18',
+            'WEEK19',
+            'WEEK20',
+            'WEEK21',
+            'WEEK22',
+            'WEEK23',
+            'WEEK24',
+            'WEEK25',
+            'WEEK26',
+            'WEEK27',
+            'WEEK28',
+            'WEEK29',
+            'WEEK30',
+            'WEEK31',
+            'WEEK32',
+            'WEEK33',
+            'WEEK34',
+            'WEEK35',
+            'WEEK36',
+            'WEEK37',
+            'WEEK38',
+            'WEEK39',
+            'WEEK40',
+            'POST1',
+            'POST2',
+            'POST3',
+            'POST4',
+            'POST5',
+            'POST6',
+            'POST7',
+            'POST8',
+            'POST9',
+            'POST10',
+            'POST11',
+            'POST12',
+            'POST13',
+            'POST14',
+            'POST15',
+            'POST16',
+            'POST17',
+            'POST18',
+            'POST19',
+            'POST20',
             ]
 
     register_questions_dict = {
@@ -651,18 +688,19 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
     default_questions_dict.update(register_questions_dict)
     default_questions_dict.update(make_quizzes("WEEK", 5, 40))
     default_questions_dict.update(make_quizzes("POST", 1, 20))
-    #pp = pprint.PrettyPrinter(indent=4)
+    pp = pprint.PrettyPrinter(indent=4)
     #pp.pprint(default_questions_dict)
 
     @inlineCallbacks
-    def run_inputs(self, inputs_and_expected):
+    def run_inputs(self, inputs_and_expected, do_print=False):
         for io in inputs_and_expected:
             msg = self.mkmsg_in(content=io[0])
             yield self.dispatch(msg)
             responses = self.get_dispatched_messages()
             output = responses[-1]['content']
             event = responses[-1].get('session_event')
-            #print "\n>", msg['content'], "\n", output
+            if do_print:
+                print "\n>", msg['content'], "\n", output
             self.assertEqual(output, io[1])
 
     @inlineCallbacks
@@ -718,5 +756,28 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
             ('2', self.default_questions_dict['register'][7]['copy']),
             ('11', self.default_questions_dict['register'][8]['copy']),
             ('Any input', self.app.registration_completed_response),
+            ]
+        yield self.run_inputs(inputs_and_expected)
+
+    @inlineCallbacks
+    def test_full_2_Z_MESSAGE(self):
+        inputs_and_expected = [
+            ('Any input', self.default_questions_dict['register'][0]['copy']),
+            ('2', self.default_questions_dict['register'][7]['copy']),
+            ('3', self.default_questions_dict['register'][9]['copy']),
+            ('1', self.default_questions_dict['register'][10]['copy']),
+            ('Any input', self.app.registration_completed_response),
+
+            ('Any input', self.default_questions_dict['WEEK5'][0]['copy']),
+            ('2', self.default_questions_dict['WEEK5'][2]['copy']),
+            ('Any input', self.default_questions_dict['WEEK5'][3]['copy']),
+            ('1', self.default_questions_dict['WEEK5'][4]['copy']),
+            ('Any input', self.app.survey_completed_response),
+
+            ('Any input', self.default_questions_dict['WEEK6'][0]['copy']),
+            ('2', self.default_questions_dict['WEEK6'][2]['copy']),
+            ('Any input', self.default_questions_dict['WEEK6'][6]['copy']),
+            ('1', self.default_questions_dict['WEEK6'][7]['copy']),
+            ('Any input', self.app.survey_completed_response),
             ]
         yield self.run_inputs(inputs_and_expected)

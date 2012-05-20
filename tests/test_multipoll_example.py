@@ -381,17 +381,28 @@ class CustomMultiPollApplication(MultiPollApplication):
                                 'please dial in again next week for more.'
 
     def custom_poll_logic_function(self, participant):
-        pass
+        new_poll = participant.get_label('JUMP_TO_POLL')
+        current_poll_id = participant.get_poll_id()
+        if new_poll and current_poll_id != 'register':
+            self.try_go_to_specific_poll(participant, new_poll)
+            participant.set_label('JUMP_TO_POLL', None)
 
     def custom_answer_logic_function(self, participant, answer, poll_question):
+        def months_to_week(month):
+            m = int(month)
+            return (m-1)*4+1
         label_value = participant.get_label(poll_question.label)
         if label_value is not None:
-            if poll_question.label == 'X_MONTH' \
+            if poll_question.label == 'EXPECTED_MONTH' \
                     and label_value == '0':
-                participant.set_label('STATUS', '4')
-            if poll_question.label == 'Y_AGE' \
+                participant.set_label('USER_STATUS', '4')
+            if poll_question.label == 'INITIAL_AGE' \
                     and label_value == '11':
-                participant.set_label('STATUS', '5')
+                participant.set_label('USER_STATUS', '5')
+            if poll_question.label == 'INITIAL_AGE' \
+                    and label_value != '11':
+                        poll_id = "POST%s" % months_to_week(label_value)
+                        participant.set_label('JUMP_TO_POLL', poll_id)
 
     custom_answer_logic = custom_answer_logic_function
 
@@ -478,24 +489,24 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
                         "2. Y\n" \
                         "3. Don't know",
                 'valid_responses': ['1', '2', '3'],
-                'label': 'STATUS',
+                'label': 'USER_STATUS',
                 },
                 {
-                'checks': {'equal': {'STATUS': '3'}},
+                'checks': {'equal': {'USER_STATUS': '3'}},
                 'copy': "Follow-up to don't know\n" \
                         "1. More",
                 'valid_responses': [],
                 'label': '',
                 },
                 {
-                'checks': {'equal': {'STATUS': '3'}},
+                'checks': {'equal': {'USER_STATUS': '3'}},
                 'copy': "Second follow-up to don't know\n" \
                         "1. End",
                 'valid_responses': [],
                 'label': '',
                 },
                 {
-                'checks': {'equal': {'STATUS': '1'}},
+                'checks': {'equal': {'USER_STATUS': '1'}},
                 'copy': "What month is X ?\n" \
                         "1. Jan\n" \
                         "2. Feb\n" \
@@ -512,32 +523,32 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
                         "0. Don't Know",
                 'valid_responses': [ '0', '1', '2', '3', '4', '5', '6',
                                     '7', '8', '9', '10', '11', '12'],
-                'label': 'X_MONTH',
+                'label': 'EXPECTED_MONTH',
                 },
                 {
-                'checks': {'equal': {'X_MONTH': '0'}},
+                'checks': {'equal': {'EXPECTED_MONTH': '0'}},
                 'copy': "Please find out ?\n" \
                         "1. End",
                 'valid_responses': [],
                 'label': '',
                 },
                 {
-                'checks': {'equal': {'STATUS': '1'}},
+                'checks': {'equal': {'USER_STATUS': '1'}},
                 'copy': "Do you want Z messages ?\n" \
                         "1. Yes\n" \
                         "2. No",
                 'valid_responses': [ '1', '2'],
-                'label': 'Z_MESSAGES',
+                'label': 'HIV_MESSAGES',
                 },
                 {
-                'checks': {'equal': {'STATUS': '1'}},
+                'checks': {'equal': {'USER_STATUS': '1'}},
                 'copy': "Thank you, come back later\n" \
                         "1. End",
                 'valid_responses': [],
                 'label': '',
                 },
                 {
-                'checks': {'equal': {'STATUS': '2'}},
+                'checks': {'equal': {'USER_STATUS': '2'}},
                 'copy': "How many months old Y ?\n" \
                         "1. 1\n" \
                         "2. 2\n" \
@@ -552,25 +563,25 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
                         "11. 11 or more.",
                 'valid_responses': [ '1', '2', '3', '4', '5', '6',
                                     '7', '8', '9', '10', '11'],
-                'label': 'Y_AGE',
+                'label': 'INITIAL_AGE',
                 },
                 {
-                'checks': {'equal': {'Y_AGE': '11'}},
+                'checks': {'equal': {'INITIAL_AGE': '11'}},
                 'copy': "Sorry, bye\n" \
                         "1. End",
                 'valid_responses': [],
                 'label': '',
                 },
                 {
-                'checks': {'equal': {'STATUS': '2'}},
+                'checks': {'equal': {'USER_STATUS': '2'}},
                 'copy': "Do you want Z messages ?\n" \
                         "1. Yes\n" \
                         "2. No",
                 'valid_responses': [ '1', '2'],
-                'label': 'Z_MESSAGES',
+                'label': 'HIV_MESSAGES',
                 },
                 {
-                'checks': {'equal': {'STATUS': '2'}},
+                'checks': {'equal': {'USER_STATUS': '2'}},
                 'copy': "Thank you, come back later\n" \
                         "1. End",
                 'valid_responses': [],
@@ -643,7 +654,7 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
                     },
 
                     {
-                    "checks": {"equal": {"Z_MESSAGES": "2"}},
+                    "checks": {"equal": {"HIV_MESSAGES": "2"}},
                     "copy": "%(p)s %(i)s Question 2 ?\\n1. Yes\\n2. No",
                     "valid_responses": [ "1", "2"],
                     "label": "%(p)s_%(i)s_QUESTION_2"
@@ -662,7 +673,7 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
                     },
 
                     {
-                    "checks": {"equal": {"Z_MESSAGES": "1"}},
+                    "checks": {"equal": {"HIV_MESSAGES": "1"}},
                     "copy": "%(p)s %(i)s Question 3 ?\\n1. Yes\\n2. No",
                     "valid_responses": [ "1", "2"],
                     "label": "%(p)s_%(i)s_QUESTION_3"
@@ -760,7 +771,7 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
         yield self.run_inputs(inputs_and_expected)
 
     @inlineCallbacks
-    def test_full_2_Z_MESSAGE(self):
+    def test_full_2_hiv(self):
         inputs_and_expected = [
             ('Any input', self.default_questions_dict['register'][0]['copy']),
             ('2', self.default_questions_dict['register'][7]['copy']),
@@ -768,16 +779,16 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
             ('1', self.default_questions_dict['register'][10]['copy']),
             ('Any input', self.app.registration_completed_response),
 
-            ('Any input', self.default_questions_dict['WEEK5'][0]['copy']),
-            ('2', self.default_questions_dict['WEEK5'][2]['copy']),
-            ('Any input', self.default_questions_dict['WEEK5'][3]['copy']),
-            ('1', self.default_questions_dict['WEEK5'][4]['copy']),
+            ('Any input', self.default_questions_dict['POST9'][0]['copy']),
+            ('2', self.default_questions_dict['POST9'][2]['copy']),
+            ('Any input', self.default_questions_dict['POST9'][3]['copy']),
+            ('1', self.default_questions_dict['POST9'][4]['copy']),
             ('Any input', self.app.survey_completed_response),
 
-            ('Any input', self.default_questions_dict['WEEK6'][0]['copy']),
-            ('2', self.default_questions_dict['WEEK6'][2]['copy']),
-            ('Any input', self.default_questions_dict['WEEK6'][6]['copy']),
-            ('1', self.default_questions_dict['WEEK6'][7]['copy']),
+            ('Any input', self.default_questions_dict['POST10'][0]['copy']),
+            ('2', self.default_questions_dict['POST10'][2]['copy']),
+            ('Any input', self.default_questions_dict['POST10'][6]['copy']),
+            ('1', self.default_questions_dict['POST10'][7]['copy']),
             ('Any input', self.app.survey_completed_response),
             ]
-        yield self.run_inputs(inputs_and_expected)
+        yield self.run_inputs(inputs_and_expected, False)

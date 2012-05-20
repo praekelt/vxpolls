@@ -14,9 +14,9 @@ class BaseMultiPollApplicationTestCase(ApplicationTestCase):
     application_class = MultiPollApplication
 
     timeout = 1
-    poll_id_list = ['register', 'week1', 'week2', 'week3']
+    poll_id_list = ['REGISTER', 'week1', 'week2', 'week3']
     default_questions_dict = {
-            'register': [{
+            'REGISTER': [{
                 'copy': 'What is your name?',
                 'valid_responses': [],
                 },
@@ -87,14 +87,14 @@ class MultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
         participant, poll = self.get_participant_and_poll(msg.user())
         # make sure we get the first question as a response
         self.assertResponse(response,
-                        self.default_questions_dict['register'][0]['copy'])
+                        self.default_questions_dict['REGISTER'][0]['copy'])
         # the session event should be none so it is expecting
         # a response
         self.assertEvent(response, None)
         # get the participant and check the state after the first interaction
         next_question = poll.get_next_question(participant)
         self.assertEqual(next_question.copy,
-                        self.default_questions_dict['register'][1]['copy'])
+                        self.default_questions_dict['REGISTER'][1]['copy'])
 
     @inlineCallbacks
     def test_continuation_of_session(self):
@@ -103,8 +103,8 @@ class MultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
         # prime the participant
         participant, poll = self.get_participant_and_poll(msg.user())
         participant.has_unanswered_question = True
-        participant.set_poll_id('register')
-        participant.set_poll_id('register')
+        participant.set_poll_id('REGISTER')
+        participant.set_poll_id('REGISTER')
         participant.set_poll_id('week0')  # No such poll
         participant.set_poll_id('week1')
         participant.set_poll_id('week1')
@@ -112,7 +112,7 @@ class MultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
         participant.set_last_question_index(0)
         self.app.pm.save_participant(participant)
         retrieved_participant = self.app.pm.get_participant(msg.user())
-        #self.assertEqual(['register', 'week0', 'week1'],
+        #self.assertEqual(['REGISTER', 'week0', 'week1'],
                 #retrieved_participant.poll_id_list)
         # send to the app
         yield self.dispatch(msg)
@@ -129,7 +129,7 @@ class MultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
         # prime the participant
         participant, poll = self.get_participant_and_poll(msg.user())
         participant.has_unanswered_question = True
-        participant.set_poll_id('register')
+        participant.set_poll_id('REGISTER')
         participant.set_last_question_index(2)
         self.app.pm.save_participant(participant)
         # send to the app
@@ -145,7 +145,7 @@ class MultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
         # prime the participant
         participant, poll = self.get_participant_and_poll(msg.user())
         participant.has_unanswered_question = True
-        participant.set_poll_id('register')
+        participant.set_poll_id('REGISTER')
         participant.set_last_question_index(2)
         self.app.pm.save_participant(participant)
         participant = self.app.pm.get_participant(msg.user())
@@ -172,7 +172,7 @@ class MultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
         msg = self.mkmsg_in(content='any input')
         # prime the participant
         participant, poll = self.get_participant_and_poll(msg.user())
-        participant.set_poll_id('register')
+        participant.set_poll_id('REGISTER')
         participant.set_label('jump_to_poll', 'week3')
         self.app.pm.save_participant(participant)
         participant = self.app.pm.get_participant(msg.user())
@@ -193,7 +193,7 @@ class MultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
 class LongMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
 
     poll_id_list = [
-            'register',
+            'REGISTER',
             'week1',
             'week2',
             'week3',
@@ -207,7 +207,7 @@ class LongMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
             ]
 
     default_questions_dict = {
-            'register': [{
+            'REGISTER': [{
                 'copy': 'Name?',
                 'valid_responses': [],
                 },
@@ -317,13 +317,13 @@ class LongMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
     def test_a_series_of_interactions(self):
 
         inputs_and_expected = [
-            ('Any input', self.default_questions_dict['register'][0]['copy']),
-            ('David', self.default_questions_dict['register'][1]['copy']),
+            ('Any input', self.default_questions_dict['REGISTER'][0]['copy']),
+            ('David', self.default_questions_dict['REGISTER'][1]['copy']),
             # Answering 16 for the next question will trigger a jump to
             # week (20-16) = week4 using a derived date parameter
             # saved in the Participant via custom app logic
             ('16', self.app.registration_partial_response),
-            ('Any input', self.default_questions_dict['register'][2]['copy']),
+            ('Any input', self.default_questions_dict['REGISTER'][2]['copy']),
             ('yes', self.app.registration_completed_response),
             ('Any input', self.default_questions_dict['week4'][0]['copy']),
             ('Any input', self.app.survey_completed_response),
@@ -383,7 +383,7 @@ class CustomMultiPollApplication(MultiPollApplication):
     def custom_poll_logic_function(self, participant):
         new_poll = participant.get_label('JUMP_TO_POLL')
         current_poll_id = participant.get_poll_id()
-        if new_poll and current_poll_id != 'register':
+        if new_poll and current_poll_id != 'REGISTER':
             self.try_go_to_specific_poll(participant, new_poll)
             participant.set_label('JUMP_TO_POLL', None)
 
@@ -443,8 +443,8 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
         }
         self.app = yield self.get_application(self.config)
 
-    poll_id_list = [
-            'register',
+    poll_name_list = [
+            'REGISTER',
             'WEEK5',
             'WEEK6',
             'WEEK7',
@@ -503,8 +503,13 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
             'POST20',
             ]
 
+    poll_id_list = poll_name_list
+    poll_id_map = {}
+    for i, v in enumerate(poll_name_list):
+        poll_id_map[v] = poll_id_list[i]
+
     register_questions_dict = {
-            'register': [{
+            'REGISTER': [{
                 'copy': "Are you X or do you have Y ?\n" \
                         "1. X\n" \
                         "2. Y\n" \
@@ -745,9 +750,9 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
     @inlineCallbacks
     def test_register_3(self):
         inputs_and_expected = [
-            ('Any input', self.default_questions_dict['register'][0]['copy']),
-            ('3', self.default_questions_dict['register'][1]['copy']),
-            ('Any input', self.default_questions_dict['register'][2]['copy']),
+            ('Any input', self.default_questions_dict['REGISTER'][0]['copy']),
+            ('3', self.default_questions_dict['REGISTER'][1]['copy']),
+            ('Any input', self.default_questions_dict['REGISTER'][2]['copy']),
             ('Any input', self.app.registration_completed_response),
             ]
         yield self.run_inputs(inputs_and_expected)
@@ -755,10 +760,10 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
     @inlineCallbacks
     def test_register_1(self):
         inputs_and_expected = [
-            ('Any input', self.default_questions_dict['register'][0]['copy']),
-            ('1', self.default_questions_dict['register'][3]['copy']),
-            ('7', self.default_questions_dict['register'][5]['copy']),
-            ('1', self.default_questions_dict['register'][6]['copy']),
+            ('Any input', self.default_questions_dict['REGISTER'][0]['copy']),
+            ('1', self.default_questions_dict['REGISTER'][3]['copy']),
+            ('7', self.default_questions_dict['REGISTER'][5]['copy']),
+            ('1', self.default_questions_dict['REGISTER'][6]['copy']),
             ('Any input', self.app.registration_completed_response),
             ]
         yield self.run_inputs(inputs_and_expected)
@@ -766,9 +771,9 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
     @inlineCallbacks
     def test_register_1_dont_know(self):
         inputs_and_expected = [
-            ('Any input', self.default_questions_dict['register'][0]['copy']),
-            ('1', self.default_questions_dict['register'][3]['copy']),
-            ('0', self.default_questions_dict['register'][4]['copy']),
+            ('Any input', self.default_questions_dict['REGISTER'][0]['copy']),
+            ('1', self.default_questions_dict['REGISTER'][3]['copy']),
+            ('0', self.default_questions_dict['REGISTER'][4]['copy']),
             ('Any input', self.app.registration_completed_response),
             ]
         yield self.run_inputs(inputs_and_expected)
@@ -781,10 +786,10 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
     @inlineCallbacks
     def test_register_2(self):
         inputs_and_expected = [
-            ('Any input', self.default_questions_dict['register'][0]['copy']),
-            ('2', self.default_questions_dict['register'][7]['copy']),
-            ('3', self.default_questions_dict['register'][9]['copy']),
-            ('1', self.default_questions_dict['register'][10]['copy']),
+            ('Any input', self.default_questions_dict['REGISTER'][0]['copy']),
+            ('2', self.default_questions_dict['REGISTER'][7]['copy']),
+            ('3', self.default_questions_dict['REGISTER'][9]['copy']),
+            ('1', self.default_questions_dict['REGISTER'][10]['copy']),
             ('Any input', self.app.registration_completed_response),
             ]
         yield self.run_inputs(inputs_and_expected)
@@ -792,11 +797,11 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
     @inlineCallbacks
     def test_register_2_too_old(self):
         inputs_and_expected = [
-            ('Any input', self.default_questions_dict['register'][0]['copy']),
-            ('2', self.default_questions_dict['register'][7]['copy']),
-            #('11', self.default_questions_dict['register'][8]['copy']),
+            ('Any input', self.default_questions_dict['REGISTER'][0]['copy']),
+            ('2', self.default_questions_dict['REGISTER'][7]['copy']),
+            #('11', self.default_questions_dict['REGISTER'][8]['copy']),
             # max age for demo should be 5
-            ('6', self.default_questions_dict['register'][8]['copy']),
+            ('6', self.default_questions_dict['REGISTER'][8]['copy']),
             ('Any input', self.app.registration_completed_response),
             ]
         yield self.run_inputs(inputs_and_expected)
@@ -809,10 +814,10 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
     @inlineCallbacks
     def test_full_2_hiv(self):
         inputs_and_expected = [
-            ('Any input', self.default_questions_dict['register'][0]['copy']),
-            ('2', self.default_questions_dict['register'][7]['copy']),
-            ('3', self.default_questions_dict['register'][9]['copy']),
-            ('1', self.default_questions_dict['register'][10]['copy']),
+            ('Any input', self.default_questions_dict['REGISTER'][0]['copy']),
+            ('2', self.default_questions_dict['REGISTER'][7]['copy']),
+            ('3', self.default_questions_dict['REGISTER'][9]['copy']),
+            ('1', self.default_questions_dict['REGISTER'][10]['copy']),
             ('Any input', self.app.registration_completed_response),
 
             ('Any input', self.default_questions_dict['POST9'][0]['copy']),
@@ -832,10 +837,10 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
     @inlineCallbacks
     def test_full_2_hiv_to_archive(self):
         inputs_and_expected = [
-            ('Any input', self.default_questions_dict['register'][0]['copy']),
-            ('2', self.default_questions_dict['register'][7]['copy']),
-            ('5', self.default_questions_dict['register'][9]['copy']),
-            ('1', self.default_questions_dict['register'][10]['copy']),
+            ('Any input', self.default_questions_dict['REGISTER'][0]['copy']),
+            ('2', self.default_questions_dict['REGISTER'][7]['copy']),
+            ('5', self.default_questions_dict['REGISTER'][9]['copy']),
+            ('1', self.default_questions_dict['REGISTER'][10]['copy']),
             ('Any input', self.app.registration_completed_response),
 
             ('Any input', self.default_questions_dict['POST17'][0]['copy']),
@@ -872,10 +877,10 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
     @inlineCallbacks
     def test_full_1_no_hiv(self):
         inputs_and_expected = [
-            ('Any input', self.default_questions_dict['register'][0]['copy']),
-            ('1', self.default_questions_dict['register'][3]['copy']),
-            ('6', self.default_questions_dict['register'][5]['copy']),
-            ('2', self.default_questions_dict['register'][6]['copy']),
+            ('Any input', self.default_questions_dict['REGISTER'][0]['copy']),
+            ('1', self.default_questions_dict['REGISTER'][3]['copy']),
+            ('6', self.default_questions_dict['REGISTER'][5]['copy']),
+            ('2', self.default_questions_dict['REGISTER'][6]['copy']),
             ('Any input', self.app.registration_completed_response),
 
             ('Any input', self.default_questions_dict['WEEK37'][0]['copy']),

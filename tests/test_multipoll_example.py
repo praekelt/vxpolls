@@ -444,6 +444,18 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
 
     @inlineCallbacks
     def setUp(self):
+        pig = self.application_class.poll_id_generator("XXXXXXXXXX_")
+        self.default_questions_dict = {}
+        self.default_questions_dict.update(self.register_questions_dict)
+        self.rekey_dict(self.register_questions_dict, pig)
+        self.default_questions_dict.update(self.make_quizzes("WEEK", 5, 40, pig))
+        self.default_questions_dict.update(self.make_quizzes("POST", 1, 20, pig))
+        #pp = pprint.PrettyPrinter(indent=4)
+        #pp.pprint(default_questions_dict)
+        #i = 0
+        #for k, v in default_questions_dict.iteritems():
+            #i = i + len(v)
+        #print "QUESTIONS", i
         yield super(BaseMultiPollApplicationTestCase, self).setUp()
         self.config = {
             'poll_id_list': self.poll_id_list,
@@ -623,10 +635,21 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
                 }],
             }
 
-    def make_quizzes(prefix, start, finish):
+    def rekey_dict(self, dictionary, poll_id_generator):
+        new_dict = {}
+        for k, v in dictionary.items():
+            new_key = poll_id_generator.next()
+            print k, '->', new_key
+            new_dict[new_key] = v
+        return new_dict
+
+    def make_quizzes(self, prefix, start, finish, poll_id_generator=None):
         string = "{"
         for i in range(start, finish + 1):
             if i % 2 != 0:
+                if poll_id_generator:
+                    print "%(p)s%(i)s" % {"p": prefix, "i": i},
+                    print "->", poll_id_generator.next()
                 string = string + """
                 "%(p)s%(i)s": [
                     {
@@ -667,6 +690,9 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
                     ],""" % {"p": prefix, "i": i}
 
             else:
+                if poll_id_generator:
+                    print "%(p)s%(i)s" % {"p": prefix, "i": i},
+                    print "->", poll_id_generator.next()
                 string = string + """
                 "%(p)s%(i)s": [
                     {
@@ -728,17 +754,6 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
         string = string[:-1]
         string = string + "\n}"
         return json.loads(string)
-
-    default_questions_dict = {}
-    default_questions_dict.update(register_questions_dict)
-    default_questions_dict.update(make_quizzes("WEEK", 5, 40))
-    default_questions_dict.update(make_quizzes("POST", 1, 20))
-    pp = pprint.PrettyPrinter(indent=4)
-    #pp.pprint(default_questions_dict)
-    #i = 0
-    #for k, v in default_questions_dict.iteritems():
-        #i = i + len(v)
-    #print "QUESTIONS", i
 
     @inlineCallbacks
     def run_inputs(self, inputs_and_expected, do_print=False):
@@ -943,3 +958,20 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
             ('Any input', self.app.survey_completed_response),
             ]
         yield self.run_inputs(inputs_and_expected)
+        pgen = self.app.poll_id_generator("eee", "eee3")
+        print pgen.next()
+        print pgen.next()
+        print pgen.next()
+
+        p2g = self.app.poll_id_generator("POST", "POST19")
+        for p in range(2):
+            id = p2g.next()
+            print id, self.app.pm.get(id)
+
+        print "-------------------------"
+        print self.app.get_next_poll("POST")
+        print self.app.get_next_poll("POST", "POST1")
+        print self.app.get_next_poll("POST", "POST1")
+        print self.app.get_next_poll("POST", "POST19")
+        print self.app.get_next_poll("POST", "POST20")
+

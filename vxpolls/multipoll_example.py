@@ -34,6 +34,7 @@ class MultiPollApplication(PollApplication):
         self.dashboard_prefix = self.config.get('dashboard_path_prefix', '/')
         self.poll_prefix = self.config.get('poll_prefix', 'poll_manager')
         #self.poll_id_prefix = "%s_POLL_ID_" % self.poll_prefix
+        self.poll_id_prefix = self.config.get('poll_id_prefix', 'POLL_ID_')
         self.poll_id_list = self.config.get('poll_id_list',
                                             [self.generate_unique_id()])
         self.poll_name_list = self.config.get('poll_name_list', [])
@@ -99,7 +100,9 @@ class MultiPollApplication(PollApplication):
                 self.end_session(participant, poll, message)
 
     def end_session(self, participant, poll, message):
-        if poll.poll_id == 'REGISTER':
+        first_poll_id = self.get_first_poll_id(self.poll_id_prefix)
+        first_poll_id = 'REGISTER'
+        if poll.poll_id == first_poll_id:
             batch_completed_response = self.registration_partial_response
             survey_completed_response = self.registration_completed_response
         else:
@@ -160,7 +163,9 @@ class MultiPollApplication(PollApplication):
             return None
 
         new_poll = participant.get_label('jump_to_week')
-        if new_poll and participant.get_poll_id() != 'REGISTER':
+        first_poll_id = self.get_first_poll_id(self.poll_id_prefix)
+        first_poll_id = 'REGISTER'
+        if new_poll and participant.get_poll_id() != first_poll_id:
             self.try_go_to_specific_poll(participant, new_poll)
             participant.set_label('jump_to_week', None)
 

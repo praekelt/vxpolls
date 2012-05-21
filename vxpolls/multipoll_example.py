@@ -33,6 +33,7 @@ class MultiPollApplication(PollApplication):
         self.dashboard_port = int(self.config.get('dashboard_port', 8000))
         self.dashboard_prefix = self.config.get('dashboard_path_prefix', '/')
         self.poll_prefix = self.config.get('poll_prefix', 'poll_manager')
+        self.poll_id_prefix = "%s_POLL_ID_" % self.poll_prefix
         self.poll_id_list = self.config.get('poll_id_list',
                                             [self.generate_unique_id()])
         self.poll_name_list = self.config.get('poll_name_list', [])
@@ -46,6 +47,20 @@ class MultiPollApplication(PollApplication):
                     'questions': self.questions_dict.get(poll_id, []),
                     'batch_size': self.batch_size,
                     })
+
+    def poll_id_generator(self, poll_id_prefix, last_id=None):
+        num = 0
+        if last_id:
+            num = int(last_id[len(poll_id_prefix):]) + 1
+        while True:
+            yield "%s%s" % (poll_id_prefix, num)
+            num = num + 1
+
+    def get_next_poll(self, poll_id_prefix, current_poll=None):
+        gen = self.poll_id_generator(poll_id_prefix, current_poll)
+        next_id = gen.next()
+        next_poll = self.pm.get(next_id)
+        return next_poll
 
     def consume_user_message(self, message):
         participant = self.pm.get_participant(message.user())

@@ -58,14 +58,20 @@ class MultiPollApplication(PollApplication):
             yield "%s%s" % (poll_id_prefix, num)
             num = num + 1
 
-    def get_next_poll(self, poll_id_prefix, current_poll=None):
-        gen = self.poll_id_generator(poll_id_prefix, current_poll)
-        next_id = gen.next()
-        next_poll = self.pm.get(next_id)
-        return next_poll
-
-    def get_first_poll_id(self, poll_id_prefix):
+    @classmethod
+    def get_first_poll_id(cls, poll_id_prefix):
         return "%s%s" % (poll_id_prefix, 0)
+
+    @classmethod
+    def get_next_poll_id(cls, poll_id_prefix, current_poll=None):
+        gen = cls.poll_id_generator(poll_id_prefix, current_poll)
+        next_id = gen.next()
+        return next_id
+
+    def get_next_poll(self, poll_id_prefix, current_poll=None):
+        next_poll = self.pm.get(self.get_next_poll_id(
+                                poll_id_prefix, current_poll))
+        return next_poll
 
     def consume_user_message(self, message):
         participant = self.pm.get_participant(message.user())

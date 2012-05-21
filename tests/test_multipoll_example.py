@@ -397,7 +397,11 @@ class CustomMultiPollApplication(MultiPollApplication):
 
         def months_to_week(month):
             m = int(month)
-            return (m - 1) * 4 + 1
+            #m = 1
+            week = (m - 1) * 4 + 1
+            poll = week + 36  # given prev poll set of 5 - 40 + reg
+            #print "week", week, "= poll", poll
+            return (week, poll)
 
         def month_of_year_to_week(month):
             m = int(month)
@@ -412,6 +416,7 @@ class CustomMultiPollApplication(MultiPollApplication):
             return start_week
 
         label_value = participant.get_label(poll_question.label)
+        print self.poll_id_prefix
         if label_value is not None:
             if poll_question.label == 'EXPECTED_MONTH' \
                     and label_value == '0':
@@ -431,7 +436,9 @@ class CustomMultiPollApplication(MultiPollApplication):
             if poll_question.label == 'INITIAL_AGE' \
                     and label_value != '6':  # max age for demo should be 5
                     #and label_value != '11':
-                        poll_name = "POST%s" % months_to_week(label_value)
+                        poll_name = "POST%s" % months_to_week(label_value)[0]
+                        print poll_name
+                        print "%s%s" % (self.poll_id_prefix, months_to_week(label_value)[1])
                         poll_id = self.poll_id_map.get(poll_name)
                         participant.set_label('JUMP_TO_POLL', poll_id)
 

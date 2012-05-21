@@ -68,8 +68,11 @@ class PollManager(object):
         if not self.uid_exists(poll_id, uid):
             uid = self.get_latest_uid(poll_id)
         version = self.get_config(poll_id, uid)
-        return Poll(self.r_server, poll_id, uid, version['questions'],
-                version.get('batch_size'), r_prefix=self.r_key('poll'))
+        try:
+            return Poll(self.r_server, poll_id, uid, version['questions'],
+                    version.get('batch_size'), r_prefix=self.r_key('poll'))
+        except:
+            return None
 
     def get_participant(self, user_id):
         session_data = self.session_manager.load_session(user_id)

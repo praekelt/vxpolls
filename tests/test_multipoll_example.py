@@ -1,3 +1,5 @@
+import json
+import pprint
 from datetime import date, timedelta
 
 from twisted.internet.defer import inlineCallbacks
@@ -12,9 +14,9 @@ class BaseMultiPollApplicationTestCase(ApplicationTestCase):
     application_class = MultiPollApplication
 
     timeout = 1
-    poll_id_list = ['register', 'week1', 'week2', 'week3']
+    poll_id_list = ['REGISTER', 'week1', 'week2', 'week3']
     default_questions_dict = {
-            'register': [{
+            'REGISTER': [{
                 'copy': 'What is your name?',
                 'valid_responses': [],
                 },
@@ -85,14 +87,14 @@ class MultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
         participant, poll = self.get_participant_and_poll(msg.user())
         # make sure we get the first question as a response
         self.assertResponse(response,
-                        self.default_questions_dict['register'][0]['copy'])
+                        self.default_questions_dict['REGISTER'][0]['copy'])
         # the session event should be none so it is expecting
         # a response
         self.assertEvent(response, None)
         # get the participant and check the state after the first interaction
         next_question = poll.get_next_question(participant)
         self.assertEqual(next_question.copy,
-                        self.default_questions_dict['register'][1]['copy'])
+                        self.default_questions_dict['REGISTER'][1]['copy'])
 
     @inlineCallbacks
     def test_continuation_of_session(self):
@@ -101,8 +103,8 @@ class MultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
         # prime the participant
         participant, poll = self.get_participant_and_poll(msg.user())
         participant.has_unanswered_question = True
-        participant.set_poll_id('register')
-        participant.set_poll_id('register')
+        participant.set_poll_id('REGISTER')
+        participant.set_poll_id('REGISTER')
         participant.set_poll_id('week0')  # No such poll
         participant.set_poll_id('week1')
         participant.set_poll_id('week1')
@@ -110,7 +112,7 @@ class MultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
         participant.set_last_question_index(0)
         self.app.pm.save_participant(participant)
         retrieved_participant = self.app.pm.get_participant(msg.user())
-        #self.assertEqual(['register', 'week0', 'week1'],
+        #self.assertEqual(['REGISTER', 'week0', 'week1'],
                 #retrieved_participant.poll_id_list)
         # send to the app
         yield self.dispatch(msg)
@@ -127,7 +129,7 @@ class MultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
         # prime the participant
         participant, poll = self.get_participant_and_poll(msg.user())
         participant.has_unanswered_question = True
-        participant.set_poll_id('register')
+        participant.set_poll_id('REGISTER')
         participant.set_last_question_index(2)
         self.app.pm.save_participant(participant)
         # send to the app
@@ -143,7 +145,7 @@ class MultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
         # prime the participant
         participant, poll = self.get_participant_and_poll(msg.user())
         participant.has_unanswered_question = True
-        participant.set_poll_id('register')
+        participant.set_poll_id('REGISTER')
         participant.set_last_question_index(2)
         self.app.pm.save_participant(participant)
         participant = self.app.pm.get_participant(msg.user())
@@ -170,7 +172,7 @@ class MultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
         msg = self.mkmsg_in(content='any input')
         # prime the participant
         participant, poll = self.get_participant_and_poll(msg.user())
-        participant.set_poll_id('register')
+        participant.set_poll_id('REGISTER')
         participant.set_label('jump_to_poll', 'week3')
         self.app.pm.save_participant(participant)
         participant = self.app.pm.get_participant(msg.user())
@@ -191,7 +193,7 @@ class MultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
 class LongMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
 
     poll_id_list = [
-            'register',
+            'REGISTER',
             'week1',
             'week2',
             'week3',
@@ -205,7 +207,7 @@ class LongMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
             ]
 
     default_questions_dict = {
-            'register': [{
+            'REGISTER': [{
                 'copy': 'Name?',
                 'valid_responses': [],
                 },
@@ -315,13 +317,13 @@ class LongMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
     def test_a_series_of_interactions(self):
 
         inputs_and_expected = [
-            ('Any input', self.default_questions_dict['register'][0]['copy']),
-            ('David', self.default_questions_dict['register'][1]['copy']),
+            ('Any input', self.default_questions_dict['REGISTER'][0]['copy']),
+            ('David', self.default_questions_dict['REGISTER'][1]['copy']),
             # Answering 16 for the next question will trigger a jump to
             # week (20-16) = week4 using a derived date parameter
             # saved in the Participant via custom app logic
             ('16', self.app.registration_partial_response),
-            ('Any input', self.default_questions_dict['register'][2]['copy']),
+            ('Any input', self.default_questions_dict['REGISTER'][2]['copy']),
             ('yes', self.app.registration_completed_response),
             ('Any input', self.default_questions_dict['week4'][0]['copy']),
             ('Any input', self.app.survey_completed_response),
@@ -363,3 +365,581 @@ class LongMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
                 (date.today()
                     + timedelta(weeks=20
                         - int(inputs_and_expected[2][0]))).isoformat())
+
+
+class CustomMultiPollApplication(MultiPollApplication):
+
+    registration_partial_response = 'You have done part of the registration '\
+                                    'process, dail in again to complete '\
+                                    'your registration.'
+    registration_completed_response = 'Thank you.'
+
+    batch_completed_response = 'You have completed the first batch of '\
+                                'this weeks questions, dial in again to '\
+                                'complete the rest.'
+    survey_completed_response = 'You have completed this weeks questions '\
+                                'please dial in again next week for more.'
+
+    def custom_poll_logic_function(self, participant):
+        new_poll = participant.get_label('JUMP_TO_POLL')
+        current_poll_id = participant.get_poll_id()
+        if new_poll and current_poll_id != 'REGISTER':
+            self.try_go_to_specific_poll(participant, new_poll)
+            participant.set_label('JUMP_TO_POLL', None)
+
+    def custom_answer_logic_function(self, participant, answer, poll_question):
+        try:
+            self.poll_id_map
+        except:
+            self.poll_id_map = {}
+            for i in self.poll_id_list:
+                self.poll_id_map[i] = i
+
+        def months_to_week(month):
+            m = int(month)
+            return (m - 1) * 4 + 1
+
+        def month_of_year_to_week(month):
+            m = int(month)
+            current_date = date.today()
+            current_date = date(2012, 5, 21)  # For testing
+            present_month = current_date.month
+            present_day = current_date.day
+            month_delta = (m + 12.5 - present_month - present_day / 30.0) % 12
+            if month_delta > 8:
+                month_delta = 8
+            start_week = int(round(40 - month_delta * 4))
+            return start_week
+
+        label_value = participant.get_label(poll_question.label)
+        if label_value is not None:
+            if poll_question.label == 'EXPECTED_MONTH' \
+                    and label_value == '0':
+                participant.set_label('USER_STATUS', '4')
+                self.poll_id_list = self.poll_id_list[:1]
+            if poll_question.label == 'EXPECTED_MONTH' \
+                    and label_value != '0':
+                        poll_name = "WEEK%s" % month_of_year_to_week(
+                                label_value)
+                        poll_id = self.poll_id_map.get(poll_name)
+                        participant.set_label('JUMP_TO_POLL', poll_id)
+            if poll_question.label == 'INITIAL_AGE' \
+                    and label_value == '6':  # max age for demo should be 5
+                    #and label_value == '11':
+                participant.set_label('USER_STATUS', '5')
+                self.poll_id_list = self.poll_id_list[:1]
+            if poll_question.label == 'INITIAL_AGE' \
+                    and label_value != '6':  # max age for demo should be 5
+                    #and label_value != '11':
+                        poll_name = "POST%s" % months_to_week(label_value)
+                        poll_id = self.poll_id_map.get(poll_name)
+                        participant.set_label('JUMP_TO_POLL', poll_id)
+
+    custom_answer_logic = custom_answer_logic_function
+
+
+class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
+
+    application_class = CustomMultiPollApplication
+
+    @inlineCallbacks
+    def setUp(self):
+        yield super(BaseMultiPollApplicationTestCase, self).setUp()
+        self.config = {
+            'poll_id_list': self.poll_id_list,
+            'questions_dict': self.default_questions_dict,
+            'transport_name': self.transport_name,
+            'batch_size': 9,
+        }
+        self.app = yield self.get_application(self.config)
+
+    poll_id_list = [
+            'REGISTER',
+            'WEEK5',
+            'WEEK6',
+            'WEEK7',
+            'WEEK8',
+            'WEEK9',
+            'WEEK10',
+            'WEEK11',
+            'WEEK12',
+            'WEEK13',
+            'WEEK14',
+            'WEEK15',
+            'WEEK16',
+            'WEEK17',
+            'WEEK18',
+            'WEEK19',
+            'WEEK20',
+            'WEEK21',
+            'WEEK22',
+            'WEEK23',
+            'WEEK24',
+            'WEEK25',
+            'WEEK26',
+            'WEEK27',
+            'WEEK28',
+            'WEEK29',
+            'WEEK30',
+            'WEEK31',
+            'WEEK32',
+            'WEEK33',
+            'WEEK34',
+            'WEEK35',
+            'WEEK36',
+            'WEEK37',
+            'WEEK38',
+            'WEEK39',
+            'WEEK40',
+            'POST1',
+            'POST2',
+            'POST3',
+            'POST4',
+            'POST5',
+            'POST6',
+            'POST7',
+            'POST8',
+            'POST9',
+            'POST10',
+            'POST11',
+            'POST12',
+            'POST13',
+            'POST14',
+            'POST15',
+            'POST16',
+            'POST17',
+            'POST18',
+            'POST19',
+            'POST20',
+            ]
+
+    register_questions_dict = {
+            'REGISTER': [{
+                'copy': "Are you X or do you have Y ?\n" \
+                        "1. X\n" \
+                        "2. Y\n" \
+                        "3. Don't know",
+                'valid_responses': ['1', '2', '3'],
+                'label': 'USER_STATUS',
+                },
+                {
+                'checks': {'equal': {'USER_STATUS': '3'}},
+                'copy': "Follow-up to don't know\n" \
+                        "1. More",
+                'valid_responses': [],
+                'label': '',
+                },
+                {
+                'checks': {'equal': {'USER_STATUS': '3'}},
+                'copy': "Second follow-up to don't know\n" \
+                        "1. End",
+                'valid_responses': [],
+                'label': '',
+                },
+                {
+                'checks': {'equal': {'USER_STATUS': '1'}},
+                'copy': "What month is X ?\n" \
+                        "1. Jan\n" \
+                        "2. Feb\n" \
+                        "3. Mar\n" \
+                        "4. Apr\n" \
+                        "5. May\n" \
+                        "6. Jun\n" \
+                        "7. Jul\n" \
+                        "8. Aug\n" \
+                        "9. Sep\n" \
+                        "10. Oct\n" \
+                        "11. Nov\n" \
+                        "12. Dec\n" \
+                        "0. Don't Know",
+                'valid_responses': ['0', '1', '2', '3', '4', '5', '6',
+                                    '7', '8', '9', '10', '11', '12'],
+                'label': 'EXPECTED_MONTH',
+                },
+                {
+                'checks': {'equal': {'EXPECTED_MONTH': '0'}},
+                'copy': "Please find out ?\n" \
+                        "1. End",
+                'valid_responses': [],
+                'label': '',
+                },
+                {
+                'checks': {'equal': {'USER_STATUS': '1'}},
+                'copy': "Do you want Z messages ?\n" \
+                        "1. Yes\n" \
+                        "2. No",
+                'valid_responses': ['1', '2'],
+                'label': 'HIV_MESSAGES',
+                },
+                {
+                'checks': {'equal': {'USER_STATUS': '1'}},
+                'copy': "Thank you, come back later\n" \
+                        "1. End",
+                'valid_responses': [],
+                'label': '',
+                },
+                {
+                'checks': {'equal': {'USER_STATUS': '2'}},
+                'copy': "How many months old Y ?\n" \
+                        "1. 1\n" \
+                        "2. 2\n" \
+                        "3. 3\n" \
+                        "4. 4\n" \
+                        "5. 5\n" \
+                        #"6. 6\n" \
+                        #"7. 7\n" \
+                        #"8. 8\n" \
+                        #"9. 9\n" \
+                        #"10. 10\n" \
+                        #"11. 11 or more.",
+                #'valid_responses': [ '1', '2', '3', '4', '5', '6',
+                                    #'7', '8', '9', '10', '11'],
+                        "6. 6 or more.",
+                'valid_responses': ['1', '2', '3', '4', '5', '6'],
+                'label': 'INITIAL_AGE',
+                },
+                {
+                #'checks': {'equal': {'INITIAL_AGE': '11'}},
+                'checks': {'equal': {'INITIAL_AGE': '6'}},
+                'copy': "Sorry, bye\n" \
+                        "1. End",
+                'valid_responses': [],
+                'label': '',
+                },
+                {
+                'checks': {'equal': {'USER_STATUS': '2'}},
+                'copy': "Do you want Z messages ?\n" \
+                        "1. Yes\n" \
+                        "2. No",
+                'valid_responses': ['1', '2'],
+                'label': 'HIV_MESSAGES',
+                },
+                {
+                'checks': {'equal': {'USER_STATUS': '2'}},
+                'copy': "Thank you, come back later\n" \
+                        "1. End",
+                'valid_responses': [],
+                'label': '',
+                }],
+            }
+
+    def make_quizzes(prefix, start, finish):
+        string = "{"
+        for i in range(start, finish + 1):
+            if i % 2 != 0:
+                string = string + """
+                "%(p)s%(i)s": [
+                    {
+                    "copy": "%(p)s %(i)s Question 1 ?\\n1. Yes\\n2. No",
+                    "valid_responses": [ "1", "2"],
+                    "label": "%(p)s_%(i)s_QUESTION_1"
+                    },
+                    {
+                    "checks": {"equal": {"%(p)s_%(i)s_QUESTION_1": "1"}},
+                    "copy": "%(p)s %(i)s Question 1 Answer to 1\\n1. Continue",
+                    "valid_responses": [],
+                    "label": ""
+                    },
+                    {
+                    "checks": {"equal": {"%(p)s_%(i)s_QUESTION_1": "2"}},
+                    "copy": "%(p)s %(i)s Question 1 Answer to 2\\n1. Continue",
+                    "valid_responses": [],
+                    "label": ""
+                    },
+
+                    {
+                    "copy": "%(p)s %(i)s Question 2 ?\\n1. Yes\\n2. No",
+                    "valid_responses": [ "1", "2"],
+                    "label": "%(p)s_%(i)s_QUESTION_2"
+                    },
+                    {
+                    "checks": {"equal": {"%(p)s_%(i)s_QUESTION_2": "1"}},
+                    "copy": "%(p)s %(i)s Question 2 Answer to 1\\n1. Continue",
+                    "valid_responses": [],
+                    "label": ""
+                    },
+                    {
+                    "checks": {"equal": {"%(p)s_%(i)s_QUESTION_2": "2"}},
+                    "copy": "%(p)s %(i)s Question 2 Answer to 2\\n1. Continue",
+                    "valid_responses": [],
+                    "label": ""
+                    }
+                    ],""" % {"p": prefix, "i": i}
+
+            else:
+                string = string + """
+                "%(p)s%(i)s": [
+                    {
+                    "copy": "%(p)s %(i)s Question 1 ?\\n1. Yes\\n2. No",
+                    "valid_responses": [ "1", "2"],
+                    "label": "%(p)s_%(i)s_QUESTION_1"
+                    },
+                    {
+                    "checks": {"equal": {"%(p)s_%(i)s_QUESTION_1": "1"}},
+                    "copy": "%(p)s %(i)s Question 1 Answer to 1\\n1. Continue",
+                    "valid_responses": [],
+                    "label": ""
+                    },
+                    {
+                    "checks": {"equal": {"%(p)s_%(i)s_QUESTION_1": "2"}},
+                    "copy": "%(p)s %(i)s Question 1 Answer to 2\\n1. Continue",
+                    "valid_responses": [],
+                    "label": ""
+                    },
+
+                    {
+                    "checks": {"equal": {"HIV_MESSAGES": "2"}},
+                    "copy": "%(p)s %(i)s Question 2 ?\\n1. Yes\\n2. No",
+                    "valid_responses": [ "1", "2"],
+                    "label": "%(p)s_%(i)s_QUESTION_2"
+                    },
+                    {
+                    "checks": {"equal": {"%(p)s_%(i)s_QUESTION_2": "1"}},
+                    "copy": "%(p)s %(i)s Question 2 Answer to 1\\n1. Continue",
+                    "valid_responses": [],
+                    "label": ""
+                    },
+                    {
+                    "checks": {"equal": {"%(p)s_%(i)s_QUESTION_2": "2"}},
+                    "copy": "%(p)s %(i)s Question 2 Answer to 2\\n1. Continue",
+                    "valid_responses": [],
+                    "label": ""
+                    },
+
+                    {
+                    "checks": {"equal": {"HIV_MESSAGES": "1"}},
+                    "copy": "%(p)s %(i)s Question 3 ?\\n1. Yes\\n2. No",
+                    "valid_responses": [ "1", "2"],
+                    "label": "%(p)s_%(i)s_QUESTION_3"
+                    },
+                    {
+                    "checks": {"equal": {"%(p)s_%(i)s_QUESTION_3": "1"}},
+                    "copy": "%(p)s %(i)s Question 3 Answer to 1\\n1. Continue",
+                    "valid_responses": [],
+                    "label": ""
+                    },
+                    {
+                    "checks": {"equal": {"%(p)s_%(i)s_QUESTION_3": "2"}},
+                    "copy": "%(p)s %(i)s Question 3 Answer to 2\\n1. Continue",
+                    "valid_responses": [],
+                    "label": ""
+                    }
+                    ],""" % {"p": prefix, "i": i}
+        string = string[:-1]
+        string = string + "\n}"
+        return json.loads(string)
+
+    default_questions_dict = {}
+    default_questions_dict.update(register_questions_dict)
+    default_questions_dict.update(make_quizzes("WEEK", 5, 40))
+    default_questions_dict.update(make_quizzes("POST", 1, 20))
+    pp = pprint.PrettyPrinter(indent=4)
+    #pp.pprint(default_questions_dict)
+    #i = 0
+    #for k, v in default_questions_dict.iteritems():
+        #i = i + len(v)
+    #print "QUESTIONS", i
+
+    @inlineCallbacks
+    def run_inputs(self, inputs_and_expected, do_print=False):
+        for io in inputs_and_expected:
+            msg = self.mkmsg_in(content=io[0])
+            yield self.dispatch(msg)
+            responses = self.get_dispatched_messages()
+            output = responses[-1]['content']
+            event = responses[-1].get('session_event')
+            if do_print:
+                print "\n>", msg['content'], "\n", output
+            self.assertEqual(output, io[1])
+
+    @inlineCallbacks
+    def test_register_3(self):
+        inputs_and_expected = [
+            ('Any input', self.default_questions_dict['REGISTER'][0]['copy']),
+            ('3', self.default_questions_dict['REGISTER'][1]['copy']),
+            ('Any input', self.default_questions_dict['REGISTER'][2]['copy']),
+            ('Any input', self.app.registration_completed_response),
+            ]
+        yield self.run_inputs(inputs_and_expected)
+
+    @inlineCallbacks
+    def test_register_1(self):
+        inputs_and_expected = [
+            ('Any input', self.default_questions_dict['REGISTER'][0]['copy']),
+            ('1', self.default_questions_dict['REGISTER'][3]['copy']),
+            ('7', self.default_questions_dict['REGISTER'][5]['copy']),
+            ('1', self.default_questions_dict['REGISTER'][6]['copy']),
+            ('Any input', self.app.registration_completed_response),
+            ]
+        yield self.run_inputs(inputs_and_expected)
+
+    @inlineCallbacks
+    def test_register_1_dont_know(self):
+        inputs_and_expected = [
+            ('Any input', self.default_questions_dict['REGISTER'][0]['copy']),
+            ('1', self.default_questions_dict['REGISTER'][3]['copy']),
+            ('0', self.default_questions_dict['REGISTER'][4]['copy']),
+            ('Any input', self.app.registration_completed_response),
+            ]
+        yield self.run_inputs(inputs_and_expected)
+        # Check abortive registration is archived
+        archived = self.app.pm.get_archive(self.mkmsg_in(content='').user())
+        self.assertEqual(archived[-1].labels.get('USER_STATUS'), '4')
+        # And confirm re-run is possible
+        yield self.run_inputs(inputs_and_expected)
+
+    @inlineCallbacks
+    def test_register_2(self):
+        inputs_and_expected = [
+            ('Any input', self.default_questions_dict['REGISTER'][0]['copy']),
+            ('2', self.default_questions_dict['REGISTER'][7]['copy']),
+            ('3', self.default_questions_dict['REGISTER'][9]['copy']),
+            ('1', self.default_questions_dict['REGISTER'][10]['copy']),
+            ('Any input', self.app.registration_completed_response),
+            ]
+        yield self.run_inputs(inputs_and_expected)
+
+    @inlineCallbacks
+    def test_register_2_too_old(self):
+        inputs_and_expected = [
+            ('Any input', self.default_questions_dict['REGISTER'][0]['copy']),
+            ('2', self.default_questions_dict['REGISTER'][7]['copy']),
+            #('11', self.default_questions_dict['REGISTER'][8]['copy']),
+            # max age for demo should be 5
+            ('6', self.default_questions_dict['REGISTER'][8]['copy']),
+            ('Any input', self.app.registration_completed_response),
+            ]
+        yield self.run_inputs(inputs_and_expected)
+        # Check abortive registration is archived
+        archived = self.app.pm.get_archive(self.mkmsg_in(content='').user())
+        self.assertEqual(archived[-1].labels.get('USER_STATUS'), '5')
+        # And confirm re-run is possible
+        yield self.run_inputs(inputs_and_expected)
+
+    @inlineCallbacks
+    def test_full_2_hiv(self):
+        inputs_and_expected = [
+            ('Any input', self.default_questions_dict['REGISTER'][0]['copy']),
+            ('2', self.default_questions_dict['REGISTER'][7]['copy']),
+            ('3', self.default_questions_dict['REGISTER'][9]['copy']),
+            ('1', self.default_questions_dict['REGISTER'][10]['copy']),
+            ('Any input', self.app.registration_completed_response),
+
+            ('Any input', self.default_questions_dict['POST9'][0]['copy']),
+            ('2', self.default_questions_dict['POST9'][2]['copy']),
+            ('Any input', self.default_questions_dict['POST9'][3]['copy']),
+            ('1', self.default_questions_dict['POST9'][4]['copy']),
+            ('Any input', self.app.survey_completed_response),
+
+            ('Any input', self.default_questions_dict['POST10'][0]['copy']),
+            ('2', self.default_questions_dict['POST10'][2]['copy']),
+            ('Any input', self.default_questions_dict['POST10'][6]['copy']),
+            ('1', self.default_questions_dict['POST10'][7]['copy']),
+            ('Any input', self.app.survey_completed_response),
+            ]
+        yield self.run_inputs(inputs_and_expected, False)
+
+    @inlineCallbacks
+    def test_full_2_hiv_to_archive(self):
+        inputs_and_expected = [
+            ('Any input', self.default_questions_dict['REGISTER'][0]['copy']),
+            ('2', self.default_questions_dict['REGISTER'][7]['copy']),
+            ('5', self.default_questions_dict['REGISTER'][9]['copy']),
+            ('1', self.default_questions_dict['REGISTER'][10]['copy']),
+            ('Any input', self.app.registration_completed_response),
+
+            ('Any input', self.default_questions_dict['POST17'][0]['copy']),
+            ('2', self.default_questions_dict['POST17'][2]['copy']),
+            ('Any input', self.default_questions_dict['POST17'][3]['copy']),
+            ('1', self.default_questions_dict['POST17'][4]['copy']),
+            ('Any input', self.app.survey_completed_response),
+
+            ('Any input', self.default_questions_dict['POST18'][0]['copy']),
+            ('2', self.default_questions_dict['POST18'][2]['copy']),
+            ('Any input', self.default_questions_dict['POST18'][6]['copy']),
+            ('1', self.default_questions_dict['POST18'][7]['copy']),
+            ('Any input', self.app.survey_completed_response),
+
+            ('Any input', self.default_questions_dict['POST19'][0]['copy']),
+            ('2', self.default_questions_dict['POST19'][2]['copy']),
+            ('Any input', self.default_questions_dict['POST19'][3]['copy']),
+            ('1', self.default_questions_dict['POST19'][4]['copy']),
+            ('Any input', self.app.survey_completed_response),
+
+            ('Any input', self.default_questions_dict['POST20'][0]['copy']),
+            ('2', self.default_questions_dict['POST20'][2]['copy']),
+            ('Any input', self.default_questions_dict['POST20'][6]['copy']),
+            ('1', self.default_questions_dict['POST20'][7]['copy']),
+            ('Any input', self.app.survey_completed_response),
+            ]
+        yield self.run_inputs(inputs_and_expected, False)
+        # Check participant is archived
+        archived = self.app.pm.get_archive(self.mkmsg_in(content='').user())
+        self.assertEqual(archived[-1].labels.get('USER_STATUS'), '2')
+        # And confirm re-run is possible
+        yield self.run_inputs(inputs_and_expected)
+
+    @inlineCallbacks
+    def test_full_1_no_hiv(self):
+        inputs_and_expected = [
+            ('Any input', self.default_questions_dict['REGISTER'][0]['copy']),
+            ('1', self.default_questions_dict['REGISTER'][3]['copy']),
+            ('6', self.default_questions_dict['REGISTER'][5]['copy']),
+            ('2', self.default_questions_dict['REGISTER'][6]['copy']),
+            ('Any input', self.app.registration_completed_response),
+
+            ('Any input', self.default_questions_dict['WEEK37'][0]['copy']),
+            ('1', self.default_questions_dict['WEEK37'][1]['copy']),
+            ('Any input', self.default_questions_dict['WEEK37'][3]['copy']),
+            ('1', self.default_questions_dict['WEEK37'][4]['copy']),
+            ('Any input', self.app.survey_completed_response),
+
+            ('Any input', self.default_questions_dict['WEEK38'][0]['copy']),
+            ('1', self.default_questions_dict['WEEK38'][1]['copy']),
+            ('Any input', self.default_questions_dict['WEEK38'][3]['copy']),
+            ('1', self.default_questions_dict['WEEK38'][4]['copy']),
+            ('Any input', self.app.survey_completed_response),
+
+            ('Any input', self.default_questions_dict['WEEK39'][0]['copy']),
+            ('1', self.default_questions_dict['WEEK39'][1]['copy']),
+            ('Any input', self.default_questions_dict['WEEK39'][3]['copy']),
+            ('1', self.default_questions_dict['WEEK39'][4]['copy']),
+            ('Any input', self.app.survey_completed_response),
+
+            ('Any input', self.default_questions_dict['WEEK40'][0]['copy']),
+            ('1', self.default_questions_dict['WEEK40'][1]['copy']),
+            ('Any input', self.default_questions_dict['WEEK40'][3]['copy']),
+            ('1', self.default_questions_dict['WEEK40'][4]['copy']),
+            ('Any input', self.app.survey_completed_response),
+
+            ('Any input', self.default_questions_dict['POST1'][0]['copy']),
+            ('1', self.default_questions_dict['POST1'][1]['copy']),
+            ('Any input', self.default_questions_dict['POST1'][3]['copy']),
+            ('1', self.default_questions_dict['POST1'][4]['copy']),
+            ('Any input', self.app.survey_completed_response),
+
+            ('Any input', self.default_questions_dict['POST2'][0]['copy']),
+            ('1', self.default_questions_dict['POST2'][1]['copy']),
+            ('Any input', self.default_questions_dict['POST2'][3]['copy']),
+            ('1', self.default_questions_dict['POST2'][4]['copy']),
+            ('Any input', self.app.survey_completed_response),
+
+            ('Any input', self.default_questions_dict['POST3'][0]['copy']),
+            ('1', self.default_questions_dict['POST3'][1]['copy']),
+            ('Any input', self.default_questions_dict['POST3'][3]['copy']),
+            ('1', self.default_questions_dict['POST3'][4]['copy']),
+            ('Any input', self.app.survey_completed_response),
+
+            ('Any input', self.default_questions_dict['POST4'][0]['copy']),
+            ('1', self.default_questions_dict['POST4'][1]['copy']),
+            ('Any input', self.default_questions_dict['POST4'][3]['copy']),
+            ('1', self.default_questions_dict['POST4'][4]['copy']),
+            ('Any input', self.app.survey_completed_response),
+
+            ('Any input', self.default_questions_dict['POST5'][0]['copy']),
+            ('1', self.default_questions_dict['POST5'][1]['copy']),
+            ('Any input', self.default_questions_dict['POST5'][3]['copy']),
+            ('1', self.default_questions_dict['POST5'][4]['copy']),
+            ('Any input', self.app.survey_completed_response),
+            ]
+        yield self.run_inputs(inputs_and_expected)

@@ -53,6 +53,8 @@ class PollParticipant(object):
         return self.labels.get(label)
 
     def get_current_poll(self):
+        if len(self.polls) == 0:
+            self.append_new_poll(None)
         return self.polls[-1]
 
     def append_new_poll(self, poll_id, uid=None, last_question_index=None):

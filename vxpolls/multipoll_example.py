@@ -32,12 +32,14 @@ class MultiPollApplication(PollApplication):
         self.batch_size = self.config.get('batch_size', 5)
         self.dashboard_port = int(self.config.get('dashboard_port', 8000))
         self.dashboard_prefix = self.config.get('dashboard_path_prefix', '/')
+        self.poll_prefix = self.config.get('poll_prefix', 'poll_manager')
         self.poll_id_list = self.config.get('poll_id_list',
                                             [self.generate_unique_id()])
+        self.poll_name_list = self.config.get('poll_name_list', [])
 
     def setup_application(self):
         self.r_server = FakeRedis(**self.r_config)
-        self.pm = PollManager(self.r_server)
+        self.pm = PollManager(self.r_server, self.poll_prefix)
         for poll_id in self.poll_id_list:
             if not self.pm.exists(poll_id):
                 self.pm.register(poll_id, {
@@ -78,7 +80,7 @@ class MultiPollApplication(PollApplication):
                 self.end_session(participant, poll, message)
 
     def end_session(self, participant, poll, message):
-        if poll.poll_id == 'register':
+        if poll.poll_id == 'REGISTER':
             batch_completed_response = self.registration_partial_response
             survey_completed_response = self.registration_completed_response
         else:
@@ -139,7 +141,7 @@ class MultiPollApplication(PollApplication):
             return None
 
         new_poll = participant.get_label('jump_to_week')
-        if new_poll and participant.get_poll_id() != 'register':
+        if new_poll and participant.get_poll_id() != 'REGISTER':
             self.try_go_to_specific_poll(participant, new_poll)
             participant.set_label('jump_to_week', None)
 

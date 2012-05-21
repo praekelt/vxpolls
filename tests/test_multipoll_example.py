@@ -388,6 +388,13 @@ class CustomMultiPollApplication(MultiPollApplication):
             participant.set_label('JUMP_TO_POLL', None)
 
     def custom_answer_logic_function(self, participant, answer, poll_question):
+        try:
+            self.poll_id_map
+        except:
+            self.poll_id_map = {}
+            for i in self.poll_id_list:
+                self.poll_id_map[i] = i
+
         def months_to_week(month):
             m = int(month)
             return (m - 1) * 4 + 1
@@ -412,7 +419,9 @@ class CustomMultiPollApplication(MultiPollApplication):
                 self.poll_id_list = self.poll_id_list[:1]
             if poll_question.label == 'EXPECTED_MONTH' \
                     and label_value != '0':
-                        poll_id = "WEEK%s" % month_of_year_to_week(label_value)
+                        poll_name = "WEEK%s" % month_of_year_to_week(
+                                label_value)
+                        poll_id = self.poll_id_map.get(poll_name)
                         participant.set_label('JUMP_TO_POLL', poll_id)
             if poll_question.label == 'INITIAL_AGE' \
                     and label_value == '6':  # max age for demo should be 5
@@ -422,7 +431,8 @@ class CustomMultiPollApplication(MultiPollApplication):
             if poll_question.label == 'INITIAL_AGE' \
                     and label_value != '6':  # max age for demo should be 5
                     #and label_value != '11':
-                        poll_id = "POST%s" % months_to_week(label_value)
+                        poll_name = "POST%s" % months_to_week(label_value)
+                        poll_id = self.poll_id_map.get(poll_name)
                         participant.set_label('JUMP_TO_POLL', poll_id)
 
     custom_answer_logic = custom_answer_logic_function
@@ -443,7 +453,7 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
         }
         self.app = yield self.get_application(self.config)
 
-    poll_name_list = [
+    poll_id_list = [
             'REGISTER',
             'WEEK5',
             'WEEK6',
@@ -502,11 +512,6 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
             'POST19',
             'POST20',
             ]
-
-    poll_id_list = poll_name_list
-    poll_id_map = {}
-    for i, v in enumerate(poll_name_list):
-        poll_id_map[v] = poll_id_list[i]
 
     register_questions_dict = {
             'REGISTER': [{

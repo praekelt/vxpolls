@@ -41,6 +41,7 @@ class PollParticipant(object):
         self.continue_session = True
         self.polls = [{"poll_id":None, "uid":None, "last_question_index":None}]
         self.labels = {}
+        self.force_archive = False
         if session_data:
             self.load(session_data)
 
@@ -128,6 +129,8 @@ class PollParticipant(object):
             'polls', deserialize, default=[])
         self.labels = typed(session_data,
             'labels', deserialize, default=[])
+        self.force_archive = typed(session_data,
+            'force_archive', lambda v: v == 'True')
 
     def dump(self):
         return {
@@ -142,6 +145,7 @@ class PollParticipant(object):
             'retries': self.retries,
             'polls': serialize(self.polls),
             'labels': serialize(self.labels),
+            'force_archive': self.force_archive,
         }
 
     def clean_dump(self):

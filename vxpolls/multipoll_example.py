@@ -127,7 +127,8 @@ class MultiPollApplication(PollApplication):
             self.next_poll_or_archive(participant, poll)
 
     def next_poll_or_archive(self, participant, poll):
-        if not self.try_go_to_next_poll(participant):
+        if participant.force_archive \
+                or not self.try_go_to_next_poll(participant):
             # Archive for demo purposes so we can redial in and start over.
             self.pm.archive(participant)
 

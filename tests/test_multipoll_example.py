@@ -428,8 +428,8 @@ class CustomMultiPollApplication(MultiPollApplication):
                         poll_name = "WEEK%s" % month_of_year_to_week(
                                 label_value)[0]
                         print poll_name,
-                        print "%s%s" % (self.poll_id_prefix, month_of_year_to_week(label_value)[1])
-                        poll_id = self.poll_id_map.get(poll_name)
+                        poll_id = "%s%s" % (self.poll_id_prefix, month_of_year_to_week(label_value)[1])
+                        #poll_id = self.poll_id_map.get(poll_name)
                         participant.set_label('JUMP_TO_POLL', poll_id)
             if poll_question.label == 'INITIAL_AGE' \
                     and label_value == '6':  # max age for demo should be 5
@@ -441,8 +441,8 @@ class CustomMultiPollApplication(MultiPollApplication):
                     #and label_value != '11':
                         poll_name = "POST%s" % months_to_week(label_value)[0]
                         print poll_name,
-                        print "%s%s" % (self.poll_id_prefix, months_to_week(label_value)[1])
-                        poll_id = self.poll_id_map.get(poll_name)
+                        poll_id =  "%s%s" % (self.poll_id_prefix, months_to_week(label_value)[1])
+                        #poll_id = self.poll_id_map.get(poll_name)
                         participant.set_label('JUMP_TO_POLL', poll_id)
 
     custom_answer_logic = custom_answer_logic_function
@@ -543,6 +543,7 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
             ]
     print len(poll_id_list)
     print len(generated_id_list)
+    poll_id_list = generated_id_list
 
     register_questions_dict = {
             'CUSTOM_POLL_ID_0': [{
@@ -662,116 +663,116 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
             new_dict[new_key] = v
         return new_dict
 
-    def make_quizzes(self, prefix, start, finish, poll_id_generator=None):
+    def make_quizzes(self, prefix, start, finish, poll_id_generator):
         string = "{"
         for i in range(start, finish + 1):
-            if i % 2 != 0:
-                if poll_id_generator:
-                    print "%(p)s%(i)s" % {"p": prefix, "i": i},
-                    print "->", poll_id_generator.next()
-                    pass
+            poll_id = poll_id_generator.next()
+            check = int(poll_id[-1:]) % 2
+            if check != 0:
+                print "%(p)s%(i)s" % {"p": prefix, "i": i},
+                print "->", poll_id
+                pass
                 string = string + """
-                "%(p)s%(i)s": [
+                "%(poll_id)s": [
                     {
-                    "copy": "%(p)s %(i)s Question 1 ?\\n1. Yes\\n2. No",
+                    "copy": "%(poll_id)s Question 1 ?\\n1. Yes\\n2. No",
                     "valid_responses": [ "1", "2"],
-                    "label": "%(p)s_%(i)s_QUESTION_1"
+                    "label": "%(poll_id)s_QUESTION_1"
                     },
                     {
-                    "checks": {"equal": {"%(p)s_%(i)s_QUESTION_1": "1"}},
-                    "copy": "%(p)s %(i)s Question 1 Answer to 1\\n1. Continue",
+                    "checks": {"equal": {"%(poll_id)s_QUESTION_1": "1"}},
+                    "copy": "%(poll_id)s Question 1 Answer to 1\\n1. Continue",
                     "valid_responses": [],
                     "label": ""
                     },
                     {
-                    "checks": {"equal": {"%(p)s_%(i)s_QUESTION_1": "2"}},
-                    "copy": "%(p)s %(i)s Question 1 Answer to 2\\n1. Continue",
+                    "checks": {"equal": {"%(poll_id)s_QUESTION_1": "2"}},
+                    "copy": "%(poll_id)s Question 1 Answer to 2\\n1. Continue",
                     "valid_responses": [],
                     "label": ""
                     },
 
                     {
-                    "copy": "%(p)s %(i)s Question 2 ?\\n1. Yes\\n2. No",
+                    "copy": "%(poll_id)s Question 2 ?\\n1. Yes\\n2. No",
                     "valid_responses": [ "1", "2"],
-                    "label": "%(p)s_%(i)s_QUESTION_2"
+                    "label": "%(poll_id)s_QUESTION_2"
                     },
                     {
-                    "checks": {"equal": {"%(p)s_%(i)s_QUESTION_2": "1"}},
-                    "copy": "%(p)s %(i)s Question 2 Answer to 1\\n1. Continue",
+                    "checks": {"equal": {"%(poll_id)s_QUESTION_2": "1"}},
+                    "copy": "%(poll_id)s Question 2 Answer to 1\\n1. Continue",
                     "valid_responses": [],
                     "label": ""
                     },
                     {
-                    "checks": {"equal": {"%(p)s_%(i)s_QUESTION_2": "2"}},
-                    "copy": "%(p)s %(i)s Question 2 Answer to 2\\n1. Continue",
+                    "checks": {"equal": {"%(poll_id)s_QUESTION_2": "2"}},
+                    "copy": "%(poll_id)s Question 2 Answer to 2\\n1. Continue",
                     "valid_responses": [],
                     "label": ""
                     }
-                    ],""" % {"p": prefix, "i": i}
+                    ],""" % {"p": prefix, "i": i, 'poll_id': poll_id}
 
             else:
-                if poll_id_generator:
-                    print "%(p)s%(i)s" % {"p": prefix, "i": i},
-                    print "->", poll_id_generator.next()
-                    pass
+                print "%(p)s%(i)s" % {"p": prefix, "i": i},
+                print "->", poll_id
+                pass
                 string = string + """
-                "%(p)s%(i)s": [
+                "%(poll_id)s": [
                     {
-                    "copy": "%(p)s %(i)s Question 1 ?\\n1. Yes\\n2. No",
+                    "copy": "%(poll_id)s Question 1 ?\\n1. Yes\\n2. No",
                     "valid_responses": [ "1", "2"],
-                    "label": "%(p)s_%(i)s_QUESTION_1"
+                    "label": "%(poll_id)s_QUESTION_1"
                     },
                     {
-                    "checks": {"equal": {"%(p)s_%(i)s_QUESTION_1": "1"}},
-                    "copy": "%(p)s %(i)s Question 1 Answer to 1\\n1. Continue",
+                    "checks": {"equal": {"%(poll_id)s_QUESTION_1": "1"}},
+                    "copy": "%(poll_id)s Question 1 Answer to 1\\n1. Continue",
                     "valid_responses": [],
                     "label": ""
                     },
                     {
-                    "checks": {"equal": {"%(p)s_%(i)s_QUESTION_1": "2"}},
-                    "copy": "%(p)s %(i)s Question 1 Answer to 2\\n1. Continue",
+                    "checks": {"equal": {"%(poll_id)s_QUESTION_1": "2"}},
+                    "copy": "%(poll_id)s Question 1 Answer to 2\\n1. Continue",
                     "valid_responses": [],
                     "label": ""
                     },
 
                     {
                     "checks": {"equal": {"HIV_MESSAGES": "2"}},
-                    "copy": "%(p)s %(i)s Question 2 ?\\n1. Yes\\n2. No",
+                    "copy": "%(poll_id)s Question 2 ?\\n1. Yes\\n2. No",
                     "valid_responses": [ "1", "2"],
-                    "label": "%(p)s_%(i)s_QUESTION_2"
+                    "label": "%(poll_id)s_QUESTION_2"
                     },
                     {
-                    "checks": {"equal": {"%(p)s_%(i)s_QUESTION_2": "1"}},
-                    "copy": "%(p)s %(i)s Question 2 Answer to 1\\n1. Continue",
+                    "checks": {"equal": {"%(poll_id)s_QUESTION_2": "1"}},
+                    "copy": "%(poll_id)s Question 2 Answer to 1\\n1. Continue",
                     "valid_responses": [],
                     "label": ""
                     },
                     {
-                    "checks": {"equal": {"%(p)s_%(i)s_QUESTION_2": "2"}},
-                    "copy": "%(p)s %(i)s Question 2 Answer to 2\\n1. Continue",
+                    "checks": {"equal": {"%(poll_id)s_QUESTION_2": "2"}},
+                    "copy": "%(poll_id)s Question 2 Answer to 2\\n1. Continue",
                     "valid_responses": [],
                     "label": ""
                     },
 
                     {
                     "checks": {"equal": {"HIV_MESSAGES": "1"}},
-                    "copy": "%(p)s %(i)s Question 3 ?\\n1. Yes\\n2. No",
+                    "copy": "%(poll_id)s Question 3 ?\\n1. Yes\\n2. No",
                     "valid_responses": [ "1", "2"],
-                    "label": "%(p)s_%(i)s_QUESTION_3"
+                    "label": "%(poll_id)s_QUESTION_3"
                     },
                     {
-                    "checks": {"equal": {"%(p)s_%(i)s_QUESTION_3": "1"}},
-                    "copy": "%(p)s %(i)s Question 3 Answer to 1\\n1. Continue",
+                    "checks": {"equal": {"%(poll_id)s_QUESTION_3": "1"}},
+                    "copy": "%(poll_id)s Question 3 Answer to 1\\n1. Continue",
                     "valid_responses": [],
                     "label": ""
                     },
                     {
-                    "checks": {"equal": {"%(p)s_%(i)s_QUESTION_3": "2"}},
-                    "copy": "%(p)s %(i)s Question 3 Answer to 2\\n1. Continue",
+                    "checks": {"equal": {"%(poll_id)s_QUESTION_3": "2"}},
+                    "copy": "%(poll_id)s Question 3 Answer to 2\\n1. Continue",
                     "valid_responses": [],
                     "label": ""
                     }
-                    ],""" % {"p": prefix, "i": i}
+                    ],""" % {"p": prefix, "i": i, 'poll_id': poll_id}
         string = string[:-1]
         string = string + "\n}"
         return json.loads(string)
@@ -874,7 +875,12 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
             ('Any input', self.app.registration_completed_response),
             ]
 
-        poll_id = 'POST9'
+        pig = self.app.poll_id_generator(self.app.poll_id_prefix, "%s44" %
+                                            self.app.poll_id_prefix)
+        poll_id = pig.next()
+        print "#######################################", poll_id, 
+        #poll_id = 'POST9'
+        print poll_id, 
         inputs_and_expected = inputs_and_expected + [
             ('Any input', self.default_questions_dict[poll_id][0]['copy']),
             ('2', self.default_questions_dict[poll_id][2]['copy']),
@@ -883,7 +889,8 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
             ('Any input', self.app.survey_completed_response),
             ]
 
-        poll_id = 'POST10'
+        poll_id = pig.next()
+        #poll_id = 'POST10'
         inputs_and_expected = inputs_and_expected + [
             ('Any input', self.default_questions_dict[poll_id][0]['copy']),
             ('2', self.default_questions_dict[poll_id][2]['copy']),
@@ -905,7 +912,10 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
             ('Any input', self.app.registration_completed_response),
             ]
 
-        poll_id = 'POST17'
+        pig = self.app.poll_id_generator(self.app.poll_id_prefix, "%s52" %
+                                            self.app.poll_id_prefix)
+        poll_id = pig.next()
+        #poll_id = 'POST17'
         inputs_and_expected = inputs_and_expected + [
             ('Any input', self.default_questions_dict[poll_id][0]['copy']),
             ('2', self.default_questions_dict[poll_id][2]['copy']),
@@ -914,7 +924,8 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
             ('Any input', self.app.survey_completed_response),
             ]
 
-        poll_id = 'POST18'
+        poll_id = pig.next()
+        #poll_id = 'POST18'
         inputs_and_expected = inputs_and_expected + [
             ('Any input', self.default_questions_dict[poll_id][0]['copy']),
             ('2', self.default_questions_dict[poll_id][2]['copy']),
@@ -923,7 +934,8 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
             ('Any input', self.app.survey_completed_response),
             ]
 
-        poll_id = 'POST19'
+        poll_id = pig.next()
+        #poll_id = 'POST19'
         inputs_and_expected = inputs_and_expected + [
             ('Any input', self.default_questions_dict[poll_id][0]['copy']),
             ('2', self.default_questions_dict[poll_id][2]['copy']),
@@ -932,7 +944,8 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
             ('Any input', self.app.survey_completed_response),
             ]
 
-        poll_id = 'POST20'
+        poll_id = pig.next()
+        #poll_id = 'POST20'
         inputs_and_expected = inputs_and_expected + [
             ('Any input', self.default_questions_dict[poll_id][0]['copy']),
             ('2', self.default_questions_dict[poll_id][2]['copy']),
@@ -959,7 +972,10 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
             ('Any input', self.app.registration_completed_response),
             ]
 
-        poll_id = 'WEEK37'
+        pig = self.app.poll_id_generator(self.app.poll_id_prefix, "%s32" %
+                                            self.app.poll_id_prefix)
+        poll_id = pig.next()
+        #poll_id = 'WEEK37'
         inputs_and_expected = inputs_and_expected + [
             ('Any input', self.default_questions_dict[poll_id][0]['copy']),
             ('1', self.default_questions_dict[poll_id][1]['copy']),
@@ -968,7 +984,8 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
             ('Any input', self.app.survey_completed_response),
             ]
 
-        poll_id = 'WEEK38'
+        poll_id = pig.next()
+        #poll_id = 'WEEK38'
         inputs_and_expected = inputs_and_expected + [
             ('Any input', self.default_questions_dict[poll_id][0]['copy']),
             ('1', self.default_questions_dict[poll_id][1]['copy']),
@@ -977,7 +994,8 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
             ('Any input', self.app.survey_completed_response),
             ]
 
-        poll_id = 'WEEK39'
+        poll_id = pig.next()
+        #poll_id = 'WEEK39'
         inputs_and_expected = inputs_and_expected + [
             ('Any input', self.default_questions_dict[poll_id][0]['copy']),
             ('1', self.default_questions_dict[poll_id][1]['copy']),
@@ -986,7 +1004,8 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
             ('Any input', self.app.survey_completed_response),
             ]
 
-        poll_id = 'WEEK40'
+        poll_id = pig.next()
+        #poll_id = 'WEEK40'
         inputs_and_expected = inputs_and_expected + [
             ('Any input', self.default_questions_dict[poll_id][0]['copy']),
             ('1', self.default_questions_dict[poll_id][1]['copy']),
@@ -995,7 +1014,8 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
             ('Any input', self.app.survey_completed_response),
             ]
 
-        poll_id = 'POST1'
+        poll_id = pig.next()
+        #poll_id = 'POST1'
         inputs_and_expected = inputs_and_expected + [
             ('Any input', self.default_questions_dict[poll_id][0]['copy']),
             ('1', self.default_questions_dict[poll_id][1]['copy']),
@@ -1004,7 +1024,8 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
             ('Any input', self.app.survey_completed_response),
             ]
 
-        poll_id = 'POST2'
+        poll_id = pig.next()
+        #poll_id = 'POST2'
         inputs_and_expected = inputs_and_expected + [
             ('Any input', self.default_questions_dict[poll_id][0]['copy']),
             ('1', self.default_questions_dict[poll_id][1]['copy']),
@@ -1013,7 +1034,8 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
             ('Any input', self.app.survey_completed_response),
             ]
 
-        poll_id = 'POST3'
+        poll_id = pig.next()
+        #poll_id = 'POST3'
         inputs_and_expected = inputs_and_expected + [
             ('Any input', self.default_questions_dict[poll_id][0]['copy']),
             ('1', self.default_questions_dict[poll_id][1]['copy']),
@@ -1022,7 +1044,8 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
             ('Any input', self.app.survey_completed_response),
             ]
 
-        poll_id = 'POST4'
+        poll_id = pig.next()
+        #poll_id = 'POST4'
         inputs_and_expected = inputs_and_expected + [
             ('Any input', self.default_questions_dict[poll_id][0]['copy']),
             ('1', self.default_questions_dict[poll_id][1]['copy']),
@@ -1031,7 +1054,8 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
             ('Any input', self.app.survey_completed_response),
             ]
 
-        poll_id = 'POST5'
+        poll_id = pig.next()
+        #poll_id = 'POST5'
         inputs_and_expected = inputs_and_expected + [
             ('Any input', self.default_questions_dict[poll_id][0]['copy']),
             ('1', self.default_questions_dict[poll_id][1]['copy']),

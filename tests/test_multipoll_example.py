@@ -383,7 +383,7 @@ class CustomMultiPollApplication(MultiPollApplication):
     def custom_poll_logic_function(self, participant):
         new_poll = participant.get_label('JUMP_TO_POLL')
         current_poll_id = participant.get_poll_id()
-        if new_poll and current_poll_id != 'REGISTER':
+        if new_poll and current_poll_id != 'CUSTOM_POLL_ID_0':
             self.try_go_to_specific_poll(participant, new_poll)
             participant.set_label('JUMP_TO_POLL', None)
 
@@ -416,7 +416,7 @@ class CustomMultiPollApplication(MultiPollApplication):
             return start_week
 
         label_value = participant.get_label(poll_question.label)
-        print self.poll_id_prefix
+        #print self.poll_id_prefix
         if label_value is not None:
             if poll_question.label == 'EXPECTED_MONTH' \
                     and label_value == '0':
@@ -437,8 +437,8 @@ class CustomMultiPollApplication(MultiPollApplication):
                     and label_value != '6':  # max age for demo should be 5
                     #and label_value != '11':
                         poll_name = "POST%s" % months_to_week(label_value)[0]
-                        print poll_name
-                        print "%s%s" % (self.poll_id_prefix, months_to_week(label_value)[1])
+                        #print poll_name
+                        #print "%s%s" % (self.poll_id_prefix, months_to_week(label_value)[1])
                         poll_id = self.poll_id_map.get(poll_name)
                         participant.set_label('JUMP_TO_POLL', poll_id)
 
@@ -476,7 +476,7 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
     poll_id_prefix = "CUSTOM_POLL_ID_"
 
     poll_id_list = [
-            'REGISTER',
+            'CUSTOM_POLL_ID_0',
             'WEEK5',
             'WEEK6',
             'WEEK7',
@@ -536,7 +536,7 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
             ]
 
     register_questions_dict = {
-            'REGISTER': [{
+            'CUSTOM_POLL_ID_0': [{
                 'copy': "Are you X or do you have Y ?\n" \
                         "1. X\n" \
                         "2. Y\n" \
@@ -782,9 +782,9 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
     @inlineCallbacks
     def test_register_3(self):
         inputs_and_expected = [
-            ('Any input', self.default_questions_dict['REGISTER'][0]['copy']),
-            ('3', self.default_questions_dict['REGISTER'][1]['copy']),
-            ('Any input', self.default_questions_dict['REGISTER'][2]['copy']),
+            ('Any input', self.default_questions_dict['CUSTOM_POLL_ID_0'][0]['copy']),
+            ('3', self.default_questions_dict['CUSTOM_POLL_ID_0'][1]['copy']),
+            ('Any input', self.default_questions_dict['CUSTOM_POLL_ID_0'][2]['copy']),
             ('Any input', self.app.registration_completed_response),
             ]
         yield self.run_inputs(inputs_and_expected)
@@ -792,10 +792,10 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
     @inlineCallbacks
     def test_register_1(self):
         inputs_and_expected = [
-            ('Any input', self.default_questions_dict['REGISTER'][0]['copy']),
-            ('1', self.default_questions_dict['REGISTER'][3]['copy']),
-            ('7', self.default_questions_dict['REGISTER'][5]['copy']),
-            ('1', self.default_questions_dict['REGISTER'][6]['copy']),
+            ('Any input', self.default_questions_dict['CUSTOM_POLL_ID_0'][0]['copy']),
+            ('1', self.default_questions_dict['CUSTOM_POLL_ID_0'][3]['copy']),
+            ('7', self.default_questions_dict['CUSTOM_POLL_ID_0'][5]['copy']),
+            ('1', self.default_questions_dict['CUSTOM_POLL_ID_0'][6]['copy']),
             ('Any input', self.app.registration_completed_response),
             ]
         yield self.run_inputs(inputs_and_expected)
@@ -803,9 +803,9 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
     @inlineCallbacks
     def test_register_1_dont_know(self):
         inputs_and_expected = [
-            ('Any input', self.default_questions_dict['REGISTER'][0]['copy']),
-            ('1', self.default_questions_dict['REGISTER'][3]['copy']),
-            ('0', self.default_questions_dict['REGISTER'][4]['copy']),
+            ('Any input', self.default_questions_dict['CUSTOM_POLL_ID_0'][0]['copy']),
+            ('1', self.default_questions_dict['CUSTOM_POLL_ID_0'][3]['copy']),
+            ('0', self.default_questions_dict['CUSTOM_POLL_ID_0'][4]['copy']),
             ('Any input', self.app.registration_completed_response),
             ]
         yield self.run_inputs(inputs_and_expected)
@@ -818,10 +818,10 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
     @inlineCallbacks
     def test_register_2(self):
         inputs_and_expected = [
-            ('Any input', self.default_questions_dict['REGISTER'][0]['copy']),
-            ('2', self.default_questions_dict['REGISTER'][7]['copy']),
-            ('3', self.default_questions_dict['REGISTER'][9]['copy']),
-            ('1', self.default_questions_dict['REGISTER'][10]['copy']),
+            ('Any input', self.default_questions_dict['CUSTOM_POLL_ID_0'][0]['copy']),
+            ('2', self.default_questions_dict['CUSTOM_POLL_ID_0'][7]['copy']),
+            ('3', self.default_questions_dict['CUSTOM_POLL_ID_0'][9]['copy']),
+            ('1', self.default_questions_dict['CUSTOM_POLL_ID_0'][10]['copy']),
             ('Any input', self.app.registration_completed_response),
             ]
         yield self.run_inputs(inputs_and_expected)
@@ -829,11 +829,11 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
     @inlineCallbacks
     def test_register_2_too_old(self):
         inputs_and_expected = [
-            ('Any input', self.default_questions_dict['REGISTER'][0]['copy']),
-            ('2', self.default_questions_dict['REGISTER'][7]['copy']),
-            #('11', self.default_questions_dict['REGISTER'][8]['copy']),
+            ('Any input', self.default_questions_dict['CUSTOM_POLL_ID_0'][0]['copy']),
+            ('2', self.default_questions_dict['CUSTOM_POLL_ID_0'][7]['copy']),
+            #('11', self.default_questions_dict['CUSTOM_POLL_ID_0'][8]['copy']),
             # max age for demo should be 5
-            ('6', self.default_questions_dict['REGISTER'][8]['copy']),
+            ('6', self.default_questions_dict['CUSTOM_POLL_ID_0'][8]['copy']),
             ('Any input', self.app.registration_completed_response),
             ]
         yield self.run_inputs(inputs_and_expected)
@@ -846,10 +846,10 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
     @inlineCallbacks
     def test_full_2_hiv(self):
         inputs_and_expected = [
-            ('Any input', self.default_questions_dict['REGISTER'][0]['copy']),
-            ('2', self.default_questions_dict['REGISTER'][7]['copy']),
-            ('3', self.default_questions_dict['REGISTER'][9]['copy']),
-            ('1', self.default_questions_dict['REGISTER'][10]['copy']),
+            ('Any input', self.default_questions_dict['CUSTOM_POLL_ID_0'][0]['copy']),
+            ('2', self.default_questions_dict['CUSTOM_POLL_ID_0'][7]['copy']),
+            ('3', self.default_questions_dict['CUSTOM_POLL_ID_0'][9]['copy']),
+            ('1', self.default_questions_dict['CUSTOM_POLL_ID_0'][10]['copy']),
             ('Any input', self.app.registration_completed_response),
 
             ('Any input', self.default_questions_dict['POST9'][0]['copy']),
@@ -869,10 +869,10 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
     @inlineCallbacks
     def test_full_2_hiv_to_archive(self):
         inputs_and_expected = [
-            ('Any input', self.default_questions_dict['REGISTER'][0]['copy']),
-            ('2', self.default_questions_dict['REGISTER'][7]['copy']),
-            ('5', self.default_questions_dict['REGISTER'][9]['copy']),
-            ('1', self.default_questions_dict['REGISTER'][10]['copy']),
+            ('Any input', self.default_questions_dict['CUSTOM_POLL_ID_0'][0]['copy']),
+            ('2', self.default_questions_dict['CUSTOM_POLL_ID_0'][7]['copy']),
+            ('5', self.default_questions_dict['CUSTOM_POLL_ID_0'][9]['copy']),
+            ('1', self.default_questions_dict['CUSTOM_POLL_ID_0'][10]['copy']),
             ('Any input', self.app.registration_completed_response),
 
             ('Any input', self.default_questions_dict['POST17'][0]['copy']),
@@ -909,10 +909,10 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
     @inlineCallbacks
     def test_full_1_no_hiv(self):
         inputs_and_expected = [
-            ('Any input', self.default_questions_dict['REGISTER'][0]['copy']),
-            ('1', self.default_questions_dict['REGISTER'][3]['copy']),
-            ('6', self.default_questions_dict['REGISTER'][5]['copy']),
-            ('2', self.default_questions_dict['REGISTER'][6]['copy']),
+            ('Any input', self.default_questions_dict['CUSTOM_POLL_ID_0'][0]['copy']),
+            ('1', self.default_questions_dict['CUSTOM_POLL_ID_0'][3]['copy']),
+            ('6', self.default_questions_dict['CUSTOM_POLL_ID_0'][5]['copy']),
+            ('2', self.default_questions_dict['CUSTOM_POLL_ID_0'][6]['copy']),
             ('Any input', self.app.registration_completed_response),
 
             ('Any input', self.default_questions_dict['WEEK37'][0]['copy']),
@@ -970,20 +970,20 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
             ('Any input', self.app.survey_completed_response),
             ]
         yield self.run_inputs(inputs_and_expected)
-        pgen = self.app.poll_id_generator("eee", "eee3")
-        print pgen.next()
-        print pgen.next()
-        print pgen.next()
+        #pgen = self.app.poll_id_generator("eee", "eee3")
+        #print pgen.next()
+        #print pgen.next()
+        #print pgen.next()
 
-        p2g = self.app.poll_id_generator("POST", "POST19")
-        for p in range(2):
-            id = p2g.next()
-            print id, self.app.pm.get(id)
+        #p2g = self.app.poll_id_generator("POST", "POST19")
+        #for p in range(2):
+            #id = p2g.next()
+            #print id, self.app.pm.get(id)
 
-        print "-------------------------"
-        print self.app.get_next_poll("POST")
-        print self.app.get_next_poll("POST", "POST1")
-        print self.app.get_next_poll("POST", "POST1")
-        print self.app.get_next_poll("POST", "POST19")
-        print self.app.get_next_poll("POST", "POST20")
+        #print "-------------------------"
+        #print self.app.get_next_poll("POST")
+        #print self.app.get_next_poll("POST", "POST1")
+        #print self.app.get_next_poll("POST", "POST1")
+        #print self.app.get_next_poll("POST", "POST19")
+        #print self.app.get_next_poll("POST", "POST20")
 

@@ -107,7 +107,6 @@ class MultiPollApplication(PollApplication):
 
     def end_session(self, participant, poll, message):
         first_poll_id = self.get_first_poll_id(self.poll_id_prefix)
-        first_poll_id = 'REGISTER'
         if poll.poll_id == first_poll_id:
             batch_completed_response = self.registration_partial_response
             survey_completed_response = self.registration_completed_response
@@ -170,7 +169,6 @@ class MultiPollApplication(PollApplication):
 
         new_poll = participant.get_label('jump_to_week')
         first_poll_id = self.get_first_poll_id(self.poll_id_prefix)
-        first_poll_id = 'REGISTER'
         if new_poll and participant.get_poll_id() != first_poll_id:
             self.try_go_to_specific_poll(participant, new_poll)
             participant.set_label('jump_to_week', None)

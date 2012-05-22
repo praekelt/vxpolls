@@ -28,14 +28,14 @@ class MultiPollApplication(PollApplication):
 
     def validate_config(self):
         self.questions_dict = self.config.get('questions_dict', {})
+        self.poll_id_list = self.config.get('poll_id_list',
+                                            [self.generate_unique_id()])
         self.r_config = self.config.get('redis_config', {})
         self.batch_size = self.config.get('batch_size', 5)
         self.dashboard_port = int(self.config.get('dashboard_port', 8000))
         self.dashboard_prefix = self.config.get('dashboard_path_prefix', '/')
         self.poll_prefix = self.config.get('poll_prefix', 'poll_manager')
         self.poll_id_prefix = self.config.get('poll_id_prefix', 'POLL_ID_')
-        self.poll_id_list = self.config.get('poll_id_list',
-                                            [self.generate_unique_id()])
         self.poll_name_list = self.config.get('poll_name_list', [])
 
     def setup_application(self):

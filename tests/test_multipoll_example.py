@@ -421,7 +421,9 @@ class CustomMultiPollApplication(MultiPollApplication):
             if poll_question.label == 'EXPECTED_MONTH' \
                     and label_value == '0':
                 participant.set_label('USER_STATUS', '4')
-                self.poll_id_list = self.poll_id_list[:1]
+                #self.poll_id_list = self.poll_id_list[:1]
+                # Force Archive
+                participant.set_poll_id("%s999999" % self.poll_id_prefix)
             if poll_question.label == 'EXPECTED_MONTH' \
                     and label_value != '0':
                         poll_id = "%s%s" % (self.poll_id_prefix,
@@ -431,7 +433,9 @@ class CustomMultiPollApplication(MultiPollApplication):
                     and label_value == '6':  # max age for demo should be 5
                     #and label_value == '11':
                 participant.set_label('USER_STATUS', '5')
-                self.poll_id_list = self.poll_id_list[:1]
+                # Force Archive
+                #self.poll_id_list = self.poll_id_list[:1]
+                participant.set_poll_id("%s999999" % self.poll_id_prefix)
             if poll_question.label == 'INITIAL_AGE' \
                     and label_value != '6':  # max age for demo should be 5
                     #and label_value != '11':

@@ -33,7 +33,6 @@ class MultiPollApplication(PollApplication):
         self.dashboard_port = int(self.config.get('dashboard_port', 8000))
         self.dashboard_prefix = self.config.get('dashboard_path_prefix', '/')
         self.poll_prefix = self.config.get('poll_prefix', 'poll_manager')
-        #self.poll_id_prefix = "%s_POLL_ID_" % self.poll_prefix
         self.poll_id_prefix = self.config.get('poll_id_prefix', 'POLL_ID_')
         self.poll_id_list = self.config.get('poll_id_list',
                                             [self.generate_unique_id()])
@@ -78,7 +77,7 @@ class MultiPollApplication(PollApplication):
         self.custom_poll_logic_function(participant)
         poll_id = participant.get_poll_id()
         if poll_id is None:
-            poll_id = (self.poll_id_list + [None])[0]
+            poll_id = self.get_first_poll_id(self.poll_id_prefix)
         poll = self.pm.get_poll_for_participant(poll_id, participant)
         # store the uid so we get this one on the next time around
         # even if the content changes.
@@ -134,9 +133,9 @@ class MultiPollApplication(PollApplication):
 
     def try_go_to_next_poll(self, participant):
         current_poll_id = participant.get_poll_id()
-        next_poll_id = (self.poll_id_list + [None])[
-                                self.poll_id_list.index(current_poll_id) + 1]
-        if next_poll_id:
+        next_poll_id = self.get_next_poll_id(self.poll_id_prefix,
+                                                current_poll_id)
+        if self.pm.get(next_poll_id):
             participant.set_poll_id(next_poll_id)
             self.pm.save_participant(participant)
             return True
@@ -144,7 +143,7 @@ class MultiPollApplication(PollApplication):
 
     def try_go_to_specific_poll(self, participant, poll_id):
         current_poll_id = participant.get_poll_id()
-        if poll_id in self.poll_id_list and poll_id != current_poll_id:
+        if poll_id != current_poll_id and self.pm.get(poll_id):
             participant.set_poll_id(poll_id)
             self.pm.save_participant(participant)
             return True

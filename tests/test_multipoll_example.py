@@ -872,17 +872,23 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
             ('3', self.default_questions_dict[poll_id][9]['copy']),
             ('1', self.default_questions_dict[poll_id][10]['copy']),
             ('Any input', self.app.registration_completed_response),
+            ]
 
-            ('Any input', self.default_questions_dict['POST9'][0]['copy']),
-            ('2', self.default_questions_dict['POST9'][2]['copy']),
-            ('Any input', self.default_questions_dict['POST9'][3]['copy']),
-            ('1', self.default_questions_dict['POST9'][4]['copy']),
+        poll_id = 'POST9'
+        inputs_and_expected = inputs_and_expected + [
+            ('Any input', self.default_questions_dict[poll_id][0]['copy']),
+            ('2', self.default_questions_dict[poll_id][2]['copy']),
+            ('Any input', self.default_questions_dict[poll_id][3]['copy']),
+            ('1', self.default_questions_dict[poll_id][4]['copy']),
             ('Any input', self.app.survey_completed_response),
+            ]
 
-            ('Any input', self.default_questions_dict['POST10'][0]['copy']),
-            ('2', self.default_questions_dict['POST10'][2]['copy']),
-            ('Any input', self.default_questions_dict['POST10'][6]['copy']),
-            ('1', self.default_questions_dict['POST10'][7]['copy']),
+        poll_id = 'POST10'
+        inputs_and_expected = inputs_and_expected + [
+            ('Any input', self.default_questions_dict[poll_id][0]['copy']),
+            ('2', self.default_questions_dict[poll_id][2]['copy']),
+            ('Any input', self.default_questions_dict[poll_id][6]['copy']),
+            ('1', self.default_questions_dict[poll_id][7]['copy']),
             ('Any input', self.app.survey_completed_response),
             ]
         yield self.run_inputs(inputs_and_expected, False)
@@ -897,29 +903,41 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
             ('5', self.default_questions_dict[poll_id][9]['copy']),
             ('1', self.default_questions_dict[poll_id][10]['copy']),
             ('Any input', self.app.registration_completed_response),
+            ]
 
-            ('Any input', self.default_questions_dict['POST17'][0]['copy']),
-            ('2', self.default_questions_dict['POST17'][2]['copy']),
-            ('Any input', self.default_questions_dict['POST17'][3]['copy']),
-            ('1', self.default_questions_dict['POST17'][4]['copy']),
+        poll_id = 'POST17'
+        inputs_and_expected = inputs_and_expected + [
+            ('Any input', self.default_questions_dict[poll_id][0]['copy']),
+            ('2', self.default_questions_dict[poll_id][2]['copy']),
+            ('Any input', self.default_questions_dict[poll_id][3]['copy']),
+            ('1', self.default_questions_dict[poll_id][4]['copy']),
             ('Any input', self.app.survey_completed_response),
+            ]
 
-            ('Any input', self.default_questions_dict['POST18'][0]['copy']),
-            ('2', self.default_questions_dict['POST18'][2]['copy']),
-            ('Any input', self.default_questions_dict['POST18'][6]['copy']),
-            ('1', self.default_questions_dict['POST18'][7]['copy']),
+        poll_id = 'POST18'
+        inputs_and_expected = inputs_and_expected + [
+            ('Any input', self.default_questions_dict[poll_id][0]['copy']),
+            ('2', self.default_questions_dict[poll_id][2]['copy']),
+            ('Any input', self.default_questions_dict[poll_id][6]['copy']),
+            ('1', self.default_questions_dict[poll_id][7]['copy']),
             ('Any input', self.app.survey_completed_response),
+            ]
 
-            ('Any input', self.default_questions_dict['POST19'][0]['copy']),
-            ('2', self.default_questions_dict['POST19'][2]['copy']),
-            ('Any input', self.default_questions_dict['POST19'][3]['copy']),
-            ('1', self.default_questions_dict['POST19'][4]['copy']),
+        poll_id = 'POST19'
+        inputs_and_expected = inputs_and_expected + [
+            ('Any input', self.default_questions_dict[poll_id][0]['copy']),
+            ('2', self.default_questions_dict[poll_id][2]['copy']),
+            ('Any input', self.default_questions_dict[poll_id][3]['copy']),
+            ('1', self.default_questions_dict[poll_id][4]['copy']),
             ('Any input', self.app.survey_completed_response),
+            ]
 
-            ('Any input', self.default_questions_dict['POST20'][0]['copy']),
-            ('2', self.default_questions_dict['POST20'][2]['copy']),
-            ('Any input', self.default_questions_dict['POST20'][6]['copy']),
-            ('1', self.default_questions_dict['POST20'][7]['copy']),
+        poll_id = 'POST20'
+        inputs_and_expected = inputs_and_expected + [
+            ('Any input', self.default_questions_dict[poll_id][0]['copy']),
+            ('2', self.default_questions_dict[poll_id][2]['copy']),
+            ('Any input', self.default_questions_dict[poll_id][6]['copy']),
+            ('1', self.default_questions_dict[poll_id][7]['copy']),
             ('Any input', self.app.survey_completed_response),
             ]
         yield self.run_inputs(inputs_and_expected, False)
@@ -939,59 +957,86 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
             ('6', self.default_questions_dict[poll_id][5]['copy']),
             ('2', self.default_questions_dict[poll_id][6]['copy']),
             ('Any input', self.app.registration_completed_response),
+            ]
 
-            ('Any input', self.default_questions_dict['WEEK37'][0]['copy']),
-            ('1', self.default_questions_dict['WEEK37'][1]['copy']),
-            ('Any input', self.default_questions_dict['WEEK37'][3]['copy']),
-            ('1', self.default_questions_dict['WEEK37'][4]['copy']),
+        poll_id = 'WEEK37'
+        inputs_and_expected = inputs_and_expected + [
+            ('Any input', self.default_questions_dict[poll_id][0]['copy']),
+            ('1', self.default_questions_dict[poll_id][1]['copy']),
+            ('Any input', self.default_questions_dict[poll_id][3]['copy']),
+            ('1', self.default_questions_dict[poll_id][4]['copy']),
             ('Any input', self.app.survey_completed_response),
+            ]
 
-            ('Any input', self.default_questions_dict['WEEK38'][0]['copy']),
-            ('1', self.default_questions_dict['WEEK38'][1]['copy']),
-            ('Any input', self.default_questions_dict['WEEK38'][3]['copy']),
-            ('1', self.default_questions_dict['WEEK38'][4]['copy']),
+        poll_id = 'WEEK38'
+        inputs_and_expected = inputs_and_expected + [
+            ('Any input', self.default_questions_dict[poll_id][0]['copy']),
+            ('1', self.default_questions_dict[poll_id][1]['copy']),
+            ('Any input', self.default_questions_dict[poll_id][3]['copy']),
+            ('1', self.default_questions_dict[poll_id][4]['copy']),
             ('Any input', self.app.survey_completed_response),
+            ]
 
-            ('Any input', self.default_questions_dict['WEEK39'][0]['copy']),
-            ('1', self.default_questions_dict['WEEK39'][1]['copy']),
-            ('Any input', self.default_questions_dict['WEEK39'][3]['copy']),
-            ('1', self.default_questions_dict['WEEK39'][4]['copy']),
+        poll_id = 'WEEK39'
+        inputs_and_expected = inputs_and_expected + [
+            ('Any input', self.default_questions_dict[poll_id][0]['copy']),
+            ('1', self.default_questions_dict[poll_id][1]['copy']),
+            ('Any input', self.default_questions_dict[poll_id][3]['copy']),
+            ('1', self.default_questions_dict[poll_id][4]['copy']),
             ('Any input', self.app.survey_completed_response),
+            ]
 
-            ('Any input', self.default_questions_dict['WEEK40'][0]['copy']),
-            ('1', self.default_questions_dict['WEEK40'][1]['copy']),
-            ('Any input', self.default_questions_dict['WEEK40'][3]['copy']),
-            ('1', self.default_questions_dict['WEEK40'][4]['copy']),
+        poll_id = 'WEEK40'
+        inputs_and_expected = inputs_and_expected + [
+            ('Any input', self.default_questions_dict[poll_id][0]['copy']),
+            ('1', self.default_questions_dict[poll_id][1]['copy']),
+            ('Any input', self.default_questions_dict[poll_id][3]['copy']),
+            ('1', self.default_questions_dict[poll_id][4]['copy']),
             ('Any input', self.app.survey_completed_response),
+            ]
 
-            ('Any input', self.default_questions_dict['POST1'][0]['copy']),
-            ('1', self.default_questions_dict['POST1'][1]['copy']),
-            ('Any input', self.default_questions_dict['POST1'][3]['copy']),
-            ('1', self.default_questions_dict['POST1'][4]['copy']),
+        poll_id = 'POST1'
+        inputs_and_expected = inputs_and_expected + [
+            ('Any input', self.default_questions_dict[poll_id][0]['copy']),
+            ('1', self.default_questions_dict[poll_id][1]['copy']),
+            ('Any input', self.default_questions_dict[poll_id][3]['copy']),
+            ('1', self.default_questions_dict[poll_id][4]['copy']),
             ('Any input', self.app.survey_completed_response),
+            ]
 
-            ('Any input', self.default_questions_dict['POST2'][0]['copy']),
-            ('1', self.default_questions_dict['POST2'][1]['copy']),
-            ('Any input', self.default_questions_dict['POST2'][3]['copy']),
-            ('1', self.default_questions_dict['POST2'][4]['copy']),
+        poll_id = 'POST2'
+        inputs_and_expected = inputs_and_expected + [
+            ('Any input', self.default_questions_dict[poll_id][0]['copy']),
+            ('1', self.default_questions_dict[poll_id][1]['copy']),
+            ('Any input', self.default_questions_dict[poll_id][3]['copy']),
+            ('1', self.default_questions_dict[poll_id][4]['copy']),
             ('Any input', self.app.survey_completed_response),
+            ]
 
-            ('Any input', self.default_questions_dict['POST3'][0]['copy']),
-            ('1', self.default_questions_dict['POST3'][1]['copy']),
-            ('Any input', self.default_questions_dict['POST3'][3]['copy']),
-            ('1', self.default_questions_dict['POST3'][4]['copy']),
+        poll_id = 'POST3'
+        inputs_and_expected = inputs_and_expected + [
+            ('Any input', self.default_questions_dict[poll_id][0]['copy']),
+            ('1', self.default_questions_dict[poll_id][1]['copy']),
+            ('Any input', self.default_questions_dict[poll_id][3]['copy']),
+            ('1', self.default_questions_dict[poll_id][4]['copy']),
             ('Any input', self.app.survey_completed_response),
+            ]
 
-            ('Any input', self.default_questions_dict['POST4'][0]['copy']),
-            ('1', self.default_questions_dict['POST4'][1]['copy']),
-            ('Any input', self.default_questions_dict['POST4'][3]['copy']),
-            ('1', self.default_questions_dict['POST4'][4]['copy']),
+        poll_id = 'POST4'
+        inputs_and_expected = inputs_and_expected + [
+            ('Any input', self.default_questions_dict[poll_id][0]['copy']),
+            ('1', self.default_questions_dict[poll_id][1]['copy']),
+            ('Any input', self.default_questions_dict[poll_id][3]['copy']),
+            ('1', self.default_questions_dict[poll_id][4]['copy']),
             ('Any input', self.app.survey_completed_response),
+            ]
 
-            ('Any input', self.default_questions_dict['POST5'][0]['copy']),
-            ('1', self.default_questions_dict['POST5'][1]['copy']),
-            ('Any input', self.default_questions_dict['POST5'][3]['copy']),
-            ('1', self.default_questions_dict['POST5'][4]['copy']),
+        poll_id = 'POST5'
+        inputs_and_expected = inputs_and_expected + [
+            ('Any input', self.default_questions_dict[poll_id][0]['copy']),
+            ('1', self.default_questions_dict[poll_id][1]['copy']),
+            ('Any input', self.default_questions_dict[poll_id][3]['copy']),
+            ('1', self.default_questions_dict[poll_id][4]['copy']),
             ('Any input', self.app.survey_completed_response),
             ]
         yield self.run_inputs(inputs_and_expected)

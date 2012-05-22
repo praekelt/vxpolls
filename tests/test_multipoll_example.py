@@ -417,7 +417,6 @@ class CustomMultiPollApplication(MultiPollApplication):
             return (start_week, poll_number)
 
         label_value = participant.get_label(poll_question.label)
-        #print self.poll_id_prefix
         if label_value is not None:
             if poll_question.label == 'EXPECTED_MONTH' \
                     and label_value == '0':
@@ -425,11 +424,8 @@ class CustomMultiPollApplication(MultiPollApplication):
                 self.poll_id_list = self.poll_id_list[:1]
             if poll_question.label == 'EXPECTED_MONTH' \
                     and label_value != '0':
-                        poll_name = "WEEK%s" % month_of_year_to_week(
-                                label_value)[0]
-                        print poll_name,
-                        poll_id = "%s%s" % (self.poll_id_prefix, month_of_year_to_week(label_value)[1])
-                        #poll_id = self.poll_id_map.get(poll_name)
+                        poll_id = "%s%s" % (self.poll_id_prefix,
+                                month_of_year_to_week(label_value)[1])
                         participant.set_label('JUMP_TO_POLL', poll_id)
             if poll_question.label == 'INITIAL_AGE' \
                     and label_value == '6':  # max age for demo should be 5
@@ -439,10 +435,8 @@ class CustomMultiPollApplication(MultiPollApplication):
             if poll_question.label == 'INITIAL_AGE' \
                     and label_value != '6':  # max age for demo should be 5
                     #and label_value != '11':
-                        poll_name = "POST%s" % months_to_week(label_value)[0]
-                        print poll_name,
-                        poll_id =  "%s%s" % (self.poll_id_prefix, months_to_week(label_value)[1])
-                        #poll_id = self.poll_id_map.get(poll_name)
+                        poll_id = "%s%s" % (self.poll_id_prefix,
+                                months_to_week(label_value)[1])
                         participant.set_label('JUMP_TO_POLL', poll_id)
 
     custom_answer_logic = custom_answer_logic_function
@@ -457,9 +451,9 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
         pig = self.application_class.poll_id_generator(self.poll_id_prefix)
         self.default_questions_dict = {}
         self.default_questions_dict.update(self.register_questions_dict)
-        self.rekey_dict(self.register_questions_dict, pig)
-        self.default_questions_dict.update(self.make_quizzes("WEEK", 5, 40, pig))
-        self.default_questions_dict.update(self.make_quizzes("POST", 1, 20, pig))
+        pig.next()  # To use up the one in the reqister poll
+        self.default_questions_dict.update(self.make_quizzes(5, 40, pig))
+        self.default_questions_dict.update(self.make_quizzes(1, 20, pig))
         #pp = pprint.PrettyPrinter(indent=4)
         #pp.pprint(default_questions_dict)
         #i = 0
@@ -479,74 +473,10 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
     poll_id_prefix = "CUSTOM_POLL_ID_"
 
     gen = CustomMultiPollApplication.poll_id_generator(poll_id_prefix)
-    generated_id_list = [gen.next() for i in range(57)]
-    print generated_id_list
-
-    poll_id_list = [
-            'CUSTOM_POLL_ID_0',
-            'WEEK5',
-            'WEEK6',
-            'WEEK7',
-            'WEEK8',
-            'WEEK9',
-            'WEEK10',
-            'WEEK11',
-            'WEEK12',
-            'WEEK13',
-            'WEEK14',
-            'WEEK15',
-            'WEEK16',
-            'WEEK17',
-            'WEEK18',
-            'WEEK19',
-            'WEEK20',
-            'WEEK21',
-            'WEEK22',
-            'WEEK23',
-            'WEEK24',
-            'WEEK25',
-            'WEEK26',
-            'WEEK27',
-            'WEEK28',
-            'WEEK29',
-            'WEEK30',
-            'WEEK31',
-            'WEEK32',
-            'WEEK33',
-            'WEEK34',
-            'WEEK35',
-            'WEEK36',
-            'WEEK37',
-            'WEEK38',
-            'WEEK39',
-            'WEEK40',
-            'POST1',
-            'POST2',
-            'POST3',
-            'POST4',
-            'POST5',
-            'POST6',
-            'POST7',
-            'POST8',
-            'POST9',
-            'POST10',
-            'POST11',
-            'POST12',
-            'POST13',
-            'POST14',
-            'POST15',
-            'POST16',
-            'POST17',
-            'POST18',
-            'POST19',
-            'POST20',
-            ]
-    print len(poll_id_list)
-    print len(generated_id_list)
-    poll_id_list = generated_id_list
+    poll_id_list = [gen.next() for i in range(57)]
 
     register_questions_dict = {
-            'CUSTOM_POLL_ID_0': [{
+            CustomMultiPollApplication.get_first_poll_id(poll_id_prefix): [{
                 'copy': "Are you X or do you have Y ?\n" \
                         "1. X\n" \
                         "2. Y\n" \
@@ -655,23 +585,12 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
                 }],
             }
 
-    def rekey_dict(self, dictionary, poll_id_generator):
-        new_dict = {}
-        for k, v in dictionary.items():
-            new_key = poll_id_generator.next()
-            #print k, '->', new_key
-            new_dict[new_key] = v
-        return new_dict
-
-    def make_quizzes(self, prefix, start, finish, poll_id_generator):
+    def make_quizzes(self, start, finish, poll_id_generator):
         string = "{"
         for i in range(start, finish + 1):
             poll_id = poll_id_generator.next()
             check = int(poll_id[-1:]) % 2
             if check != 0:
-                print "%(p)s%(i)s" % {"p": prefix, "i": i},
-                print "->", poll_id
-                pass
                 string = string + """
                 "%(poll_id)s": [
                     {
@@ -709,12 +628,9 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
                     "valid_responses": [],
                     "label": ""
                     }
-                    ],""" % {"p": prefix, "i": i, 'poll_id': poll_id}
+                    ],""" % {'poll_id': poll_id}
 
             else:
-                print "%(p)s%(i)s" % {"p": prefix, "i": i},
-                print "->", poll_id
-                pass
                 string = string + """
                 "%(poll_id)s": [
                     {
@@ -772,7 +688,7 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
                     "valid_responses": [],
                     "label": ""
                     }
-                    ],""" % {"p": prefix, "i": i, 'poll_id': poll_id}
+                    ],""" % {'poll_id': poll_id}
         string = string[:-1]
         string = string + "\n}"
         return json.loads(string)
@@ -878,9 +794,6 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
         pig = self.app.poll_id_generator(self.app.poll_id_prefix, "%s44" %
                                             self.app.poll_id_prefix)
         poll_id = pig.next()
-        print "#######################################", poll_id, 
-        #poll_id = 'POST9'
-        print poll_id, 
         inputs_and_expected = inputs_and_expected + [
             ('Any input', self.default_questions_dict[poll_id][0]['copy']),
             ('2', self.default_questions_dict[poll_id][2]['copy']),
@@ -890,7 +803,6 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
             ]
 
         poll_id = pig.next()
-        #poll_id = 'POST10'
         inputs_and_expected = inputs_and_expected + [
             ('Any input', self.default_questions_dict[poll_id][0]['copy']),
             ('2', self.default_questions_dict[poll_id][2]['copy']),
@@ -915,7 +827,6 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
         pig = self.app.poll_id_generator(self.app.poll_id_prefix, "%s52" %
                                             self.app.poll_id_prefix)
         poll_id = pig.next()
-        #poll_id = 'POST17'
         inputs_and_expected = inputs_and_expected + [
             ('Any input', self.default_questions_dict[poll_id][0]['copy']),
             ('2', self.default_questions_dict[poll_id][2]['copy']),
@@ -925,7 +836,6 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
             ]
 
         poll_id = pig.next()
-        #poll_id = 'POST18'
         inputs_and_expected = inputs_and_expected + [
             ('Any input', self.default_questions_dict[poll_id][0]['copy']),
             ('2', self.default_questions_dict[poll_id][2]['copy']),
@@ -935,7 +845,6 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
             ]
 
         poll_id = pig.next()
-        #poll_id = 'POST19'
         inputs_and_expected = inputs_and_expected + [
             ('Any input', self.default_questions_dict[poll_id][0]['copy']),
             ('2', self.default_questions_dict[poll_id][2]['copy']),
@@ -945,7 +854,6 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
             ]
 
         poll_id = pig.next()
-        #poll_id = 'POST20'
         inputs_and_expected = inputs_and_expected + [
             ('Any input', self.default_questions_dict[poll_id][0]['copy']),
             ('2', self.default_questions_dict[poll_id][2]['copy']),
@@ -975,7 +883,6 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
         pig = self.app.poll_id_generator(self.app.poll_id_prefix, "%s32" %
                                             self.app.poll_id_prefix)
         poll_id = pig.next()
-        #poll_id = 'WEEK37'
         inputs_and_expected = inputs_and_expected + [
             ('Any input', self.default_questions_dict[poll_id][0]['copy']),
             ('1', self.default_questions_dict[poll_id][1]['copy']),
@@ -985,7 +892,6 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
             ]
 
         poll_id = pig.next()
-        #poll_id = 'WEEK38'
         inputs_and_expected = inputs_and_expected + [
             ('Any input', self.default_questions_dict[poll_id][0]['copy']),
             ('1', self.default_questions_dict[poll_id][1]['copy']),
@@ -995,7 +901,6 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
             ]
 
         poll_id = pig.next()
-        #poll_id = 'WEEK39'
         inputs_and_expected = inputs_and_expected + [
             ('Any input', self.default_questions_dict[poll_id][0]['copy']),
             ('1', self.default_questions_dict[poll_id][1]['copy']),
@@ -1005,7 +910,6 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
             ]
 
         poll_id = pig.next()
-        #poll_id = 'WEEK40'
         inputs_and_expected = inputs_and_expected + [
             ('Any input', self.default_questions_dict[poll_id][0]['copy']),
             ('1', self.default_questions_dict[poll_id][1]['copy']),
@@ -1015,7 +919,6 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
             ]
 
         poll_id = pig.next()
-        #poll_id = 'POST1'
         inputs_and_expected = inputs_and_expected + [
             ('Any input', self.default_questions_dict[poll_id][0]['copy']),
             ('1', self.default_questions_dict[poll_id][1]['copy']),
@@ -1025,7 +928,6 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
             ]
 
         poll_id = pig.next()
-        #poll_id = 'POST2'
         inputs_and_expected = inputs_and_expected + [
             ('Any input', self.default_questions_dict[poll_id][0]['copy']),
             ('1', self.default_questions_dict[poll_id][1]['copy']),
@@ -1035,7 +937,6 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
             ]
 
         poll_id = pig.next()
-        #poll_id = 'POST3'
         inputs_and_expected = inputs_and_expected + [
             ('Any input', self.default_questions_dict[poll_id][0]['copy']),
             ('1', self.default_questions_dict[poll_id][1]['copy']),
@@ -1045,7 +946,6 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
             ]
 
         poll_id = pig.next()
-        #poll_id = 'POST4'
         inputs_and_expected = inputs_and_expected + [
             ('Any input', self.default_questions_dict[poll_id][0]['copy']),
             ('1', self.default_questions_dict[poll_id][1]['copy']),
@@ -1055,7 +955,6 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
             ]
 
         poll_id = pig.next()
-        #poll_id = 'POST5'
         inputs_and_expected = inputs_and_expected + [
             ('Any input', self.default_questions_dict[poll_id][0]['copy']),
             ('1', self.default_questions_dict[poll_id][1]['copy']),
@@ -1080,4 +979,3 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
         #print self.app.get_next_poll("POST", "POST1")
         #print self.app.get_next_poll("POST", "POST19")
         #print self.app.get_next_poll("POST", "POST20")
-

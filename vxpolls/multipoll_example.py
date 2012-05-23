@@ -35,7 +35,6 @@ class MultiPollApplication(PollApplication):
         self.dashboard_port = int(self.config.get('dashboard_port', 8000))
         self.dashboard_prefix = self.config.get('dashboard_path_prefix', '/')
         self.poll_prefix = self.config.get('poll_prefix', 'poll_manager')
-        self.poll_id_prefix = self.config.get('poll_id_prefix', 'POLL_ID_')
         self.poll_name_list = self.config.get('poll_name_list', [])
 
     def setup_application(self):
@@ -74,7 +73,8 @@ class MultiPollApplication(PollApplication):
 
     def consume_user_message(self, message):
         helper_poll_id = message['helper_metadata'].get('poll_id', '')
-        participant = self.pm.get_participant(message.user(), helper_poll_id)
+        scoped_user_id = helper_poll_id + message.user()
+        participant = self.pm.get_participant(scoped_user_id, helper_poll_id)
         self.custom_poll_logic_function(participant)
         poll_id = participant.get_poll_id()
         if poll_id is None:
@@ -152,46 +152,11 @@ class MultiPollApplication(PollApplication):
         return False
 
     def custom_poll_logic_function(self, participant):
-        new_poll = participant.get_label('jump_to_poll')
-        if new_poll:
-            self.try_go_to_specific_poll(participant, new_poll)
-            participant.set_label('jump_to_poll', None)
-
-        def expected_date_to_week(current_week, expected):
-            if expected is not None:
-                expected = datetime.strptime(expected, "%Y-%m-%d").date()
-                today = date.today()
-                week_delta = (expected - date.today()).days / 7
-                new_week = 'week%s' % week_delta
-                if current_week[:4] == 'week' \
-                        and int(current_week[4:]) < week_delta:
-                    return new_week
-            return None
-
-        new_poll = participant.get_label('jump_to_week')
-        first_poll_id = self.get_first_poll_id(participant.poll_id_prefix)
-        if new_poll and participant.get_poll_id() != first_poll_id:
-            self.try_go_to_specific_poll(participant, new_poll)
-            participant.set_label('jump_to_week', None)
-
-        new_poll = expected_date_to_week(participant.get_poll_id(),
-                                        participant.get_label('expected_date'))
-        if new_poll:
-            self.try_go_to_specific_poll(participant, new_poll)
-
-        if participant.get_label('skip_week6') == 'yes' \
-            and participant.get_poll_id() == 'week6':
-                self.try_go_to_next_poll(participant)
+        # Add custom logic to be called during consume_user_message here
+        pass
 
     def custom_answer_logic_function(self, participant, answer, poll_question):
-        label_value = participant.get_label(poll_question.label)
-        if label_value is not None:
-            if poll_question.label == 'weeks_till':
-                participant.set_label(poll_question.label,
-                                        'week%s' % answer)
-                expected_date = (date.today()
-                        + timedelta(weeks=20 - int(answer))).isoformat()
-                participant.set_label('expected_date', expected_date)
-                participant.set_label('weeks_till', None)
+        # Add custom logic to be called during answer handling here
+        pass
 
     custom_answer_logic = custom_answer_logic_function

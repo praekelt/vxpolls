@@ -78,8 +78,7 @@ class PollManager(object):
     def poll_prefix_from_other_id(cls, other_id):
         return "%s_" % other_id
 
-    def get_participant(self, user_id, scope_id=''):
-        user_id = scope_id + user_id
+    def get_participant(self, user_id, scope_id=None):
         session_data = self.session_manager.load_session(user_id)
         participant = PollParticipant(user_id, session_data)
         if participant:

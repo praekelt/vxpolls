@@ -77,296 +77,6 @@ class BaseMultiPollApplicationTestCase(ApplicationTestCase):
         self.assertEqual(response['session_event'], event)
 
 
-#class MultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
-
-    #@inlineCallbacks
-    #def test_initial_connect(self):
-        #msg = self.mkmsg_in(content=None)
-        #yield self.dispatch(msg)
-        #[response] = self.get_dispatched_messages()
-        #participant, poll = self.get_participant_and_poll(msg.user())
-        ## make sure we get the first question as a response
-        #self.assertResponse(response,
-                        #self.default_questions_dict['REGISTER'][0]['copy'])
-        ## the session event should be none so it is expecting
-        ## a response
-        #self.assertEvent(response, None)
-        ## get the participant and check the state after the first interaction
-        #next_question = poll.get_next_question(participant)
-        #self.assertEqual(next_question.copy,
-                        #self.default_questions_dict['REGISTER'][1]['copy'])
-
-    #@inlineCallbacks
-    #def test_continuation_of_session(self):
-        ## create the inbound message
-        #msg = self.mkmsg_in(content='red')
-        ## prime the participant
-        #participant, poll = self.get_participant_and_poll(msg.user())
-        #participant.has_unanswered_question = True
-        #participant.set_poll_id('REGISTER')
-        #participant.set_poll_id('REGISTER')
-        #participant.set_poll_id('week0')  # No such poll
-        #participant.set_poll_id('week1')
-        #participant.set_poll_id('week1')
-        ## Need to set last question index only after setting poll
-        #participant.set_last_question_index(0)
-        #self.app.pm.save_participant(participant)
-        #retrieved_participant = self.app.pm.get_participant(msg.user())
-        ##self.assertEqual(['REGISTER', 'week0', 'week1'],
-                ##retrieved_participant.poll_id_list)
-        ## send to the app
-        #yield self.dispatch(msg)
-        #[response] = self.get_dispatched_messages()
-        ## check we get the next question and that its not a session close event
-        #self.assertResponse(response,
-                        #self.default_questions_dict['week1'][1]['copy'])
-        #self.assertEvent(response, None)
-
-    #@inlineCallbacks
-    #def test_end_of_session(self):
-        ## create the inbound message
-        #msg = self.mkmsg_in(content='apple')
-        ## prime the participant
-        #participant, poll = self.get_participant_and_poll(msg.user())
-        #participant.has_unanswered_question = True
-        #participant.set_poll_id('REGISTER')
-        #participant.set_last_question_index(2)
-        #self.app.pm.save_participant(participant)
-        ## send to the app
-        #yield self.dispatch(msg)
-        #[response] = self.get_dispatched_messages()
-        #self.assertResponse(response, self.app.registration_completed_response)
-        #self.assertEvent(response, 'close')
-
-    #@inlineCallbacks
-    #def test_finish_one_poll_then_start_another(self):
-        ## create the inbound message
-        #msg = self.mkmsg_in(content='apple')
-        ## prime the participant
-        #participant, poll = self.get_participant_and_poll(msg.user())
-        #participant.has_unanswered_question = True
-        #participant.set_poll_id('REGISTER')
-        #participant.set_last_question_index(2)
-        #self.app.pm.save_participant(participant)
-        #participant = self.app.pm.get_participant(msg.user())
-        ## send to the app
-        #yield self.dispatch(msg)
-        #[response] = self.get_dispatched_messages()
-        #self.assertResponse(response, self.app.registration_completed_response)
-        #self.assertEvent(response, 'close')
-
-        #msg = self.mkmsg_in(content='any input')
-        #yield self.dispatch(msg)
-        #responses = self.get_dispatched_messages()
-        #self.assertResponse(responses[-1],
-                #self.default_questions_dict['week1'][0]['copy'])
-
-        #msg = self.mkmsg_in(content='red')
-        #yield self.dispatch(msg)
-        #responses = self.get_dispatched_messages()
-        #self.assertResponse(responses[-1],
-                #self.default_questions_dict['week1'][1]['copy'])
-
-    #@inlineCallbacks
-    #def test_finish_one_poll_then_start_another(self):
-        #msg = self.mkmsg_in(content='any input')
-        ## prime the participant
-        #participant, poll = self.get_participant_and_poll(msg.user())
-        #participant.set_poll_id('REGISTER')
-        #participant.set_label('jump_to_poll', 'week3')
-        #self.app.pm.save_participant(participant)
-        #participant = self.app.pm.get_participant(msg.user())
-
-        #msg = self.mkmsg_in(content='any input')
-        #yield self.dispatch(msg)
-        #responses = self.get_dispatched_messages()
-        #self.assertResponse(responses[-1],
-                #self.default_questions_dict['week3'][0]['copy'])
-
-        #msg = self.mkmsg_in(content='1')
-        #yield self.dispatch(msg)
-        #responses = self.get_dispatched_messages()
-        #self.assertResponse(responses[-1],
-                #self.default_questions_dict['week3'][1]['copy'])
-
-
-#class LongMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
-
-    #poll_id_list = [
-            #'REGISTER',
-            #'week1',
-            #'week2',
-            #'week3',
-            #'week4',
-            #'week5',
-            #'week6',
-            #'week7',
-            #'week8',
-            #'week9',
-            #'week10',
-            #]
-
-    #default_questions_dict = {
-            #'REGISTER': [{
-                #'copy': 'Name?',
-                #'valid_responses': [],
-                #},
-                #{
-                #'copy': 'Week?',  # Will trigger a jump to week (20 - answer)
-                #'valid_responses': ['1', '2', '3', '4', '5',
-                                    #'6', '7', '8', '9', '10',
-                                    #'11', '12', '13', '14', '15',
-                                    #'16', '17', '18', '19', '20'],
-                #'label': 'weeks_till',
-                #},
-                #{
-                #'copy': 'SMS?',
-                #'valid_responses': ['yes', 'no'],
-                #}],
-
-            #'week1': [{
-                    #'copy': 'Week1 question',
-                #}],
-
-            #'week2': [{
-                    #'copy': 'Week2 question',
-                #}],
-
-            #'week3': [{
-                    #'copy': 'Week3 question',
-                #}],
-
-            #'week4': [{
-                    #'copy': 'Week4 question',
-                #}],
-
-            #'week5': [{
-                #'copy': 'Ask this once regardless of answer',
-                #'label': 'ask_once_1',
-                #'checks': {
-                    #'not exists': {'ask_once_1': ''}
-                    #},
-                #},
-                #{
-                #'copy': 'Ask this until answer is yes',
-                #'valid_responses': ['yes', 'no'],
-                #'label': 'ask_until_1',
-                #'checks': {
-                    #'not equal': {'ask_until_1': 'yes'}
-                    #},
-                #},
-                #{
-                #'copy': 'Skip week 6?',
-                #'valid_responses': ['yes', 'no'],
-                #'label': 'skip_week6',
-                #}],
-
-            #'week6': [{
-                    #'copy': 'Week6 question',
-                #}],
-
-            #'week7': [{
-                #'copy': 'Ask this once regardless of answer',
-                #'label': 'ask_once_1',
-                #'checks': {
-                    #'not exists': {'ask_once_1': ''}
-                    #},
-                #},
-                #{
-                #'copy': '1 or 2?',
-                #'valid_responses': ['1', '2'],
-                #},
-                #{
-                #'copy': '3 or 4?',
-                #'valid_responses': ['3', '4'],
-                #},
-                #{
-                #'copy': '5 or 6?',
-                #'valid_responses': ['5', '6'],
-                #}],
-
-            #'week8': [{
-                #'copy': 'Ask this until answer is yes',
-                #'valid_responses': ['yes', 'no'],
-                #'label': 'ask_until_1',
-                #'checks': {
-                    #'not equal': {'ask_until_1': 'yes'}
-                    #},
-                #}],
-
-            #'week9': [{
-                #'copy': 'Ask this once regardless of answer',
-                #'label': 'ask_once_1',
-                #'checks': {
-                    #'not exists': {'ask_once_1': ''}
-                    #},
-                #},
-                #{
-                #'copy': 'Ask this until answer is yes',
-                #'valid_responses': ['yes', 'no'],
-                #'label': 'ask_until_1',
-                #'checks': {
-                    #'not equal': {'ask_until_1': 'yes'}
-                    #},
-                #}],
-
-            #'week10': [],
-            #}
-
-    #@inlineCallbacks
-    #def test_a_series_of_interactions(self):
-
-        #inputs_and_expected = [
-            #('Any input', self.default_questions_dict['REGISTER'][0]['copy']),
-            #('David', self.default_questions_dict['REGISTER'][1]['copy']),
-            ## Answering 16 for the next question will trigger a jump to
-            ## week (20-16) = week4 using a derived date parameter
-            ## saved in the Participant via custom app logic
-            #('16', self.app.registration_partial_response),
-            #('Any input', self.default_questions_dict['REGISTER'][2]['copy']),
-            #('yes', self.app.registration_completed_response),
-            #('Any input', self.default_questions_dict['week4'][0]['copy']),
-            #('Any input', self.app.survey_completed_response),
-            #('Any input', self.default_questions_dict['week5'][0]['copy']),
-            #('answered once', self.default_questions_dict['week5'][1]['copy']),
-            #('no', self.app.batch_completed_response),
-            #('Any input', self.default_questions_dict['week5'][2]['copy']),
-            ## try invalid response
-            #('qe?', self.default_questions_dict['week5'][2]['copy']),
-            ## now try valid response
-            #('yes', self.app.survey_completed_response),
-            ## should skip ['week7'][0] --- label: ask_once_1 exists
-            #('Any input', self.default_questions_dict['week7'][1]['copy']),
-            #('1', self.default_questions_dict['week7'][2]['copy']),
-            ## try invalid response
-            #('5', self.default_questions_dict['week7'][2]['copy']),
-            ## now try valid response
-            #('3', self.app.batch_completed_response),
-            #('Any input', self.default_questions_dict['week7'][3]['copy']),
-            #('5', self.app.survey_completed_response),
-            ## will ask ['week8'][0] --- label: ask_until_1 is still not yes
-            #('Any input', self.default_questions_dict['week8'][0]['copy']),
-            #('yes', self.app.survey_completed_response),
-            ## week9 should now skip all questions
-            #('Any input', self.app.survey_completed_response),
-            ## and week10 has none
-            #('Any input', self.app.survey_completed_response),
-            #]
-
-        #for io in inputs_and_expected:
-            #msg = self.mkmsg_in(content=io[0])
-            #yield self.dispatch(msg)
-            #responses = self.get_dispatched_messages()
-            #output = responses[-1]['content']
-            #event = responses[-1].get('session_event')
-            #self.assertEqual(output, io[1])
-        #archived = self.app.pm.get_archive(self.mkmsg_in(content='').user())
-        #self.assertEqual(archived[-1].labels.get('expected_date'),
-                #(date.today()
-                    #+ timedelta(weeks=20
-                        #- int(inputs_and_expected[2][0]))).isoformat())
-
-
 class CustomMultiPollApplication(MultiPollApplication):
 
     registration_partial_response = 'You have done part of the registration '\
@@ -424,7 +134,7 @@ class CustomMultiPollApplication(MultiPollApplication):
                 participant.force_archive = True
             if poll_question.label == 'EXPECTED_MONTH' \
                     and label_value != '0':
-                        poll_id = "%s%s" % (self.poll_id_prefix,
+                        poll_id = "%s%s" % (participant.poll_id_prefix,
                                 month_of_year_to_week(label_value)[1])
                         participant.set_label('JUMP_TO_POLL', poll_id)
             if poll_question.label == 'INITIAL_AGE' \
@@ -435,7 +145,7 @@ class CustomMultiPollApplication(MultiPollApplication):
             if poll_question.label == 'INITIAL_AGE' \
                     and label_value != '6':  # max age for demo should be 5
                     #and label_value != '11':
-                        poll_id = "%s%s" % (self.poll_id_prefix,
+                        poll_id = "%s%s" % (participant.poll_id_prefix,
                                 months_to_week(label_value)[1])
                         participant.set_label('JUMP_TO_POLL', poll_id)
 
@@ -708,7 +418,7 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
 
     @inlineCallbacks
     def test_register_3(self):
-        pig = self.app.poll_id_generator(self.app.poll_id_prefix)
+        pig = self.app.poll_id_generator(self.poll_id_prefix)
         poll_id = pig.next()
         inputs_and_expected = [
             ('Any input', self.default_questions_dict[poll_id][0]['copy']),
@@ -720,7 +430,7 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
 
     @inlineCallbacks
     def test_register_1(self):
-        pig = self.app.poll_id_generator(self.app.poll_id_prefix)
+        pig = self.app.poll_id_generator(self.poll_id_prefix)
         poll_id = pig.next()
         inputs_and_expected = [
             ('Any input', self.default_questions_dict[poll_id][0]['copy']),
@@ -733,7 +443,7 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
 
     @inlineCallbacks
     def test_register_1_dont_know(self):
-        pig = self.app.poll_id_generator(self.app.poll_id_prefix)
+        pig = self.app.poll_id_generator(self.poll_id_prefix)
         poll_id = pig.next()
         inputs_and_expected = [
             ('Any input', self.default_questions_dict[poll_id][0]['copy']),
@@ -751,7 +461,7 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
 
     @inlineCallbacks
     def test_register_2(self):
-        pig = self.app.poll_id_generator(self.app.poll_id_prefix)
+        pig = self.app.poll_id_generator(self.poll_id_prefix)
         poll_id = pig.next()
         inputs_and_expected = [
             ('Any input', self.default_questions_dict[poll_id][0]['copy']),
@@ -764,7 +474,7 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
 
     @inlineCallbacks
     def test_register_2_too_old(self):
-        pig = self.app.poll_id_generator(self.app.poll_id_prefix)
+        pig = self.app.poll_id_generator(self.poll_id_prefix)
         poll_id = pig.next()
         inputs_and_expected = [
             ('Any input', self.default_questions_dict[poll_id][0]['copy']),
@@ -784,7 +494,7 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
 
     @inlineCallbacks
     def test_full_2_hiv(self):
-        pig = self.app.poll_id_generator(self.app.poll_id_prefix)
+        pig = self.app.poll_id_generator(self.poll_id_prefix)
         poll_id = pig.next()
         inputs_and_expected = [
             ('Any input', self.default_questions_dict[poll_id][0]['copy']),
@@ -794,8 +504,8 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
             ('Any input', self.app.registration_completed_response),
             ]
 
-        pig = self.app.poll_id_generator(self.app.poll_id_prefix, "%s44" %
-                                            self.app.poll_id_prefix)
+        pig = self.app.poll_id_generator(self.poll_id_prefix, "%s44" %
+                                            self.poll_id_prefix)
         poll_id = pig.next()
         inputs_and_expected = inputs_and_expected + [
             ('Any input', self.default_questions_dict[poll_id][0]['copy']),
@@ -817,7 +527,7 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
 
     @inlineCallbacks
     def test_full_2_hiv_to_archive(self):
-        pig = self.app.poll_id_generator(self.app.poll_id_prefix)
+        pig = self.app.poll_id_generator(self.poll_id_prefix)
         poll_id = pig.next()
         inputs_and_expected = [
             ('Any input', self.default_questions_dict[poll_id][0]['copy']),
@@ -827,8 +537,8 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
             ('Any input', self.app.registration_completed_response),
             ]
 
-        pig = self.app.poll_id_generator(self.app.poll_id_prefix, "%s52" %
-                                            self.app.poll_id_prefix)
+        pig = self.app.poll_id_generator(self.poll_id_prefix, "%s52" %
+                                            self.poll_id_prefix)
         poll_id = pig.next()
         inputs_and_expected = inputs_and_expected + [
             ('Any input', self.default_questions_dict[poll_id][0]['copy']),
@@ -874,7 +584,7 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
 
     @inlineCallbacks
     def test_full_1_no_hiv(self):
-        pig = self.app.poll_id_generator(self.app.poll_id_prefix)
+        pig = self.app.poll_id_generator(self.poll_id_prefix)
         poll_id = pig.next()
         inputs_and_expected = [
             ('Any input', self.default_questions_dict[poll_id][0]['copy']),
@@ -884,8 +594,8 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
             ('Any input', self.app.registration_completed_response),
             ]
 
-        pig = self.app.poll_id_generator(self.app.poll_id_prefix, "%s32" %
-                                            self.app.poll_id_prefix)
+        pig = self.app.poll_id_generator(self.poll_id_prefix, "%s32" %
+                                            self.poll_id_prefix)
         poll_id = pig.next()
         inputs_and_expected = inputs_and_expected + [
             ('Any input', self.default_questions_dict[poll_id][0]['copy']),

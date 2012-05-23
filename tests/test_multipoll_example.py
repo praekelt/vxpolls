@@ -14,42 +14,6 @@ class BaseMultiPollApplicationTestCase(ApplicationTestCase):
     application_class = MultiPollApplication
 
     timeout = 2
-    poll_id_list = ['REGISTER', 'week1', 'week2', 'week3']
-    default_questions_dict = {
-            'REGISTER': [{
-                'copy': 'What is your name?',
-                'valid_responses': [],
-                },
-                {
-                'copy': 'Orange, Yellow or Black?',
-                'valid_responses': ['orange', 'yellow', 'black'],
-                },
-                {
-                'copy': 'What is your favorite fruit?',
-                'valid_responses': ['apple', 'orange'],
-                }],
-            'week1': [{
-                'copy': 'Red or blue?',
-                'valid_responses': ['red', 'blue'],
-                },
-                {
-                'copy': 'Tall or short?',
-                'valid_responses': ['tall', 'short'],
-                 }],
-            'week2': [],
-            'week3': [{
-                'copy': '1 or 2?',
-                'valid_responses': ['1', '2'],
-                },
-                {
-                'copy': '3 or 4?',
-                'valid_responses': ['3', '4'],
-                },
-                {
-                'copy': '5 or 6?',
-                'valid_responses': ['5', '6'],
-                }],
-            }
 
     @inlineCallbacks
     def setUp(self):

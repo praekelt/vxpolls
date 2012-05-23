@@ -73,11 +73,12 @@ class MultiPollApplication(PollApplication):
         return next_poll
 
     def consume_user_message(self, message):
-        participant = self.pm.get_participant(message.user())
+        helper_poll_id = message['helper_metadata'].get('poll_id', '')
+        participant = self.pm.get_participant(message.user(), helper_poll_id)
         self.custom_poll_logic_function(participant)
         poll_id = participant.get_poll_id()
         if poll_id is None:
-            poll_id = self.get_first_poll_id(self.poll_id_prefix)
+            poll_id = self.get_first_poll_id(participant.poll_id_prefix)
         poll = self.pm.get_poll_for_participant(poll_id, participant)
         # store the uid so we get this one on the next time around
         # even if the content changes.
@@ -105,7 +106,7 @@ class MultiPollApplication(PollApplication):
                 self.end_session(participant, poll, message)
 
     def end_session(self, participant, poll, message):
-        first_poll_id = self.get_first_poll_id(self.poll_id_prefix)
+        first_poll_id = self.get_first_poll_id(participant.poll_id_prefix)
         if poll.poll_id == first_poll_id:
             batch_completed_response = self.registration_partial_response
             survey_completed_response = self.registration_completed_response
@@ -134,7 +135,7 @@ class MultiPollApplication(PollApplication):
 
     def try_go_to_next_poll(self, participant):
         current_poll_id = participant.get_poll_id()
-        next_poll_id = self.get_next_poll_id(self.poll_id_prefix,
+        next_poll_id = self.get_next_poll_id(participant.poll_id_prefix,
                                                 current_poll_id)
         if self.pm.get(next_poll_id):
             participant.set_poll_id(next_poll_id)
@@ -168,7 +169,7 @@ class MultiPollApplication(PollApplication):
             return None
 
         new_poll = participant.get_label('jump_to_week')
-        first_poll_id = self.get_first_poll_id(self.poll_id_prefix)
+        first_poll_id = self.get_first_poll_id(participant.poll_id_prefix)
         if new_poll and participant.get_poll_id() != first_poll_id:
             self.try_go_to_specific_poll(participant, new_poll)
             participant.set_label('jump_to_week', None)

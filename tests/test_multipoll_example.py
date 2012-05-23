@@ -83,7 +83,6 @@ class CustomMultiPollApplication(MultiPollApplication):
                                     'process, dail in again to complete '\
                                     'your registration.'
     registration_completed_response = 'Thank you.'
-
     batch_completed_response = 'You have completed the first batch of '\
                                 'this weeks questions, dial in again to '\
                                 'complete the rest.'

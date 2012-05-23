@@ -9,9 +9,11 @@ def typed(dictionary, key, formatter, default=None):
         return formatter(value)
     return default
 
+
 def deserialize_messages(json_data):
     message_json_data = json.loads(json_data)
     return [TransportUserMessage.from_json(data) for data in message_json_data]
+
 
 def serialize_messages(messages):
     return json.dumps([message.to_json() for message in messages])
@@ -167,4 +169,3 @@ class PollParticipant(object):
     def __repr__(self):
         return '<PollParticipant %s, %s, %s>' % (
             self.user_id, self.has_completed_batch(), self.interactions)
-

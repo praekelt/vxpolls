@@ -17,7 +17,6 @@ class MultiPollApplication(PollApplication):
                                     'your registration.'
     registration_completed_response = 'You have completed registration, '\
                                       'dial in again to start the surveys.'
-
     batch_completed_response = 'You have completed the first batch of '\
                                 'this weeks questions, dial in again to '\
                                 'complete the rest.'

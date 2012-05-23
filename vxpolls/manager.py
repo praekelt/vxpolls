@@ -292,3 +292,4 @@ class PollQuestion(object):
     def __repr__(self):
         return '<PollQuestion copy: %s, responses: %s>' % (
             repr(self.copy), repr(self.valid_responses))
+

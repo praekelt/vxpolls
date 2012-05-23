@@ -71,10 +71,17 @@ class MultiPollApplication(PollApplication):
                                 poll_id_prefix, current_poll))
         return next_poll
 
+    @classmethod
+    def poll_prefix_from_other_id(cls, other_id):
+        return "%s_" % other_id
+
     def consume_user_message(self, message):
         helper_poll_id = message['helper_metadata'].get('poll_id', '')
         scoped_user_id = helper_poll_id + message.user()
-        participant = self.pm.get_participant(scoped_user_id, helper_poll_id)
+        participant = self.pm.get_participant(scoped_user_id)
+        if participant:
+            participant.poll_id_prefix = self.poll_prefix_from_other_id(
+                                                                helper_poll_id)
         self.custom_poll_logic_function(participant)
         poll_id = participant.get_poll_id()
         if poll_id is None:

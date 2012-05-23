@@ -72,20 +72,19 @@ class MultiPollApplication(PollApplication):
         return next_poll
 
     @classmethod
-    def poll_prefix_from_other_id(cls, other_id):
+    def make_poll_prefix(cls, other_id):
         return "%s_" % other_id
 
     def consume_user_message(self, message):
-        helper_poll_id = message['helper_metadata'].get('poll_id', '')
-        scoped_user_id = helper_poll_id + message.user()
-        participant = self.pm.get_participant(scoped_user_id)
+        scope_id = message['helper_metadata'].get('poll_id', '')
+        participant = self.pm.get_participant(scope_id, message.user())
         if participant:
-            participant.poll_id_prefix = self.poll_prefix_from_other_id(
-                                                                helper_poll_id)
+            participant.scope_id = scope_id
         self.custom_poll_logic_function(participant)
         poll_id = participant.get_poll_id()
         if poll_id is None:
-            poll_id = self.get_first_poll_id(participant.poll_id_prefix)
+            poll_id = self.get_first_poll_id(self.make_poll_prefix(
+                                                    participant.scope_id))
         poll = self.pm.get_poll_for_participant(poll_id, participant)
         # store the uid so we get this one on the next time around
         # even if the content changes.
@@ -113,7 +112,8 @@ class MultiPollApplication(PollApplication):
                 self.end_session(participant, poll, message)
 
     def end_session(self, participant, poll, message):
-        first_poll_id = self.get_first_poll_id(participant.poll_id_prefix)
+        first_poll_id = self.get_first_poll_id(self.make_poll_prefix(
+                                                    participant.scope_id))
         if poll.poll_id == first_poll_id:
             batch_completed_response = self.registration_partial_response
             survey_completed_response = self.registration_completed_response
@@ -130,7 +130,7 @@ class MultiPollApplication(PollApplication):
         else:
             self.reply_to(message, survey_completed_response,
                 continue_session=False)
-            self.pm.save_participant(participant)
+            self.pm.save_participant(participant.scope_id, participant)
             # Move on to the next poll if possible
             self.next_poll_or_archive(participant, poll)
 
@@ -138,15 +138,16 @@ class MultiPollApplication(PollApplication):
         if participant.force_archive \
                 or not self.try_go_to_next_poll(participant):
             # Archive for demo purposes so we can redial in and start over.
-            self.pm.archive(participant)
+            self.pm.archive(participant.scope_id, participant)
 
     def try_go_to_next_poll(self, participant):
         current_poll_id = participant.get_poll_id()
-        next_poll_id = self.get_next_poll_id(participant.poll_id_prefix,
-                                                current_poll_id)
+        next_poll_id = self.get_next_poll_id(self.make_poll_prefix(
+                                                participant.scope_id),
+                                                    current_poll_id)
         if self.pm.get(next_poll_id):
             participant.set_poll_id(next_poll_id)
-            self.pm.save_participant(participant)
+            self.pm.save_participant(participant.scope_id, participant)
             return True
         return False
 
@@ -154,9 +155,15 @@ class MultiPollApplication(PollApplication):
         current_poll_id = participant.get_poll_id()
         if poll_id != current_poll_id and self.pm.get(poll_id):
             participant.set_poll_id(poll_id)
-            self.pm.save_participant(participant)
+            self.pm.save_participant(participant.scope_id, participant)
             return True
         return False
+
+    def ask_question(self, participant, poll, question):
+        participant.has_unanswered_question = True
+        poll.set_last_question(participant, question)
+        self.pm.save_participant(participant.scope_id, participant)
+        return question.copy
 
     def custom_poll_logic_function(self, participant):
         # Add custom logic to be called during consume_user_message here

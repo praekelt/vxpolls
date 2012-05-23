@@ -134,7 +134,8 @@ class CustomMultiPollApplication(MultiPollApplication):
                 participant.force_archive = True
             if poll_question.label == 'EXPECTED_MONTH' \
                     and label_value != '0':
-                        poll_id = "%s%s" % (participant.poll_id_prefix,
+                        poll_id = "%s%s" % (self.make_poll_prefix(
+                                                participant.scope_id),
                                 month_of_year_to_week(label_value)[1])
                         participant.set_label('JUMP_TO_POLL', poll_id)
             if poll_question.label == 'INITIAL_AGE' \
@@ -145,7 +146,8 @@ class CustomMultiPollApplication(MultiPollApplication):
             if poll_question.label == 'INITIAL_AGE' \
                     and label_value != '6':  # max age for demo should be 5
                     #and label_value != '11':
-                        poll_id = "%s%s" % (participant.poll_id_prefix,
+                        poll_id = "%s%s" % (self.make_poll_prefix(
+                                                participant.scope_id),
                                 months_to_week(label_value)[1])
                         participant.set_label('JUMP_TO_POLL', poll_id)
 
@@ -453,8 +455,8 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
             ]
         yield self.run_inputs(inputs_and_expected)
         # Check abortive registration is archived
-        archived = self.app.pm.get_archive(self.poll_id_prefix[:-1]
-                                        + self.mkmsg_in(content='').user())
+        archived = self.app.pm.get_archive(self.poll_id_prefix[:-1],
+                                            self.mkmsg_in(content='').user())
         self.assertEqual(archived[-1].labels.get('USER_STATUS'), '4')
         # And confirm re-run is possible
         yield self.run_inputs(inputs_and_expected)
@@ -486,8 +488,8 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
             ]
         yield self.run_inputs(inputs_and_expected)
         # Check abortive registration is archived
-        archived = self.app.pm.get_archive(self.poll_id_prefix[:-1]
-                                        + self.mkmsg_in(content='').user())
+        archived = self.app.pm.get_archive(self.poll_id_prefix[:-1],
+                                            self.mkmsg_in(content='').user())
         self.assertEqual(archived[-1].labels.get('USER_STATUS'), '5')
         # And confirm re-run is possible
         yield self.run_inputs(inputs_and_expected)
@@ -576,8 +578,8 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
             ]
         yield self.run_inputs(inputs_and_expected, False)
         # Check participant is archived
-        archived = self.app.pm.get_archive(self.poll_id_prefix[:-1]
-                                        + self.mkmsg_in(content='').user())
+        archived = self.app.pm.get_archive(self.poll_id_prefix[:-1],
+                                            self.mkmsg_in(content='').user())
         self.assertEqual(archived[-1].labels.get('USER_STATUS'), '2')
         # And confirm re-run is possible
         yield self.run_inputs(inputs_and_expected)

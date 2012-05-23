@@ -44,8 +44,8 @@ class PollApplication(ApplicationWorker):
         self.pm.stop()
 
     def consume_user_message(self, message):
-        participant = self.pm.get_participant(message.user())
         poll_id = message['helper_metadata'].get('poll_id', self.poll_id)
+        participant = self.pm.get_participant(poll_id, message.user())
         poll = self.pm.get_poll_for_participant(poll_id, participant)
         # store the uid so we get this one on the next time around
         # even if the content changes.
@@ -80,16 +80,16 @@ class PollApplication(ApplicationWorker):
             response = config.get('batch_completed_response',
                                     self.batch_completed_response)
             self.reply_to(message, response, continue_session=False)
-            self.pm.save_participant(participant)
+            self.pm.save_participant(poll.poll_id, participant)
         else:
             response = config.get('survey_completed_response',
                                     self.survey_completed_response)
             self.reply_to(message, response, continue_session=False)
             participant.poll_id = None
             participant.set_poll_uid(None)
-            self.pm.save_participant(participant)
+            self.pm.save_participant(poll.poll_id, participant)
             # Archive for demo purposes so we can redial in and start over.
-            self.pm.archive(participant)
+            self.pm.archive(poll.poll_id, participant)
 
     def init_session(self, participant, poll, message):
         # brand new session
@@ -102,5 +102,5 @@ class PollApplication(ApplicationWorker):
     def ask_question(self, participant, poll, question):
         participant.has_unanswered_question = True
         poll.set_last_question(participant, question)
-        self.pm.save_participant(participant)
+        self.pm.save_participant(poll.poll_id, participant)
         return question.copy

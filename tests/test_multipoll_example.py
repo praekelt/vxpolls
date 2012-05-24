@@ -62,7 +62,8 @@ class CustomMultiPollApplication(MultiPollApplication):
 
     def custom_answer_logic_function(self, participant, answer, poll_question):
 
-        if str(answer) == '555':  # Force Archive at end of current Quiz
+        if str(answer) == '555':
+            # Force Archive at end of current Quiz
             # Only works on questions that accept any input
             participant.force_archive = True
 

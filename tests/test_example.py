@@ -52,6 +52,11 @@ class BasePollApplicationTestCase(ApplicationTestCase):
     def assertEvent(self, response, event):
         self.assertEqual(response['session_event'], event)
 
+    def mkmsg_in(self, **kwargs):
+        msg = super(BasePollApplicationTestCase, self).mkmsg_in(**kwargs)
+        msg['helper_metadata']['poll_id'] = self.poll_id
+        return msg
+
 
 class PollApplicationTestCase(BasePollApplicationTestCase):
 

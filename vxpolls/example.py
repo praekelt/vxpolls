@@ -44,7 +44,7 @@ class PollApplication(ApplicationWorker):
         self.pm.stop()
 
     def consume_user_message(self, message):
-        poll_id = message['helper_metadata'].get('poll_id', self.poll_id)
+        poll_id = message['helper_metadata']['poll_id']
         participant = self.pm.get_participant(poll_id, message.user())
         poll = self.pm.get_poll_for_participant(poll_id, participant)
         # store the uid so we get this one on the next time around

@@ -57,9 +57,10 @@ class PollResultsResource(GeckoboardResourceBase):
 class PollActiveResource(GeckoboardResourceBase):
 
     def get_data(self, request):
+        poll_id = request.args['poll_id'][0]
         poll_manager = self.poll_manager
-        active_count = len(poll_manager.active_participants())
-        inactive_count = len(poll_manager.inactive_participant_user_ids())
+        active_count = len(poll_manager.active_participants(poll_id))
+        inactive_count = len(poll_manager.inactive_participant_session_keys())
         return {
             "item": sorted([
                 {

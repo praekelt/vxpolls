@@ -1,12 +1,10 @@
-# -*- test-case-name: tests.test_multipull_example -*-
+# -*- test-case-name: tests.test_multipoll_example -*-
 # -*- coding: utf8 -*-
 
-from datetime import datetime, date, timedelta
+from datetime import date
+import redis
 
-from vumi.tests.utils import FakeRedis
-#from vumi.application.base import ApplicationWorker
 from vxpolls.example import PollApplication
-
 from vxpolls import PollManager
 
 
@@ -17,7 +15,6 @@ class MultiPollApplication(PollApplication):
                                     'your registration.'
     registration_completed_response = 'You have completed registration, '\
                                       'dial in again to start the surveys.'
-
     batch_completed_response = 'You have completed the first batch of '\
                                 'this weeks questions, dial in again to '\
                                 'complete the rest.'
@@ -28,17 +25,17 @@ class MultiPollApplication(PollApplication):
 
     def validate_config(self):
         self.questions_dict = self.config.get('questions_dict', {})
+        self.poll_id_list = self.config.get('poll_id_list',
+                                            [self.generate_unique_id()])
         self.r_config = self.config.get('redis_config', {})
         self.batch_size = self.config.get('batch_size', 5)
         self.dashboard_port = int(self.config.get('dashboard_port', 8000))
         self.dashboard_prefix = self.config.get('dashboard_path_prefix', '/')
         self.poll_prefix = self.config.get('poll_prefix', 'poll_manager')
-        self.poll_id_list = self.config.get('poll_id_list',
-                                            [self.generate_unique_id()])
         self.poll_name_list = self.config.get('poll_name_list', [])
 
     def setup_application(self):
-        self.r_server = FakeRedis(**self.r_config)
+        self.r_server = self.get_redis(self.r_config)
         self.pm = PollManager(self.r_server, self.poll_prefix)
         for poll_id in self.poll_id_list:
             if not self.pm.exists(poll_id):
@@ -47,12 +44,47 @@ class MultiPollApplication(PollApplication):
                     'batch_size': self.batch_size,
                     })
 
+    def get_redis(self, config):
+        return redis.Redis(**self.r_config)
+
+    @classmethod
+    def poll_id_generator(cls, poll_id_prefix, last_id=None):
+        num = 0
+        if last_id:
+            num = int(last_id[len(poll_id_prefix):]) + 1
+        while True:
+            yield "%s%s" % (poll_id_prefix, num)
+            num = num + 1
+
+    @classmethod
+    def get_first_poll_id(cls, poll_id_prefix):
+        return "%s%s" % (poll_id_prefix, 0)
+
+    @classmethod
+    def get_next_poll_id(cls, poll_id_prefix, current_poll=None):
+        gen = cls.poll_id_generator(poll_id_prefix, current_poll)
+        next_id = gen.next()
+        return next_id
+
+    def get_next_poll(self, poll_id_prefix, current_poll=None):
+        next_poll = self.pm.get(self.get_next_poll_id(
+                                poll_id_prefix, current_poll))
+        return next_poll
+
+    @classmethod
+    def make_poll_prefix(cls, other_id):
+        return "%s_" % other_id
+
     def consume_user_message(self, message):
-        participant = self.pm.get_participant(message.user())
+        scope_id = message['helper_metadata'].get('poll_id', '')
+        participant = self.pm.get_participant(scope_id, message.user())
+        if participant:
+            participant.scope_id = scope_id
         self.custom_poll_logic_function(participant)
         poll_id = participant.get_poll_id()
         if poll_id is None:
-            poll_id = (self.poll_id_list + [None])[0]
+            poll_id = self.get_first_poll_id(self.make_poll_prefix(
+                                                    participant.scope_id))
         poll = self.pm.get_poll_for_participant(poll_id, participant)
         # store the uid so we get this one on the next time around
         # even if the content changes.
@@ -80,7 +112,9 @@ class MultiPollApplication(PollApplication):
                 self.end_session(participant, poll, message)
 
     def end_session(self, participant, poll, message):
-        if poll.poll_id == 'REGISTER':
+        first_poll_id = self.get_first_poll_id(self.make_poll_prefix(
+                                                    participant.scope_id))
+        if poll.poll_id == first_poll_id:
             batch_completed_response = self.registration_partial_response
             survey_completed_response = self.registration_completed_response
         else:
@@ -96,73 +130,111 @@ class MultiPollApplication(PollApplication):
         else:
             self.reply_to(message, survey_completed_response,
                 continue_session=False)
-            self.pm.save_participant(participant)
+            self.pm.save_participant(participant.scope_id, participant)
             # Move on to the next poll if possible
             self.next_poll_or_archive(participant, poll)
 
     def next_poll_or_archive(self, participant, poll):
-        if not self.try_go_to_next_poll(participant):
+        if participant.force_archive \
+                or not self.try_go_to_next_poll(participant):
             # Archive for demo purposes so we can redial in and start over.
-            self.pm.archive(participant)
+            self.pm.archive(participant.scope_id, participant)
 
     def try_go_to_next_poll(self, participant):
         current_poll_id = participant.get_poll_id()
-        next_poll_id = (self.poll_id_list + [None])[
-                                self.poll_id_list.index(current_poll_id) + 1]
-        if next_poll_id:
+        next_poll_id = self.get_next_poll_id(self.make_poll_prefix(
+                                                participant.scope_id),
+                                                    current_poll_id)
+        if self.pm.get(next_poll_id):
             participant.set_poll_id(next_poll_id)
-            self.pm.save_participant(participant)
+            self.pm.save_participant(participant.scope_id, participant)
             return True
         return False
 
     def try_go_to_specific_poll(self, participant, poll_id):
         current_poll_id = participant.get_poll_id()
-        if poll_id in self.poll_id_list and poll_id != current_poll_id:
+        if poll_id != current_poll_id and self.pm.get(poll_id):
             participant.set_poll_id(poll_id)
-            self.pm.save_participant(participant)
+            self.pm.save_participant(participant.scope_id, participant)
             return True
         return False
 
+    def ask_question(self, participant, poll, question):
+        participant.has_unanswered_question = True
+        poll.set_last_question(participant, question)
+        self.pm.save_participant(participant.scope_id, participant)
+        return question.copy
+
+    #def custom_poll_logic_function(self, participant):
+        ## Add custom logic to be called during consume_user_message here
+        #pass
+
+    #def custom_answer_logic_function(self, participant, answer, poll_question):
+        ## Add custom logic to be called during answer handling here
+        #pass
+
     def custom_poll_logic_function(self, participant):
-        new_poll = participant.get_label('jump_to_poll')
-        if new_poll:
+        new_poll = participant.get_label('JUMP_TO_POLL')
+        current_poll_id = participant.get_poll_id()
+        if new_poll and current_poll_id != 'CUSTOM_POLL_ID_0':
             self.try_go_to_specific_poll(participant, new_poll)
-            participant.set_label('jump_to_poll', None)
-
-        def expected_date_to_week(current_week, expected):
-            if expected is not None:
-                expected = datetime.strptime(expected, "%Y-%m-%d").date()
-                today = date.today()
-                week_delta = (expected - date.today()).days / 7
-                new_week = 'week%s' % week_delta
-                if current_week[:4] == 'week' \
-                        and int(current_week[4:]) < week_delta:
-                    return new_week
-            return None
-
-        new_poll = participant.get_label('jump_to_week')
-        if new_poll and participant.get_poll_id() != 'REGISTER':
-            self.try_go_to_specific_poll(participant, new_poll)
-            participant.set_label('jump_to_week', None)
-
-        new_poll = expected_date_to_week(participant.get_poll_id(),
-                                        participant.get_label('expected_date'))
-        if new_poll:
-            self.try_go_to_specific_poll(participant, new_poll)
-
-        if participant.get_label('skip_week6') == 'yes' \
-            and participant.get_poll_id() == 'week6':
-                self.try_go_to_next_poll(participant)
+            participant.set_label('JUMP_TO_POLL', None)
 
     def custom_answer_logic_function(self, participant, answer, poll_question):
+
+        if poll_question.label == "SEND_SMS":
+            #print "SEND SMS TO ->", participant.user_id
+            pass
+
+        if str(answer) == '555':
+            # Force Archive at end of current Quiz
+            # Only works on questions that accept any input
+            participant.force_archive = True
+
+        def months_to_week(month):
+            m = int(month)
+            #m = 1
+            week = (m - 1) * 4 + 1
+            poll_number = week + 36  # given prev poll set of 5 - 40 + reg
+            #print "week", week, "= poll", poll
+            return (week, poll_number)
+
+        def month_of_year_to_week(month):
+            m = int(month)
+            current_date = date.today()
+            current_date = date(2012, 5, 21)  # For testing
+            present_month = current_date.month
+            present_day = current_date.day
+            month_delta = (m + 12.5 - present_month - present_day / 30.0) % 12
+            if month_delta > 8:
+                month_delta = 8
+            start_week = int(round(40 - month_delta * 4))
+            poll_number = start_week - 4
+            return (start_week, poll_number)
+
         label_value = participant.get_label(poll_question.label)
         if label_value is not None:
-            if poll_question.label == 'weeks_till':
-                participant.set_label(poll_question.label,
-                                        'week%s' % answer)
-                expected_date = (date.today()
-                        + timedelta(weeks=20 - int(answer))).isoformat()
-                participant.set_label('expected_date', expected_date)
-                participant.set_label('weeks_till', None)
+            if poll_question.label == 'EXPECTED_MONTH' \
+                    and label_value == '0':
+                participant.set_label('USER_STATUS', '4')
+                participant.force_archive = True
+            if poll_question.label == 'EXPECTED_MONTH' \
+                    and label_value != '0':
+                        poll_id = "%s%s" % (self.make_poll_prefix(
+                                                participant.scope_id),
+                                month_of_year_to_week(label_value)[1])
+                        participant.set_label('JUMP_TO_POLL', poll_id)
+            if poll_question.label == 'INITIAL_AGE' \
+                    and label_value == '6':  # max age for demo should be 5
+                    #and label_value == '11':
+                participant.set_label('USER_STATUS', '5')
+                participant.force_archive = True
+            if poll_question.label == 'INITIAL_AGE' \
+                    and label_value != '6':  # max age for demo should be 5
+                    #and label_value != '11':
+                        poll_id = "%s%s" % (self.make_poll_prefix(
+                                                participant.scope_id),
+                                months_to_week(label_value)[1])
+                        participant.set_label('JUMP_TO_POLL', poll_id)
 
     custom_answer_logic = custom_answer_logic_function

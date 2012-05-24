@@ -734,7 +734,6 @@ class RegisterMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
         self.patch(CustomMultiPollApplication, 'get_redis',
             lambda *args: FakeRedis())
 
-
         pig = self.application_class.poll_id_generator(self.poll_id_prefix)
         self.default_questions_dict = {pig.next(): self.register_questions}
 

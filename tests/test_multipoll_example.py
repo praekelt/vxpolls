@@ -62,8 +62,7 @@ class CustomMultiPollApplication(MultiPollApplication):
 
     def custom_answer_logic_function(self, participant, answer, poll_question):
 
-        if poll_question.label == "HIV_MESSAGES" \
-                and (answer == '1' or answer == '2'):
+        if poll_question.label == "SEND_SMS":
             #print "SEND SMS TO ->", participant.user_id
             pass
 
@@ -192,7 +191,7 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
                 'copy': "Thank you, come back later\n" \
                         "1. End",
                 'valid_responses': [],
-                'label': '',
+                'label': 'SEND_SMS',
                 },
                 {
                 'checks': {'equal': {'USER_STATUS': '2'}},
@@ -235,7 +234,7 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
                 'copy': "Thank you, come back later\n" \
                         "1. End",
                 'valid_responses': [],
-                'label': '',
+                'label': 'SEND_SMS',
                 }]
 
     def make_quiz_list(self, start, finish, poll_id_generator):

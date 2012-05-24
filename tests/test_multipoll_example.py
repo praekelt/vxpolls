@@ -1,5 +1,4 @@
 import json
-from datetime import date
 
 from twisted.internet.defer import inlineCallbacks
 
@@ -52,72 +51,6 @@ class CustomMultiPollApplication(MultiPollApplication):
                                 'complete the rest.'
     survey_completed_response = 'You have completed this weeks questions '\
                                 'please dial in again next week for more.'
-
-    def custom_poll_logic_function(self, participant):
-        new_poll = participant.get_label('JUMP_TO_POLL')
-        current_poll_id = participant.get_poll_id()
-        if new_poll and current_poll_id != 'CUSTOM_POLL_ID_0':
-            self.try_go_to_specific_poll(participant, new_poll)
-            participant.set_label('JUMP_TO_POLL', None)
-
-    def custom_answer_logic_function(self, participant, answer, poll_question):
-
-        if poll_question.label == "SEND_SMS":
-            #print "SEND SMS TO ->", participant.user_id
-            pass
-
-        if str(answer) == '555':
-            # Force Archive at end of current Quiz
-            # Only works on questions that accept any input
-            participant.force_archive = True
-
-        def months_to_week(month):
-            m = int(month)
-            #m = 1
-            week = (m - 1) * 4 + 1
-            poll_number = week + 36  # given prev poll set of 5 - 40 + reg
-            #print "week", week, "= poll", poll
-            return (week, poll_number)
-
-        def month_of_year_to_week(month):
-            m = int(month)
-            current_date = date.today()
-            current_date = date(2012, 5, 21)  # For testing
-            present_month = current_date.month
-            present_day = current_date.day
-            month_delta = (m + 12.5 - present_month - present_day / 30.0) % 12
-            if month_delta > 8:
-                month_delta = 8
-            start_week = int(round(40 - month_delta * 4))
-            poll_number = start_week - 4
-            return (start_week, poll_number)
-
-        label_value = participant.get_label(poll_question.label)
-        if label_value is not None:
-            if poll_question.label == 'EXPECTED_MONTH' \
-                    and label_value == '0':
-                participant.set_label('USER_STATUS', '4')
-                participant.force_archive = True
-            if poll_question.label == 'EXPECTED_MONTH' \
-                    and label_value != '0':
-                        poll_id = "%s%s" % (self.make_poll_prefix(
-                                                participant.scope_id),
-                                month_of_year_to_week(label_value)[1])
-                        participant.set_label('JUMP_TO_POLL', poll_id)
-            if poll_question.label == 'INITIAL_AGE' \
-                    and label_value == '6':  # max age for demo should be 5
-                    #and label_value == '11':
-                participant.set_label('USER_STATUS', '5')
-                participant.force_archive = True
-            if poll_question.label == 'INITIAL_AGE' \
-                    and label_value != '6':  # max age for demo should be 5
-                    #and label_value != '11':
-                        poll_id = "%s%s" % (self.make_poll_prefix(
-                                                participant.scope_id),
-                                months_to_week(label_value)[1])
-                        participant.set_label('JUMP_TO_POLL', poll_id)
-
-    custom_answer_logic = custom_answer_logic_function
 
 
 class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
@@ -797,21 +730,13 @@ class RegisterMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
     @inlineCallbacks
     def setUp(self):
 
-        #pig = self.application_class.poll_id_generator(self.poll_id_prefix)
-        #pig.next()  # To skip the id for registration
-        #other_quizzes_list = self.make_quiz_list(1, 56, pig)
+        # Patch the class to return an instance of FakeRedis for this test
+        self.patch(CustomMultiPollApplication, 'get_redis',
+            lambda *args: FakeRedis())
+
 
         pig = self.application_class.poll_id_generator(self.poll_id_prefix)
         self.default_questions_dict = {pig.next(): self.register_questions}
-        #for quiz in other_quizzes_list:
-            #self.default_questions_dict[pig.next()] = quiz
-
-        #pp = pprint.PrettyPrinter(indent=4)
-        #pp.pprint(default_questions_dict)
-        #i = 0
-        #for k, v in default_questions_dict.iteritems():
-            #i = i + len(v)
-        #print "QUESTIONS", i
 
         yield super(BaseMultiPollApplicationTestCase, self).setUp()
         self.config = {

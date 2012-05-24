@@ -1,6 +1,7 @@
 # -*- test-case-name: tests.test_multipoll_example -*-
 # -*- coding: utf8 -*-
 
+from datetime import date
 import redis
 
 from vxpolls.example import PollApplication
@@ -164,12 +165,76 @@ class MultiPollApplication(PollApplication):
         self.pm.save_participant(participant.scope_id, participant)
         return question.copy
 
+    #def custom_poll_logic_function(self, participant):
+        ## Add custom logic to be called during consume_user_message here
+        #pass
+
+    #def custom_answer_logic_function(self, participant, answer, poll_question):
+        ## Add custom logic to be called during answer handling here
+        #pass
+
     def custom_poll_logic_function(self, participant):
-        # Add custom logic to be called during consume_user_message here
-        pass
+        new_poll = participant.get_label('JUMP_TO_POLL')
+        current_poll_id = participant.get_poll_id()
+        if new_poll and current_poll_id != 'CUSTOM_POLL_ID_0':
+            self.try_go_to_specific_poll(participant, new_poll)
+            participant.set_label('JUMP_TO_POLL', None)
 
     def custom_answer_logic_function(self, participant, answer, poll_question):
-        # Add custom logic to be called during answer handling here
-        pass
+
+        if poll_question.label == "SEND_SMS":
+            #print "SEND SMS TO ->", participant.user_id
+            pass
+
+        if str(answer) == '555':
+            # Force Archive at end of current Quiz
+            # Only works on questions that accept any input
+            participant.force_archive = True
+
+        def months_to_week(month):
+            m = int(month)
+            #m = 1
+            week = (m - 1) * 4 + 1
+            poll_number = week + 36  # given prev poll set of 5 - 40 + reg
+            #print "week", week, "= poll", poll
+            return (week, poll_number)
+
+        def month_of_year_to_week(month):
+            m = int(month)
+            current_date = date.today()
+            current_date = date(2012, 5, 21)  # For testing
+            present_month = current_date.month
+            present_day = current_date.day
+            month_delta = (m + 12.5 - present_month - present_day / 30.0) % 12
+            if month_delta > 8:
+                month_delta = 8
+            start_week = int(round(40 - month_delta * 4))
+            poll_number = start_week - 4
+            return (start_week, poll_number)
+
+        label_value = participant.get_label(poll_question.label)
+        if label_value is not None:
+            if poll_question.label == 'EXPECTED_MONTH' \
+                    and label_value == '0':
+                participant.set_label('USER_STATUS', '4')
+                participant.force_archive = True
+            if poll_question.label == 'EXPECTED_MONTH' \
+                    and label_value != '0':
+                        poll_id = "%s%s" % (self.make_poll_prefix(
+                                                participant.scope_id),
+                                month_of_year_to_week(label_value)[1])
+                        participant.set_label('JUMP_TO_POLL', poll_id)
+            if poll_question.label == 'INITIAL_AGE' \
+                    and label_value == '6':  # max age for demo should be 5
+                    #and label_value == '11':
+                participant.set_label('USER_STATUS', '5')
+                participant.force_archive = True
+            if poll_question.label == 'INITIAL_AGE' \
+                    and label_value != '6':  # max age for demo should be 5
+                    #and label_value != '11':
+                        poll_id = "%s%s" % (self.make_poll_prefix(
+                                                participant.scope_id),
+                                months_to_week(label_value)[1])
+                        participant.set_label('JUMP_TO_POLL', poll_id)
 
     custom_answer_logic = custom_answer_logic_function

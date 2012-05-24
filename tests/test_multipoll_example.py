@@ -800,6 +800,8 @@ class RegisterMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
         #pig = self.application_class.poll_id_generator(self.poll_id_prefix)
         #pig.next()  # To skip the id for registration
         #other_quizzes_list = self.make_quiz_list(1, 56, pig)
+        self.patch(self.application_class, 'get_redis',
+            lambda *config: FakeRedis())
 
         pig = self.application_class.poll_id_generator(self.poll_id_prefix)
         self.default_questions_dict = {pig.next(): self.register_questions}

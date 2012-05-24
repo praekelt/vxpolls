@@ -165,15 +165,8 @@ class MultiPollApplication(PollApplication):
         self.pm.save_participant(participant.scope_id, participant)
         return question.copy
 
-    #def custom_poll_logic_function(self, participant):
-        ## Add custom logic to be called during consume_user_message here
-        #pass
-
-    #def custom_answer_logic_function(self, participant, answer, poll_question):
-        ## Add custom logic to be called during answer handling here
-        #pass
-
     def custom_poll_logic_function(self, participant):
+        # Override custom logic to be called during consume_user_message here
         new_poll = participant.get_label('JUMP_TO_POLL')
         current_poll_id = participant.get_poll_id()
         if new_poll and current_poll_id != 'CUSTOM_POLL_ID_0':
@@ -181,6 +174,7 @@ class MultiPollApplication(PollApplication):
             participant.set_label('JUMP_TO_POLL', None)
 
     def custom_answer_logic_function(self, participant, answer, poll_question):
+        # Override  custom logic to be called during answer handling here
 
         if poll_question.label == "SEND_SMS":
             #print "SEND SMS TO ->", participant.user_id
@@ -196,7 +190,6 @@ class MultiPollApplication(PollApplication):
             #m = 1
             week = (m - 1) * 4 + 1
             poll_number = week + 36  # given prev poll set of 5 - 40 + reg
-            #print "week", week, "= poll", poll
             return (week, poll_number)
 
         def month_of_year_to_week(month):

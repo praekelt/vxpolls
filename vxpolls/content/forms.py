@@ -1,4 +1,3 @@
-from pprint import pprint
 from django import forms
 from django.utils.datastructures import SortedDict
 from django.core.exceptions import ValidationError
@@ -28,6 +27,7 @@ def _normalize_question(question_dict):
         defaults['valid_responses'] = ', '.join(list_values)
     return defaults
 
+
 def _roll_up_questions(questions):
     """
     Roll up the question to a flattened dictionary instead
@@ -47,6 +47,7 @@ def _roll_up_questions(questions):
             else:
                 result['question--%s--%s' % (idx, key)] = value
     return result
+
 
 def _field_for(key):
     """
@@ -89,7 +90,7 @@ def _field_for(key):
             help_text='Skip this question unless the value of the given label matches the answer given.',
             required=False),
         'poll_id': forms.CharField(required=True, widget=forms.HiddenInput),
-        'transport_name': forms.CharField(required=True, widget=forms.HiddenInput),
+        'transport_name': forms.CharField(required=False, widget=forms.HiddenInput),
         'worker_name': forms.CharField(required=False, widget=forms.HiddenInput),
         'survey_completed_response': forms.CharField(
             label='Closing copy at survey completion',
@@ -108,11 +109,8 @@ class VxpollForm(forms.BaseForm):
         if not self.is_valid():
             raise ValidationError('form must validate')
         data = {
-            'transport_name': self.cleaned_data['transport_name'],
-            'poll_id': self.cleaned_data['poll_id'],
             'batch_size': self.cleaned_data.get('batch_size', None),
             'questions': self._export_questions(),
-            'survey_completed_response': self.cleaned_data['survey_completed_response'],
         }
         return data
 

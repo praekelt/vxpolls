@@ -1,12 +1,9 @@
-# -*- test-case-name: tests.test_multipull_example -*-
+# -*- test-case-name: tests.test_multipoll_example -*-
 # -*- coding: utf8 -*-
 
-from datetime import datetime, date, timedelta
+import redis
 
-from vumi.tests.utils import FakeRedis
-#from vumi.application.base import ApplicationWorker
 from vxpolls.example import PollApplication
-
 from vxpolls import PollManager
 
 
@@ -37,7 +34,7 @@ class MultiPollApplication(PollApplication):
         self.poll_name_list = self.config.get('poll_name_list', [])
 
     def setup_application(self):
-        self.r_server = FakeRedis(**self.r_config)
+        self.r_server = self.get_redis(self.r_config)
         self.pm = PollManager(self.r_server, self.poll_prefix)
         for poll_id in self.poll_id_list:
             if not self.pm.exists(poll_id):
@@ -45,6 +42,9 @@ class MultiPollApplication(PollApplication):
                     'questions': self.questions_dict.get(poll_id, []),
                     'batch_size': self.batch_size,
                     })
+
+    def get_redis(self, config):
+        return redis.Redis(**self.r_config)
 
     @classmethod
     def poll_id_generator(cls, poll_id_prefix, last_id=None):

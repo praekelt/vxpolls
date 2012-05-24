@@ -1,10 +1,10 @@
 import json
-import pprint
-from datetime import date, timedelta
+from datetime import date
 
 from twisted.internet.defer import inlineCallbacks
 
 from vumi.application.tests.test_base import ApplicationTestCase
+from vumi.tests.utils import FakeRedis
 
 from vxpolls.multipoll_example import MultiPollApplication
 
@@ -347,6 +347,10 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
 
     @inlineCallbacks
     def setUp(self):
+
+        # Patch the class to return an instance of FakeRedis for this test
+        self.patch(CustomMultiPollApplication, 'get_redis',
+            lambda *args: FakeRedis())
 
         pig = self.application_class.poll_id_generator(self.poll_id_prefix)
         pig.next()  # To skip the id for registration

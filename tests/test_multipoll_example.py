@@ -62,6 +62,11 @@ class CustomMultiPollApplication(MultiPollApplication):
 
     def custom_answer_logic_function(self, participant, answer, poll_question):
 
+        if poll_question.label == "HIV_MESSAGES" \
+                and (answer == '1' or answer == '2'):
+            #print "SEND SMS TO ->", participant.user_id
+            pass
+
         if str(answer) == '555':
             # Force Archive at end of current Quiz
             # Only works on questions that accept any input

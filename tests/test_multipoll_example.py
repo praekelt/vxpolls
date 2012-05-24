@@ -61,12 +61,10 @@ class CustomMultiPollApplication(MultiPollApplication):
             participant.set_label('JUMP_TO_POLL', None)
 
     def custom_answer_logic_function(self, participant, answer, poll_question):
-        try:
-            self.poll_id_map
-        except:
-            self.poll_id_map = {}
-            for i in self.poll_id_list:
-                self.poll_id_map[i] = i
+
+        if str(answer) == '555':  # Force Archive at end of current Quiz
+            # Only works on questions that accept any input
+            participant.force_archive = True
 
         def months_to_week(month):
             m = int(month)
@@ -121,37 +119,12 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
 
     application_class = CustomMultiPollApplication
 
-    @inlineCallbacks
-    def setUp(self):
-        pig = self.application_class.poll_id_generator(self.poll_id_prefix)
-        self.default_questions_dict = {}
-        self.default_questions_dict.update(self.register_questions_dict)
-        pig.next()  # To use up the one in the reqister poll
-        self.default_questions_dict.update(self.make_quizzes(5, 40, pig))
-        self.default_questions_dict.update(self.make_quizzes(1, 20, pig))
-        #pp = pprint.PrettyPrinter(indent=4)
-        #pp.pprint(default_questions_dict)
-        #i = 0
-        #for k, v in default_questions_dict.iteritems():
-            #i = i + len(v)
-        #print "QUESTIONS", i
-        yield super(BaseMultiPollApplicationTestCase, self).setUp()
-        self.config = {
-            'poll_id_list': self.poll_id_list,
-            'poll_id_prefix': self.poll_id_prefix,
-            'questions_dict': self.default_questions_dict,
-            'transport_name': self.transport_name,
-            'batch_size': 9,
-        }
-        self.app = yield self.get_application(self.config)
-
     poll_id_prefix = "CUSTOM_POLL_ID_"
 
     gen = CustomMultiPollApplication.poll_id_generator(poll_id_prefix)
     poll_id_list = [gen.next() for i in range(57)]
 
-    register_questions_dict = {
-            CustomMultiPollApplication.get_first_poll_id(poll_id_prefix): [{
+    register_questions = [{
                 'copy': "Are you X or do you have Y ?\n" \
                         "1. X\n" \
                         "2. Y\n" \
@@ -257,17 +230,16 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
                         "1. End",
                 'valid_responses': [],
                 'label': '',
-                }],
-            }
+                }]
 
-    def make_quizzes(self, start, finish, poll_id_generator):
-        string = "{"
+    def make_quiz_list(self, start, finish, poll_id_generator):
+        string = "["
         for i in range(start, finish + 1):
             poll_id = poll_id_generator.next()
             check = int(poll_id[-1:]) % 2
             if check != 0:
                 string = string + """
-                "%(poll_id)s": [
+                [
                     {
                     "copy": "%(poll_id)s Question 1 ?\\n1. Yes\\n2. No",
                     "valid_responses": [ "1", "2"],
@@ -307,7 +279,7 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
 
             else:
                 string = string + """
-                "%(poll_id)s": [
+                [
                     {
                     "copy": "%(poll_id)s Question 1 ?\\n1. Yes\\n2. No",
                     "valid_responses": [ "1", "2"],
@@ -365,8 +337,37 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
                     }
                     ],""" % {'poll_id': poll_id}
         string = string[:-1]
-        string = string + "\n}"
+        string = string + "\n]"
         return json.loads(string)
+
+    @inlineCallbacks
+    def setUp(self):
+
+        pig = self.application_class.poll_id_generator(self.poll_id_prefix)
+        pig.next()  # To skip the id for registration
+        other_quizzes_list = self.make_quiz_list(1, 56, pig)
+
+        pig = self.application_class.poll_id_generator(self.poll_id_prefix)
+        self.default_questions_dict = {pig.next(): self.register_questions}
+        for quiz in other_quizzes_list:
+            self.default_questions_dict[pig.next()] = quiz
+
+        #pp = pprint.PrettyPrinter(indent=4)
+        #pp.pprint(default_questions_dict)
+        #i = 0
+        #for k, v in default_questions_dict.iteritems():
+            #i = i + len(v)
+        #print "QUESTIONS", i
+
+        yield super(BaseMultiPollApplicationTestCase, self).setUp()
+        self.config = {
+            'poll_id_list': self.poll_id_list,
+            'poll_id_prefix': self.poll_id_prefix,
+            'questions_dict': self.default_questions_dict,
+            'transport_name': self.transport_name,
+            'batch_size': 9,
+        }
+        self.app = yield self.get_application(self.config)
 
     @inlineCallbacks
     def run_inputs(self, inputs_and_expected, do_print=False):
@@ -633,4 +634,35 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
             ('Any input', self.app.survey_completed_response),
             ]
 
+        yield self.run_inputs(inputs_and_expected)
+
+    @inlineCallbacks
+    def test_full_2_hiv_with_deliberate_555_force_achive(self):
+        pig = self.app.poll_id_generator(self.poll_id_prefix)
+        poll_id = pig.next()
+        inputs_and_expected = [
+            ('Any input', self.default_questions_dict[poll_id][0]['copy']),
+            ('2', self.default_questions_dict[poll_id][7]['copy']),
+            ('3', self.default_questions_dict[poll_id][9]['copy']),
+            ('1', self.default_questions_dict[poll_id][10]['copy']),
+            ('Any input', self.app.registration_completed_response),
+            ]
+
+        pig = self.app.poll_id_generator(self.poll_id_prefix, "%s44" %
+                                            self.poll_id_prefix)
+        poll_id = pig.next()
+        inputs_and_expected = inputs_and_expected + [
+            ('Any input', self.default_questions_dict[poll_id][0]['copy']),
+            ('2', self.default_questions_dict[poll_id][2]['copy']),
+            ('555', self.default_questions_dict[poll_id][3]['copy']),
+            ('1', self.default_questions_dict[poll_id][4]['copy']),
+            ('Any input', self.app.survey_completed_response),
+            ]
+
+        yield self.run_inputs(inputs_and_expected)
+        # Check participant is archived
+        archived = self.app.pm.get_archive(self.poll_id_prefix[:-1],
+                                            self.mkmsg_in(content='').user())
+        self.assertEqual(archived[-1].labels.get('USER_STATUS'), '2')
+        # And confirm re-run is possible
         yield self.run_inputs(inputs_and_expected)

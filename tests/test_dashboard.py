@@ -77,6 +77,7 @@ class PollDashboardTestCase(TestCase):
         for answer in answers:
             participant = self.poll_manager.get_participant(self.poll_id,
                             kwargs.get('user_id', 'user_id'))
+            participant.set_poll_id(self.poll_id)
             question = self.poll.get_next_question(participant)
             self.poll.set_last_question(participant, question)
             error_message = self.poll.submit_answer(participant, answer)

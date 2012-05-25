@@ -16,8 +16,10 @@ class ExportTestCase(TestCase):
         self.patch(PollExporter, 'get_redis',
             lambda *a: self.r_server)
         self.exporter = PollExporter({
-            'poll_prefix': self.poll_prefix,
-            })
+            'vxpolls': {
+                'prefix': self.poll_prefix,
+            }
+        })
         self.exporter.stdout = StringIO()
         self.manager = PollManager(self.r_server, self.poll_prefix)
 
@@ -52,7 +54,9 @@ class ImportTestCase(TestCase):
         self.patch(PollImporter, 'get_redis',
             lambda *a: self.r_server)
         self.importer = PollImporter({
-            'poll_prefix': self.poll_prefix,
+            'vxpolls': {
+                'prefix': self.poll_prefix,
+            }
         })
         self.manager = PollManager(self.r_server, self.poll_prefix)
         self.config = {

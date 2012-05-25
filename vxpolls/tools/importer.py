@@ -10,7 +10,8 @@ class PollImporter(object):
 
     def __init__(self, config):
         r_config = config.get('redis', {})
-        poll_prefix = config.get('poll_prefix', 'poll_manager')
+        vxp_config = config.get('vxpolls', {})
+        poll_prefix = vxp_config.get('prefix', 'poll_manager')
         self.r_server = self.get_redis(r_config)
         self.pm = PollManager(self.r_server, poll_prefix)
 

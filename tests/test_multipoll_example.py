@@ -99,13 +99,13 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
                         "10. Oct\n" \
                         "11. Nov\n" \
                         "12. Dec\n" \
-                        "0. Don't Know",
-                'valid_responses': ['0', '1', '2', '3', '4', '5', '6',
-                                    '7', '8', '9', '10', '11', '12'],
+                        "13. Don't Know",
+                'valid_responses': ['1', '2', '3', '4', '5', '6',
+                                    '7', '8', '9', '10', '11', '12', 13],
                 'label': 'EXPECTED_MONTH',
                 },
                 {
-                'checks': {'equal': {'EXPECTED_MONTH': '0'}},
+                'checks': {'equal': {'EXPECTED_MONTH': '13'}},
                 'copy': "Please find out ?\n" \
                         "1. End",
                 'valid_responses': [],
@@ -356,7 +356,7 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
         inputs_and_expected = [
             ('Any input', self.default_questions_dict[poll_id][0]['copy']),
             ('1', self.default_questions_dict[poll_id][3]['copy']),
-            ('0', self.default_questions_dict[poll_id][4]['copy']),
+            ('13', self.default_questions_dict[poll_id][4]['copy']),
             ('Any input', self.app.registration_completed_response),
             ]
         yield self.run_inputs(inputs_and_expected)

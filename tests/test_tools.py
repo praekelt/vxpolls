@@ -2,7 +2,8 @@ import yaml
 from StringIO import StringIO
 
 from twisted.trial.unittest import TestCase
-from vxpolls.tools.export import PollExporter
+from vxpolls.tools.exporter import PollExporter
+from vxpolls.tools.importer import PollImporter
 from vxpolls.manager import PollManager
 from vumi.tests.utils import FakeRedis
 
@@ -41,3 +42,45 @@ class ExportTestCase(TestCase):
         self.exporter.export('poll-id-1')
         exported_string = self.exporter.stdout.getvalue()
         self.assertEqual(exported_string, yaml.safe_dump(config))
+
+
+class ImportTestCase(TestCase):
+
+    def setUp(self):
+        self.r_server = FakeRedis()
+        self.poll_prefix = 'poll_prefix'
+        self.patch(PollImporter, 'get_redis',
+            lambda *a: self.r_server)
+        self.importer = PollImporter({
+            'poll_prefix': self.poll_prefix,
+        })
+        self.manager = PollManager(self.r_server, self.poll_prefix)
+        self.config = {
+            'batch_size': None,
+            'questions': [{
+                'copy': 'one or two?',
+                'valid_responses': ['one', 'two']
+            }],
+            'survey_completed_response': 'Thanks for completing the survey',
+            'transport_name': 'vxpolls_transport'
+        }
+
+    def tearDown(self):
+        self.importer.pm.stop()
+        self.manager.stop()
+
+    def test_import(self):
+        self.assertEqual(self.manager.polls(), set([]))
+        self.importer.import_config('poll-id-1', self.config)
+        self.assertEqual(self.manager.polls(), set(['poll-id-1']))
+
+    def test_error_when_poll_exists(self):
+        self.importer.import_config('poll-id-1', self.config)
+        self.assertRaises(ValueError, self.importer.import_config,
+            'poll-id-1', self.config)
+
+    def test_force_import_when_poll_exists(self):
+        self.importer.import_config('poll-id-1', self.config, force=True)
+        self.assertRaises(ValueError, self.importer.import_config,
+            'poll-id-1', self.config)
+        self.assertEqual(self.manager.polls(), set(['poll-id-1']))

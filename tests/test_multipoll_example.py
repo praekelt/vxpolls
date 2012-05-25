@@ -71,20 +71,6 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
                 'label': 'USER_STATUS',
                 },
                 {
-                'checks': {'equal': {'USER_STATUS': '3'}},
-                'copy': "Follow-up to don't know\n" \
-                        "1. More",
-                'valid_responses': [],
-                'label': '',
-                },
-                {
-                'checks': {'equal': {'USER_STATUS': '3'}},
-                'copy': "Second follow-up to don't know\n" \
-                        "1. End",
-                'valid_responses': [],
-                'label': '',
-                },
-                {
                 'checks': {'equal': {'USER_STATUS': '1'}},
                 'copy': "What month is X ?\n" \
                         "1. Jan\n" \
@@ -168,6 +154,20 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
                         "1. End",
                 'valid_responses': [],
                 'label': 'SEND_SMS',
+                },
+                {
+                'checks': {'equal': {'USER_STATUS': '3'}},
+                'copy': "Follow-up to don't know\n" \
+                        "1. More",
+                'valid_responses': [],
+                'label': '',
+                },
+                {
+                'checks': {'equal': {'USER_STATUS': '3'}},
+                'copy': "Second follow-up to don't know\n" \
+                        "1. End",
+                'valid_responses': [],
+                'label': '',
                 }]
 
     def make_quiz_list(self, start, finish, poll_id_generator):
@@ -330,8 +330,8 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
         poll_id = pig.next()
         inputs_and_expected = [
             ('Any input', self.default_questions_dict[poll_id][0]['copy']),
-            ('3', self.default_questions_dict[poll_id][1]['copy']),
-            ('Any input', self.default_questions_dict[poll_id][2]['copy']),
+            ('3', self.default_questions_dict[poll_id][9]['copy']),
+            ('Any input', self.default_questions_dict[poll_id][10]['copy']),
             ('Any input', self.app.registration_completed_response),
             ]
         yield self.run_inputs(inputs_and_expected)
@@ -342,9 +342,9 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
         poll_id = pig.next()
         inputs_and_expected = [
             ('Any input', self.default_questions_dict[poll_id][0]['copy']),
-            ('1', self.default_questions_dict[poll_id][3]['copy']),
-            ('7', self.default_questions_dict[poll_id][5]['copy']),
-            ('1', self.default_questions_dict[poll_id][6]['copy']),
+            ('1', self.default_questions_dict[poll_id][1]['copy']),
+            ('7', self.default_questions_dict[poll_id][3]['copy']),
+            ('1', self.default_questions_dict[poll_id][4]['copy']),
             ('Any input', self.app.registration_completed_response),
             ]
         yield self.run_inputs(inputs_and_expected)
@@ -355,8 +355,8 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
         poll_id = pig.next()
         inputs_and_expected = [
             ('Any input', self.default_questions_dict[poll_id][0]['copy']),
-            ('1', self.default_questions_dict[poll_id][3]['copy']),
-            ('13', self.default_questions_dict[poll_id][4]['copy']),
+            ('1', self.default_questions_dict[poll_id][1]['copy']),
+            ('13', self.default_questions_dict[poll_id][2]['copy']),
             ('Any input', self.app.registration_completed_response),
             ]
         yield self.run_inputs(inputs_and_expected)
@@ -373,9 +373,9 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
         poll_id = pig.next()
         inputs_and_expected = [
             ('Any input', self.default_questions_dict[poll_id][0]['copy']),
-            ('2', self.default_questions_dict[poll_id][7]['copy']),
-            ('3', self.default_questions_dict[poll_id][9]['copy']),
-            ('1', self.default_questions_dict[poll_id][10]['copy']),
+            ('2', self.default_questions_dict[poll_id][5]['copy']),
+            ('3', self.default_questions_dict[poll_id][7]['copy']),
+            ('1', self.default_questions_dict[poll_id][8]['copy']),
             ('Any input', self.app.registration_completed_response),
             ]
         yield self.run_inputs(inputs_and_expected)
@@ -386,10 +386,10 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
         poll_id = pig.next()
         inputs_and_expected = [
             ('Any input', self.default_questions_dict[poll_id][0]['copy']),
-            ('2', self.default_questions_dict[poll_id][7]['copy']),
-            #('11', self.default_questions_dict[poll_id][8]['copy']),
+            ('2', self.default_questions_dict[poll_id][5]['copy']),
+            #('11', self.default_questions_dict[poll_id][6]['copy']),
             # max age for demo should be 5
-            ('6', self.default_questions_dict[poll_id][8]['copy']),
+            ('6', self.default_questions_dict[poll_id][6]['copy']),
             ('Any input', self.app.registration_completed_response),
             ]
         yield self.run_inputs(inputs_and_expected)
@@ -406,9 +406,9 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
         poll_id = pig.next()
         inputs_and_expected = [
             ('Any input', self.default_questions_dict[poll_id][0]['copy']),
-            ('2', self.default_questions_dict[poll_id][7]['copy']),
-            ('3', self.default_questions_dict[poll_id][9]['copy']),
-            ('1', self.default_questions_dict[poll_id][10]['copy']),
+            ('2', self.default_questions_dict[poll_id][5]['copy']),
+            ('3', self.default_questions_dict[poll_id][7]['copy']),
+            ('1', self.default_questions_dict[poll_id][8]['copy']),
             ('Any input', self.app.registration_completed_response),
             ]
 
@@ -431,7 +431,7 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
             ('1', self.default_questions_dict[poll_id][7]['copy']),
             ('Any input', self.app.survey_completed_response),
             ]
-        yield self.run_inputs(inputs_and_expected, False)
+        yield self.run_inputs(inputs_and_expected)
 
     @inlineCallbacks
     def test_full_2_hiv_to_archive(self):
@@ -439,9 +439,9 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
         poll_id = pig.next()
         inputs_and_expected = [
             ('Any input', self.default_questions_dict[poll_id][0]['copy']),
-            ('2', self.default_questions_dict[poll_id][7]['copy']),
-            ('5', self.default_questions_dict[poll_id][9]['copy']),
-            ('1', self.default_questions_dict[poll_id][10]['copy']),
+            ('2', self.default_questions_dict[poll_id][5]['copy']),
+            ('5', self.default_questions_dict[poll_id][7]['copy']),
+            ('1', self.default_questions_dict[poll_id][8]['copy']),
             ('Any input', self.app.registration_completed_response),
             ]
 
@@ -496,9 +496,9 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
         poll_id = pig.next()
         inputs_and_expected = [
             ('Any input', self.default_questions_dict[poll_id][0]['copy']),
-            ('1', self.default_questions_dict[poll_id][3]['copy']),
-            ('6', self.default_questions_dict[poll_id][5]['copy']),
-            ('2', self.default_questions_dict[poll_id][6]['copy']),
+            ('1', self.default_questions_dict[poll_id][1]['copy']),
+            ('6', self.default_questions_dict[poll_id][3]['copy']),
+            ('2', self.default_questions_dict[poll_id][4]['copy']),
             ('Any input', self.app.registration_completed_response),
             ]
 
@@ -584,9 +584,9 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
         poll_id = pig.next()
         inputs_and_expected = [
             ('Any input', self.default_questions_dict[poll_id][0]['copy']),
-            ('2', self.default_questions_dict[poll_id][7]['copy']),
-            ('3', self.default_questions_dict[poll_id][9]['copy']),
-            ('1', self.default_questions_dict[poll_id][10]['copy']),
+            ('2', self.default_questions_dict[poll_id][5]['copy']),
+            ('3', self.default_questions_dict[poll_id][7]['copy']),
+            ('1', self.default_questions_dict[poll_id][8]['copy']),
             ('Any input', self.app.registration_completed_response),
             ]
 
@@ -628,20 +628,6 @@ class RegisterMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
                 'label': 'USER_STATUS',
                 },
                 {
-                'checks': {'equal': {'USER_STATUS': '3'}},
-                'copy': "Follow-up to don't know\n" \
-                        "1. More",
-                'valid_responses': [],
-                'label': '',
-                },
-                {
-                'checks': {'equal': {'USER_STATUS': '3'}},
-                'copy': "Second follow-up to don't know\n" \
-                        "1. End",
-                'valid_responses': [],
-                'label': '',
-                },
-                {
                 'checks': {'equal': {'USER_STATUS': '1'}},
                 'copy': "What month is X ?\n" \
                         "1. Jan\n" \
@@ -656,13 +642,13 @@ class RegisterMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
                         "10. Oct\n" \
                         "11. Nov\n" \
                         "12. Dec\n" \
-                        "0. Don't Know",
-                'valid_responses': ['0', '1', '2', '3', '4', '5', '6',
-                                    '7', '8', '9', '10', '11', '12'],
+                        "13. Don't Know",
+                'valid_responses': ['1', '2', '3', '4', '5', '6',
+                                    '7', '8', '9', '10', '11', '12', '13'],
                 'label': 'EXPECTED_MONTH',
                 },
                 {
-                'checks': {'equal': {'EXPECTED_MONTH': '0'}},
+                'checks': {'equal': {'EXPECTED_MONTH': '13'}},
                 'copy': "Please find out ?\n" \
                         "1. End",
                 'valid_responses': [],
@@ -725,6 +711,20 @@ class RegisterMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
                         "1. End",
                 'valid_responses': [],
                 'label': 'SEND_SMS',
+                },
+                {
+                'checks': {'equal': {'USER_STATUS': '3'}},
+                'copy': "Follow-up to don't know\n" \
+                        "1. More",
+                'valid_responses': [],
+                'label': '',
+                },
+                {
+                'checks': {'equal': {'USER_STATUS': '3'}},
+                'copy': "Second follow-up to don't know\n" \
+                        "1. End",
+                'valid_responses': [],
+                'label': '',
                 }]
 
     @inlineCallbacks
@@ -766,9 +766,9 @@ class RegisterMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
         poll_id = pig.next()
         inputs_and_expected = [
             ('Any input', self.default_questions_dict[poll_id][0]['copy']),
-            ('1', self.default_questions_dict[poll_id][3]['copy']),
-            ('7', self.default_questions_dict[poll_id][5]['copy']),
-            ('1', self.default_questions_dict[poll_id][6]['copy']),
+            ('1', self.default_questions_dict[poll_id][1]['copy']),
+            ('7', self.default_questions_dict[poll_id][3]['copy']),
+            ('1', self.default_questions_dict[poll_id][4]['copy']),
             ('Any input', self.app.registration_completed_response),
             ]
         yield self.run_inputs(inputs_and_expected)

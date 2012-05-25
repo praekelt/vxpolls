@@ -169,7 +169,9 @@ class MultiPollApplication(PollApplication):
         # Override custom logic to be called during consume_user_message here
         new_poll = participant.get_label('JUMP_TO_POLL')
         current_poll_id = participant.get_poll_id()
-        if new_poll and current_poll_id != 'CUSTOM_POLL_ID_0':
+        if new_poll and current_poll_id != self.get_first_poll_id(
+                                                    self.make_poll_prefix(
+                                                    participant.scope_id)):
             self.try_go_to_specific_poll(participant, new_poll)
             participant.set_label('JUMP_TO_POLL', None)
 

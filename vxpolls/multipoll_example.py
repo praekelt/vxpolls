@@ -214,7 +214,7 @@ class MultiPollApplication(PollApplication):
                 participant.set_label('USER_STATUS', '4')
                 participant.force_archive = True
             if poll_question.label == 'EXPECTED_MONTH' \
-                    and label_value != '0':
+                    and label_value != '13':
                         poll_id = "%s%s" % (self.make_poll_prefix(
                                                 participant.scope_id),
                                 month_of_year_to_week(label_value)[1])

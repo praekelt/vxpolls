@@ -208,6 +208,8 @@ class MultiPollApplication(PollApplication):
             return (start_week, poll_number)
 
         label_value = participant.get_label(poll_question.label)
+        if participant.get_label('USER_STATUS') == '3':
+            participant.force_archive = True
         if label_value is not None:
             if poll_question.label == 'EXPECTED_MONTH' \
                     and label_value == '13':

@@ -850,10 +850,10 @@ class ArchivingMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
             ('Any input', self.default_questions_dict[poll_id][1]['copy']),
             ('1', self.app.registration_completed_response),
             ]
-        yield self.run_inputs(inputs_and_expected, True)
+        yield self.run_inputs(inputs_and_expected)
         # Check participant is archived
         archived = self.app.pm.get_archive(self.poll_id_prefix[:-1],
                                             self.mkmsg_in(content='').user())
         self.assertEqual(archived[-1].labels.get('TEST'), '1')
         # And confirm re-run is possible
-        yield self.run_inputs(inputs_and_expected, True)
+        yield self.run_inputs(inputs_and_expected)

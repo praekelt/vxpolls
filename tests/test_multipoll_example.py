@@ -778,3 +778,82 @@ class RegisterMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
         self.assertEqual(archived[-1].labels.get('USER_STATUS'), '1')
         # And confirm re-run is possible
         yield self.run_inputs(inputs_and_expected)
+
+
+class ArchivingMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
+
+    application_class = CustomMultiPollApplication
+
+    poll_id_prefix = "ARCHIVABLE_POLL_ID_"
+
+    gen = CustomMultiPollApplication.poll_id_generator(poll_id_prefix)
+    poll_id_list = [gen.next() for i in range(1)]
+
+    register_questions = [{
+                'checks': {'equal': {'TEST': '1'}},
+                'copy': "This should never be shown!",
+                'valid_responses': [],
+                'label': '',
+                },
+                {
+                'copy': "So which is it ?\n" \
+                        "1. Yes\n" \
+                        "2. No",
+                'valid_responses': ['1', '2'],
+                'label': 'TEST',
+                },
+                {
+                'checks': {'equal': {'TEST': '2'}},
+                'copy': "Thats negative.",
+                'valid_responses': [],
+                'label': '',
+                }]
+
+    @inlineCallbacks
+    def setUp(self):
+
+        # Patch the class to return an instance of FakeRedis for this test
+        self.patch(CustomMultiPollApplication, 'get_redis',
+            lambda *args: FakeRedis())
+
+        pig = self.application_class.poll_id_generator(self.poll_id_prefix)
+        self.default_questions_dict = {pig.next(): self.register_questions}
+
+        yield super(BaseMultiPollApplicationTestCase, self).setUp()
+        self.config = {
+            'poll_id_list': self.poll_id_list,
+            'poll_id_prefix': self.poll_id_prefix,
+            'questions_dict': self.default_questions_dict,
+            'transport_name': self.transport_name,
+            'batch_size': 9,
+        }
+        self.app = yield self.get_application(self.config)
+
+    @inlineCallbacks
+    def run_inputs(self, inputs_and_expected, do_print=False):
+        for io in inputs_and_expected:
+            msg = self.mkmsg_in(content=io[0])
+            msg['helper_metadata']['poll_id'] = self.poll_id_prefix[:-1]
+            yield self.dispatch(msg)
+            responses = self.get_dispatched_messages()
+            output = responses[-1]['content']
+            event = responses[-1].get('session_event')
+            if do_print:
+                print "\n>", msg['content'], "\n", output
+            self.assertEqual(output, io[1])
+
+    @inlineCallbacks
+    def test_register_1_archive_and_repeat(self):
+        pig = self.app.poll_id_generator(self.poll_id_prefix)
+        poll_id = pig.next()
+        inputs_and_expected = [
+            ('Any input', self.default_questions_dict[poll_id][1]['copy']),
+            ('1', self.app.registration_completed_response),
+            ]
+        yield self.run_inputs(inputs_and_expected, True)
+        # Check participant is archived
+        archived = self.app.pm.get_archive(self.poll_id_prefix[:-1],
+                                            self.mkmsg_in(content='').user())
+        self.assertEqual(archived[-1].labels.get('TEST'), '1')
+        # And confirm re-run is possible
+        yield self.run_inputs(inputs_and_expected, True)

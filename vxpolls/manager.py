@@ -190,33 +190,31 @@ class Poll(object):
 
     def is_suitable_question(self, participant, question):
 
-        state = self.results_manager.get_user(self.poll_id,
-                        participant.user_id)
-        extended_state = dict(state, **participant.labels)
+        state = participant.labels
 
         def equals(key, value):
-            return unicode(extended_state[key]) == unicode(value)
+            return unicode(state.get(key)) == unicode(value)
 
         def not_equals(key, value):
-            return unicode(extended_state[key]) != unicode(value)
+            return unicode(state.get(key)) != unicode(value)
 
         def exists(key, value=None):
-            return unicode(extended_state[key]) is not None
+            return unicode(state.get(key)) is not None
 
         def not_exists(key, value=None):
-            return extended_state.get(key) is None
+            return state.get(key) is None
 
         def less(key, value):
-            return unicode(extended_state[key]) < unicode(value)
+            return unicode(state.get(key)) < unicode(value)
 
         def less_equal(key, value):
-            return unicode(extended_state[key]) <= unicode(value)
+            return unicode(state.get(key)) <= unicode(value)
 
         def greater(key, value):
-            return unicode(extended_state[key]) > unicode(value)
+            return unicode(state.get(key)) > unicode(value)
 
         def greater_equal(key, value):
-            return unicode(extended_state[key]) >= unicode(value)
+            return unicode(state.get(key)) >= unicode(value)
 
         operations_dispatcher = {
             'equal': equals,

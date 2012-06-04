@@ -364,6 +364,7 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
         archived = self.app.pm.get_archive(self.poll_id_prefix[:-1],
                                             self.mkmsg_in(content='').user())
         self.assertEqual(archived[-1].labels.get('USER_STATUS'), '4')
+        self.assertFalse(archived[-1].opted_in)
         # And confirm re-run is possible
         yield self.run_inputs(inputs_and_expected)
 
@@ -397,6 +398,7 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
         archived = self.app.pm.get_archive(self.poll_id_prefix[:-1],
                                             self.mkmsg_in(content='').user())
         self.assertEqual(archived[-1].labels.get('USER_STATUS'), '5')
+        self.assertFalse(archived[-1].opted_in)
         # And confirm re-run is possible
         yield self.run_inputs(inputs_and_expected)
 
@@ -487,6 +489,7 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
         archived = self.app.pm.get_archive(self.poll_id_prefix[:-1],
                                             self.mkmsg_in(content='').user())
         self.assertEqual(archived[-1].labels.get('USER_STATUS'), '2')
+        self.assertTrue(archived[-1].opted_in)
         # And confirm re-run is possible
         yield self.run_inputs(inputs_and_expected)
 
@@ -606,6 +609,7 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
         archived = self.app.pm.get_archive(self.poll_id_prefix[:-1],
                                             self.mkmsg_in(content='').user())
         self.assertEqual(archived[-1].labels.get('USER_STATUS'), '2')
+        self.assertTrue(archived[-1].opted_in)
         # And confirm re-run is possible
         yield self.run_inputs(inputs_and_expected)
 
@@ -776,6 +780,7 @@ class RegisterMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
         archived = self.app.pm.get_archive(self.poll_id_prefix[:-1],
                                             self.mkmsg_in(content='').user())
         self.assertEqual(archived[-1].labels.get('USER_STATUS'), '1')
+        self.assertTrue(archived[-1].opted_in)
         # And confirm re-run is possible
         yield self.run_inputs(inputs_and_expected)
 
@@ -843,7 +848,7 @@ class ArchivingMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
             self.assertEqual(output, io[1])
 
     @inlineCallbacks
-    def test_register_1_archive_and_repeat(self):
+    def test_for_old_poll_data_register_archive_and_repeat(self):
         pig = self.app.poll_id_generator(self.poll_id_prefix)
         poll_id = pig.next()
         inputs_and_expected = [

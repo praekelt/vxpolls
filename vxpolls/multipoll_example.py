@@ -167,6 +167,12 @@ class MultiPollApplication(PollApplication):
 
     def custom_poll_logic_function(self, participant):
         # Override custom logic to be called during consume_user_message here
+
+        if participant.get_label('HIV_MESSAGES'):
+            # we assume participants who get as far as selecting whether
+            # they want HIV messages or not, are opting in
+            participant.opted_in = 'True'
+
         new_poll = participant.get_label('JUMP_TO_POLL')
         current_poll_id = participant.get_poll_id()
         if new_poll and current_poll_id != self.get_first_poll_id(

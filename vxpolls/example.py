@@ -52,10 +52,35 @@ class PollApplication(ApplicationWorker):
         participant.set_poll_uid(poll.uid)
         participant.poll_id = poll_id
         participant.questions_per_session = poll.batch_size
+
+        # If we have an unanswered question then we always need to reply
+        # as its a resuming session.
         if participant.has_unanswered_question:
             self.on_message(participant, poll, message)
         else:
-            self.init_session(participant, poll, message)
+            # If we have more questions for the participant, continue otherwise
+            # end the session
+            if poll.has_more_questions_for(participant):
+                # This would indicate we've got history of interactions
+                # and this isn't a first contact so it's a user that
+                # has dialed in again a second time but has possible
+                # skip a step in the survey because the participant
+                # has been primed with state based on earlier interactions
+                # for things like opt-ins
+                if not participant.interactions:
+                    self.init_session(participant, poll, message)
+                else:
+                    # Here we send a follow up question again that we might
+                    # have started at because earlier checks all passed
+                    # and so the input we're receiving might be the first init
+                    # sms
+                    next_question = poll.get_next_question(participant)
+                    participant.has_unanswered_question = True
+                    poll.set_last_question(participant, next_question)
+                    self.pm.save_participant(poll.poll_id, participant)
+                    self.on_message(participant, poll, message)
+            else:
+                self.end_session(participant, poll, message)
 
     def on_message(self, participant, poll, message):
         # receive a message as part of a live session

@@ -14,6 +14,11 @@ class BasePollApplicationTestCase(ApplicationTestCase):
     default_questions = [{
             'copy': 'What is your favorite colour?',
             'valid_responses': ['red', 'green', 'blue'],
+            'checks': {
+                'equal': {
+                    'favorite-color': 'None'
+                }
+            }
         },
         {
             'copy': 'Orange, Yellow or Black?',
@@ -165,6 +170,22 @@ class PollApplicationTestCase(BasePollApplicationTestCase):
         [response] = self.get_dispatched_messages()
         self.assertResponse(response, self.app.survey_completed_response)
         self.assertEvent(response, 'close')
+
+    @inlineCallbacks
+    def test_with_primed_state_from_previous_interactions(self):
+        msg = self.mkmsg_in(content=None)
+        # We're priming the participant to already arrive with data
+        # from previous interactions.
+        participant, poll = self.get_participant_and_poll(msg.user())
+        participant.labels.update({
+            'favorite-color': 'red'
+        })
+        self.app.pm.save_participant(self.poll_id, participant)
+        yield self.dispatch(msg)
+        [response] = self.get_dispatched_messages()
+        # According to the check specified we should arrive straight
+        # at question two
+        self.assertResponse(response, self.default_questions[1]['copy'])
 
 
 class PollManagerVersioningTestCase(BasePollApplicationTestCase):

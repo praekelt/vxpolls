@@ -73,7 +73,8 @@ def _field_for(key):
         'batch_size': forms.IntegerField(required=False,
             widget=forms.HiddenInput),
         'valid_responses': fields.CSVField(
-            label='Question %s valid responses (comma separated)' % (key_number,),
+            label='Question %s valid responses (comma separated)' % (
+                key_number,),
             help_text='Only comma separated values are allowed.',
             required=False),
         'copy': forms.CharField(
@@ -86,12 +87,16 @@ def _field_for(key):
             widget=forms.TextInput(attrs={'class': 'input-medium'}),
             required=False),
         'checks': fields.CheckField(
-            label='Question %s should only be asked if the stored' % (key_number,),
-            help_text='Skip this question unless the value of the given label matches the answer given.',
+            label='Question %s should only be asked if the stored' % (
+                key_number,),
+            help_text='Skip this question unless the value of the given '
+                        'label matches the answer given.',
             required=False),
         'poll_id': forms.CharField(required=True, widget=forms.HiddenInput),
-        'transport_name': forms.CharField(required=False, widget=forms.HiddenInput),
-        'worker_name': forms.CharField(required=False, widget=forms.HiddenInput),
+        'transport_name': forms.CharField(required=False,
+            widget=forms.HiddenInput),
+        'worker_name': forms.CharField(required=False,
+            widget=forms.HiddenInput),
         'survey_completed_response': forms.CharField(
             label='Closing copy at survey completion',
             help_text='The copy that is sent at the end of the session.',
@@ -102,6 +107,7 @@ def _field_for(key):
             required=False, widget=forms.Textarea),
     }
     return key_map.get(key_type, forms.CharField(required=False))
+
 
 class VxpollForm(forms.BaseForm):
 

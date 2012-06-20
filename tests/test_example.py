@@ -187,6 +187,38 @@ class PollApplicationTestCase(BasePollApplicationTestCase):
         # at question two
         self.assertResponse(response, self.default_questions[1]['copy'])
 
+    @inlineCallbacks
+    def test_repeatable_flag(self):
+        # create the inbound message
+        poll_id = 'non-repeatable-poll'
+        msg = self.mkmsg_in(content='apple')
+        msg['helper_metadata']['poll_id'] = poll_id
+        self.app.pm.set(poll_id, {
+            'poll_id': poll_id,
+            'repeatable': False,
+            'questions': self.default_questions,
+        })
+
+        # prime the participant
+        participant, poll = self.get_participant_and_poll(msg.user(), poll_id)
+        self.assertFalse(poll.repeatable)
+        participant.has_unanswered_question = True
+        participant.set_last_question_index(2)
+        self.app.pm.save_participant(poll_id, participant)
+        # send to the app
+        yield self.dispatch(msg)
+        [response] = self.get_dispatched_messages()
+        self.assertResponse(response, self.app.survey_completed_response)
+        self.assertEvent(response, 'close')
+        # any follow ups should return the survey completed response
+        # as this poll is not repeatable.
+        msg_after_close = self.mkmsg_in(content='hello?')
+        msg_after_close['helper_metadata']['poll_id'] = poll_id
+        yield self.dispatch(msg_after_close)
+        [_, last_response] = self.get_dispatched_messages()
+        self.assertResponse(last_response, self.app.survey_completed_response)
+        self.assertEvent(last_response, 'close')
+
 
 class PollManagerVersioningTestCase(BasePollApplicationTestCase):
 

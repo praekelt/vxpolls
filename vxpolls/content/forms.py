@@ -105,6 +105,9 @@ def _field_for(key):
             label='Batch Completed response',
             help_text='The copy that is sent at the end of a batch.',
             required=False, widget=forms.Textarea),
+        'repeatable': forms.BooleanField(
+            label='Can contacts interact repeatedly?',
+            required=False),
     }
     return key_map.get(key_type, forms.CharField(required=False))
 
@@ -116,6 +119,7 @@ class VxpollForm(forms.BaseForm):
             raise ValidationError('form must validate')
         data = {
             'batch_size': self.cleaned_data.get('batch_size', None),
+            'repeatable': self.cleaned_data.get('repeatable', True),
             'questions': self._export_questions(),
         }
         return data

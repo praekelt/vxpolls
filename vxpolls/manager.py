@@ -72,8 +72,10 @@ class PollManager(object):
             uid = self.get_latest_uid(poll_id)
         version = self.get_config(poll_id, uid)
         try:
+            repeatable = version.get('repeatable', True)
             return Poll(self.r_server, poll_id, uid, version['questions'],
-                    version.get('batch_size'), r_prefix=self.r_key('poll'))
+                version.get('batch_size'), r_prefix=self.r_key('poll'),
+                repeatable=repeatable)
         except:
             return None
 
@@ -140,13 +142,14 @@ class PollManager(object):
 
 class Poll(object):
     def __init__(self, r_server, poll_id, uid, questions, batch_size=None,
-        r_prefix='poll'):
+        r_prefix='poll', repeatable=True):
         self.r_server = r_server
         self.poll_id = poll_id
         self.uid = uid
         self.questions = questions
         self.r_prefix = r_prefix
         self.batch_size = batch_size
+        self.repeatable = repeatable
         # Result Manager keeps track of what was answered
         # to which question. We need to tell it about the options
         # before hand.

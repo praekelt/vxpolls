@@ -47,6 +47,7 @@ class PollApplication(ApplicationWorker):
         poll_id = message['helper_metadata']['poll_id']
         participant = self.pm.get_participant(poll_id, message.user())
         poll = self.pm.get_poll_for_participant(poll_id, participant)
+
         # store the uid so we get this one on the next time around
         # even if the content changes.
         participant.set_poll_uid(poll.uid)
@@ -113,8 +114,9 @@ class PollApplication(ApplicationWorker):
             participant.poll_id = None
             participant.set_poll_uid(None)
             self.pm.save_participant(poll.poll_id, participant)
-            # Archive for demo purposes so we can redial in and start over.
-            self.pm.archive(poll.poll_id, participant)
+            if poll.repeatable:
+                # Archive for demo purposes so we can redial in and start over.
+                self.pm.archive(poll.poll_id, participant)
 
     def init_session(self, participant, poll, message):
         # brand new session

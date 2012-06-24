@@ -143,7 +143,7 @@ class MultiPollApplication(PollApplication):
                 self.pm.archive(participant.scope_id, participant)
 
     def try_go_to_next_poll(self, participant):
-        if not self.is_demo:
+        if not self.is_demo and len(participant.polls) > 1:
             return False
         current_poll_id = participant.get_poll_id()
         next_poll_id = self.get_next_poll_id(self.make_poll_prefix(
@@ -179,12 +179,6 @@ class MultiPollApplication(PollApplication):
 
         new_poll = participant.get_label('JUMP_TO_POLL')
         current_poll_id = participant.get_poll_id()
-        #more_questions = False
-        #poll = self.pm.get_poll_for_participant(current_poll_id, participant)
-        #if poll and poll.has_more_questions_for(participant):
-            #more_questions = True
-        #print more_questions
-        #if new_poll and more_questions:
         if new_poll and current_poll_id != self.get_first_poll_id(
                                                     self.make_poll_prefix(
                                                     participant.scope_id)):

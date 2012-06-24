@@ -968,7 +968,7 @@ class LiveCustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
         yield self.run_inputs(inputs_and_expected)
 
     @inlineCallbacks
-    def test_full_2_hiv(self):
+    def test_partial_2_hiv(self):
         pig = self.app.poll_id_generator(self.poll_id_prefix)
         poll_id = pig.next()
         inputs_and_expected = [
@@ -988,20 +988,15 @@ class LiveCustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
             ('Any input', self.default_questions_dict[poll_id][3]['copy']),
             ('1', self.default_questions_dict[poll_id][4]['copy']),
             ('Any input', self.app.survey_completed_response),
-            ]
-
-        poll_id = pig.next()
-        inputs_and_expected = inputs_and_expected + [
-            ('Any input', self.default_questions_dict[poll_id][0]['copy']),
-            ('2', self.default_questions_dict[poll_id][2]['copy']),
-            ('Any input', self.default_questions_dict[poll_id][6]['copy']),
-            ('1', self.default_questions_dict[poll_id][7]['copy']),
+            ('Any input', self.app.survey_completed_response),
+            ('Any input', self.app.survey_completed_response),
             ('Any input', self.app.survey_completed_response),
             ]
+
         yield self.run_inputs(inputs_and_expected)
 
     @inlineCallbacks
-    def test_full_2_hiv_to_archive(self):
+    def test_partial_2_hiv(self):
         pig = self.app.poll_id_generator(self.poll_id_prefix)
         poll_id = pig.next()
         inputs_and_expected = [
@@ -1021,45 +1016,21 @@ class LiveCustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
             ('Any input', self.default_questions_dict[poll_id][3]['copy']),
             ('1', self.default_questions_dict[poll_id][4]['copy']),
             ('Any input', self.app.survey_completed_response),
-            ]
-
-        poll_id = pig.next()
-        inputs_and_expected = inputs_and_expected + [
-            ('Any input', self.default_questions_dict[poll_id][0]['copy']),
-            ('2', self.default_questions_dict[poll_id][2]['copy']),
-            ('Any input', self.default_questions_dict[poll_id][6]['copy']),
-            ('1', self.default_questions_dict[poll_id][7]['copy']),
+            ('Any input', self.app.survey_completed_response),
+            ('Any input', self.app.survey_completed_response),
+            ('Any input', self.app.survey_completed_response),
             ('Any input', self.app.survey_completed_response),
             ]
 
-        poll_id = pig.next()
-        inputs_and_expected = inputs_and_expected + [
-            ('Any input', self.default_questions_dict[poll_id][0]['copy']),
-            ('2', self.default_questions_dict[poll_id][2]['copy']),
-            ('Any input', self.default_questions_dict[poll_id][3]['copy']),
-            ('1', self.default_questions_dict[poll_id][4]['copy']),
-            ('Any input', self.app.survey_completed_response),
-            ]
-
-        poll_id = pig.next()
-        inputs_and_expected = inputs_and_expected + [
-            ('Any input', self.default_questions_dict[poll_id][0]['copy']),
-            ('2', self.default_questions_dict[poll_id][2]['copy']),
-            ('Any input', self.default_questions_dict[poll_id][6]['copy']),
-            ('1', self.default_questions_dict[poll_id][7]['copy']),
-            ('Any input', self.app.survey_completed_response),
-            ]
         yield self.run_inputs(inputs_and_expected, False)
-        # Check participant is archived
-        archived = self.app.pm.get_archive(self.poll_id_prefix[:-1],
+        # Check participant
+        participant = self.app.pm.get_participant(self.poll_id_prefix[:-1],
                                             self.mkmsg_in(content='').user())
-        self.assertEqual(archived[-1].labels.get('USER_STATUS'), '2')
-        self.assertTrue(archived[-1].opted_in)
-        # And confirm re-run is possible
-        yield self.run_inputs(inputs_and_expected)
+        self.assertEqual(participant.labels.get('USER_STATUS'), '2')
+        self.assertTrue(participant.opted_in)
 
     @inlineCallbacks
-    def test_full_1_no_hiv(self):
+    def test_partial_1_no_hiv(self):
         pig = self.app.poll_id_generator(self.poll_id_prefix)
         poll_id = pig.next()
         inputs_and_expected = [
@@ -1079,103 +1050,12 @@ class LiveCustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
             ('Any input', self.default_questions_dict[poll_id][3]['copy']),
             ('1', self.default_questions_dict[poll_id][4]['copy']),
             ('Any input', self.app.survey_completed_response),
-            ]
-
-        poll_id = pig.next()
-        inputs_and_expected = inputs_and_expected + [
-            ('Any input', self.default_questions_dict[poll_id][0]['copy']),
-            ('1', self.default_questions_dict[poll_id][1]['copy']),
-            ('Any input', self.default_questions_dict[poll_id][3]['copy']),
-            ('1', self.default_questions_dict[poll_id][4]['copy']),
+            ('Any input', self.app.survey_completed_response),
+            ('Any input', self.app.survey_completed_response),
+            ('Any input', self.app.survey_completed_response),
             ('Any input', self.app.survey_completed_response),
             ]
 
-        poll_id = pig.next()
-        inputs_and_expected = inputs_and_expected + [
-            ('Any input', self.default_questions_dict[poll_id][0]['copy']),
-            ('1', self.default_questions_dict[poll_id][1]['copy']),
-            ('Any input', self.default_questions_dict[poll_id][3]['copy']),
-            ('1', self.default_questions_dict[poll_id][4]['copy']),
-            ('Any input', self.app.survey_completed_response),
-            ]
-
-        poll_id = pig.next()
-        inputs_and_expected = inputs_and_expected + [
-            ('Any input', self.default_questions_dict[poll_id][0]['copy']),
-            ('1', self.default_questions_dict[poll_id][1]['copy']),
-            ('Any input', self.default_questions_dict[poll_id][3]['copy']),
-            ('1', self.default_questions_dict[poll_id][4]['copy']),
-            ('Any input', self.app.survey_completed_response),
-            ]
-
-        poll_id = pig.next()
-        inputs_and_expected = inputs_and_expected + [
-            ('Any input', self.default_questions_dict[poll_id][0]['copy']),
-            ('1', self.default_questions_dict[poll_id][1]['copy']),
-            ('Any input', self.default_questions_dict[poll_id][3]['copy']),
-            ('1', self.default_questions_dict[poll_id][4]['copy']),
-            ('Any input', self.app.survey_completed_response),
-            ]
-
-        poll_id = pig.next()
-        inputs_and_expected = inputs_and_expected + [
-            ('Any input', self.default_questions_dict[poll_id][0]['copy']),
-            ('1', self.default_questions_dict[poll_id][1]['copy']),
-            ('Any input', self.default_questions_dict[poll_id][3]['copy']),
-            ('1', self.default_questions_dict[poll_id][4]['copy']),
-            ('Any input', self.app.survey_completed_response),
-            ]
-
-        poll_id = pig.next()
-        inputs_and_expected = inputs_and_expected + [
-            ('Any input', self.default_questions_dict[poll_id][0]['copy']),
-            ('1', self.default_questions_dict[poll_id][1]['copy']),
-            ('Any input', self.default_questions_dict[poll_id][3]['copy']),
-            ('1', self.default_questions_dict[poll_id][4]['copy']),
-            ('Any input', self.app.survey_completed_response),
-            ]
-
-        poll_id = pig.next()
-        inputs_and_expected = inputs_and_expected + [
-            ('Any input', self.default_questions_dict[poll_id][0]['copy']),
-            ('1', self.default_questions_dict[poll_id][1]['copy']),
-            ('Any input', self.default_questions_dict[poll_id][3]['copy']),
-            ('1', self.default_questions_dict[poll_id][4]['copy']),
-            ('Any input', self.app.survey_completed_response),
-            ]
-
-        yield self.run_inputs(inputs_and_expected)
-
-    @inlineCallbacks
-    def test_full_2_hiv_with_deliberate_555_force_achive(self):
-        pig = self.app.poll_id_generator(self.poll_id_prefix)
-        poll_id = pig.next()
-        inputs_and_expected = [
-            ('Any input', self.default_questions_dict[poll_id][0]['copy']),
-            ('2', self.default_questions_dict[poll_id][5]['copy']),
-            ('3', self.default_questions_dict[poll_id][7]['copy']),
-            ('1', self.default_questions_dict[poll_id][8]['copy']),
-            ('Any input', self.app.registration_completed_response),
-            ]
-
-        pig = self.app.poll_id_generator(self.poll_id_prefix, "%s44" %
-                                            self.poll_id_prefix)
-        poll_id = pig.next()
-        inputs_and_expected = inputs_and_expected + [
-            ('Any input', self.default_questions_dict[poll_id][0]['copy']),
-            ('2', self.default_questions_dict[poll_id][2]['copy']),
-            ('555', self.default_questions_dict[poll_id][3]['copy']),
-            ('1', self.default_questions_dict[poll_id][4]['copy']),
-            ('Any input', self.app.survey_completed_response),
-            ]
-
-        yield self.run_inputs(inputs_and_expected)
-        # Check participant is archived
-        archived = self.app.pm.get_archive(self.poll_id_prefix[:-1],
-                                            self.mkmsg_in(content='').user())
-        self.assertEqual(archived[-1].labels.get('USER_STATUS'), '2')
-        self.assertTrue(archived[-1].opted_in)
-        # And confirm re-run is possible
         yield self.run_inputs(inputs_and_expected)
 
 
@@ -1388,7 +1268,7 @@ class LiveRegisterMultiPollApplicationTestCase(RegisterMultiPollApplicationTestC
             ('Any input', self.app.registration_completed_response),
             ]
         yield self.run_inputs(inputs_and_expected)
-        # Check participant is archived
+        # Check participant
         participant = self.app.pm.get_participant(self.poll_id_prefix[:-1],
                                             self.mkmsg_in(content='').user())
         self.assertEqual(participant.labels.get('USER_STATUS'), '1')

@@ -1,4 +1,5 @@
 import json
+from datetime import date
 
 from twisted.internet.defer import inlineCallbacks
 
@@ -313,6 +314,7 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
             'is_demo': True,
         }
         self.app = yield self.get_application(self.config)
+        self.app.current_date = date(2012, 5, 21)
 
     @inlineCallbacks
     def run_inputs(self, inputs_and_expected, do_print=False):
@@ -875,6 +877,7 @@ class LiveCustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
             #'is_demo': True,
         }
         self.app = yield self.get_application(self.config)
+        self.app.current_date = date(2012, 5, 21)
 
     @inlineCallbacks
     def run_inputs(self, inputs_and_expected, do_print=False):
@@ -1196,6 +1199,7 @@ class RegisterMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
             'is_demo': True,
         }
         self.app = yield self.get_application(self.config)
+        self.app.current_date = date(2012, 5, 21)
 
     @inlineCallbacks
     def run_inputs(self, inputs_and_expected, do_print=False):
@@ -1251,6 +1255,7 @@ class LiveRegisterMultiPollApplicationTestCase(RegisterMultiPollApplicationTestC
             'batch_size': 9,
         }
         self.app = yield self.get_application(self.config)
+        self.app.current_date = date(2012, 5, 21)
 
     @inlineCallbacks
     def test_register_1_archive_and_repeat(self):
@@ -1330,6 +1335,7 @@ class ArchivingMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
             'is_demo': True,
         }
         self.app = yield self.get_application(self.config)
+        self.app.current_date = date(2012, 5, 21)
 
     @inlineCallbacks
     def run_inputs(self, inputs_and_expected, do_print=False):

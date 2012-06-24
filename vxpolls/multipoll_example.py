@@ -185,6 +185,12 @@ class MultiPollApplication(PollApplication):
             self.try_go_to_specific_poll(participant, new_poll)
             participant.set_label('JUMP_TO_POLL', None)
 
+    def get_current_date(self):
+        if self.current_date:  # for testing
+            return self.current_date
+        else:
+            return date.today()
+
     def custom_answer_logic_function(self, participant, answer, poll_question):
         # Override  custom logic to be called during answer handling here
 
@@ -206,8 +212,7 @@ class MultiPollApplication(PollApplication):
 
         def month_of_year_to_week(month):
             m = int(month)
-            current_date = date.today()
-            current_date = date(2012, 5, 21)  # For testing
+            current_date = self.get_current_date()
             present_month = current_date.month
             present_day = current_date.day
             month_delta = (m + 12.5 - present_month - present_day / 30.0) % 12

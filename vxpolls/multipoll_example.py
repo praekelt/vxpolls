@@ -33,6 +33,7 @@ class MultiPollApplication(PollApplication):
         self.dashboard_prefix = self.config.get('dashboard_path_prefix', '/')
         self.poll_prefix = self.config.get('poll_prefix', 'poll_manager')
         self.poll_name_list = self.config.get('poll_name_list', [])
+        self.is_demo = self.config.get('is_demo', False)
 
     def setup_application(self):
         self.r_server = self.get_redis(self.r_config)
@@ -138,9 +139,12 @@ class MultiPollApplication(PollApplication):
         if participant.force_archive \
                 or not self.try_go_to_next_poll(participant):
             # Archive for demo purposes so we can redial in and start over.
-            self.pm.archive(participant.scope_id, participant)
+            if self.is_demo or participant.force_archive:
+                self.pm.archive(participant.scope_id, participant)
 
     def try_go_to_next_poll(self, participant):
+        if not self.is_demo:
+            return False
         current_poll_id = participant.get_poll_id()
         next_poll_id = self.get_next_poll_id(self.make_poll_prefix(
                                                 participant.scope_id),
@@ -175,6 +179,12 @@ class MultiPollApplication(PollApplication):
 
         new_poll = participant.get_label('JUMP_TO_POLL')
         current_poll_id = participant.get_poll_id()
+        #more_questions = False
+        #poll = self.pm.get_poll_for_participant(current_poll_id, participant)
+        #if poll and poll.has_more_questions_for(participant):
+            #more_questions = True
+        #print more_questions
+        #if new_poll and more_questions:
         if new_poll and current_poll_id != self.get_first_poll_id(
                                                     self.make_poll_prefix(
                                                     participant.scope_id)):

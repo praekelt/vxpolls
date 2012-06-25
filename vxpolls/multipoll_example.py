@@ -234,14 +234,12 @@ class MultiPollApplication(PollApplication):
                 year_offset = 1
             birth_date = date(present_year + year_offset, m, 15)
 
-            # base switches between weekly surveys on monday of
-            # current week, not current date
-            #weeks_till = (birth_date - last_monday).days / 7
-            #if weeks_till > 35:
-                #weeks_till = 35
-            #poll_number = 36 - weeks_till
-            # TODO need a better way to eliminate impossible birth_dates
-            # and a test for it ...
+            # Revise birth date if too distant TODO need a test for this
+            check_poll_number = self.get_poll_number(birth_date)
+            if check_poll_number < 1:
+                print "fixing birth_date"
+                birth_date = birth_date - timedelta(weeks=1-check_poll_number)
+
             poll_number = self.get_poll_number(birth_date)
             return (poll_number, birth_date)
 

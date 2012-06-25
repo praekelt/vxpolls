@@ -1030,7 +1030,10 @@ class LiveCustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
         participant = self.app.pm.get_participant(self.poll_id_prefix[:-1],
                                             self.mkmsg_in(content='').user())
         self.assertEqual(participant.labels.get('USER_STATUS'), '2')
+        self.assertEqual(participant.labels.get('REGISTRATION_DATE'),
+                '2012-05-21')
         self.assertTrue(participant.opted_in)
+
 
     @inlineCallbacks
     def test_partial_1_no_hiv(self):
@@ -1277,6 +1280,8 @@ class LiveRegisterMultiPollApplicationTestCase(RegisterMultiPollApplicationTestC
         participant = self.app.pm.get_participant(self.poll_id_prefix[:-1],
                                             self.mkmsg_in(content='').user())
         self.assertEqual(participant.labels.get('USER_STATUS'), '1')
+        self.assertEqual(participant.labels.get('REGISTRATION_DATE'),
+                '2012-05-21')
         self.assertTrue(participant.opted_in)
         follow_up_attempts = [
             ('Any input', self.app.registration_completed_response),

@@ -236,6 +236,8 @@ class MultiPollApplication(PollApplication):
                                                 participant.scope_id),
                                 month_of_year_to_week(label_value)[1])
                         participant.set_label('JUMP_TO_POLL', poll_id)
+                        participant.set_label('REGISTRATION_DATE',
+                                str(self.get_current_date()))
             if poll_question.label == 'INITIAL_AGE' \
                     and label_value == '6':  # max age for demo should be 5
                     #and label_value == '11':
@@ -248,5 +250,7 @@ class MultiPollApplication(PollApplication):
                                                 participant.scope_id),
                                 months_to_week(label_value)[1])
                         participant.set_label('JUMP_TO_POLL', poll_id)
+                        participant.set_label('REGISTRATION_DATE',
+                                str(self.get_current_date()))
 
     custom_answer_logic = custom_answer_logic_function

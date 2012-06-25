@@ -1034,7 +1034,6 @@ class LiveCustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
                 '2012-05-21')
         self.assertTrue(participant.opted_in)
 
-
     @inlineCallbacks
     def test_partial_1_no_hiv(self):
         pig = self.app.poll_id_generator(self.poll_id_prefix)
@@ -1102,6 +1101,7 @@ class LiveCustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
             ]
 
         yield self.run_inputs(inputs_and_expected)
+
 
 class RegisterMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
 
@@ -1275,8 +1275,9 @@ class RegisterMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
         # And confirm re-run is possible
         yield self.run_inputs(inputs_and_expected)
 
-class LiveRegisterMultiPollApplicationTestCase(RegisterMultiPollApplicationTestCase):
 
+class LiveRegisterMultiPollApplicationTestCase(
+                                RegisterMultiPollApplicationTestCase):
     @inlineCallbacks
     def setUp(self):
 

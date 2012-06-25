@@ -999,7 +999,7 @@ class LiveCustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
         yield self.run_inputs(inputs_and_expected)
 
     @inlineCallbacks
-    def test_partial_2_hiv(self):
+    def test_partial_2_hiv_b(self):
         pig = self.app.poll_id_generator(self.poll_id_prefix)
         poll_id = pig.next()
         inputs_and_expected = [
@@ -1102,6 +1102,35 @@ class LiveCustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
 
         yield self.run_inputs(inputs_and_expected)
 
+    @inlineCallbacks
+    def test_partial_1_hiv_birth_date_fix(self):
+        self.app.current_date = date(2012, 5, 24)
+        pig = self.app.poll_id_generator(self.poll_id_prefix)
+        poll_id = pig.next()
+        inputs_and_expected = [
+            ('Any input', self.default_questions_dict[poll_id][0]['copy']),
+            ('1', self.default_questions_dict[poll_id][1]['copy']),
+            ('4', self.default_questions_dict[poll_id][3]['copy']),
+            ('2', self.default_questions_dict[poll_id][4]['copy']),
+            ('Any input', self.app.registration_completed_response),
+            ]
+
+        pig = self.app.poll_id_generator(self.poll_id_prefix, "%s0" %
+                                            self.poll_id_prefix)
+        poll_id = pig.next()
+        inputs_and_expected = inputs_and_expected + [
+            ('Any input', self.default_questions_dict[poll_id][0]['copy']),
+            ('1', self.default_questions_dict[poll_id][1]['copy']),
+            ('Any input', self.default_questions_dict[poll_id][3]['copy']),
+            ('1', self.default_questions_dict[poll_id][4]['copy']),
+            ('Any input', self.app.survey_completed_response),
+            ('Any input', self.app.survey_completed_response),
+            ('Any input', self.app.survey_completed_response),
+            ('Any input', self.app.survey_completed_response),
+            ('Any input', self.app.survey_completed_response),
+            ]
+
+        yield self.run_inputs(inputs_and_expected)
 
 class RegisterMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
 

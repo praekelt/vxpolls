@@ -234,10 +234,9 @@ class MultiPollApplication(PollApplication):
                 year_offset = 1
             birth_date = date(present_year + year_offset, m, 15)
 
-            # Revise birth date if too distant TODO need a test for this
+            # Revise birth date if too distant
             check_poll_number = self.get_poll_number(birth_date)
             if check_poll_number < 1:
-                print "fixing birth_date"
                 birth_date = birth_date - timedelta(
                                             weeks=1 - check_poll_number)
 

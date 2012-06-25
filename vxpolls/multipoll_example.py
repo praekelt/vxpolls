@@ -238,7 +238,8 @@ class MultiPollApplication(PollApplication):
             check_poll_number = self.get_poll_number(birth_date)
             if check_poll_number < 1:
                 print "fixing birth_date"
-                birth_date = birth_date - timedelta(weeks=1-check_poll_number)
+                birth_date = birth_date - timedelta(
+                                            weeks=1 - check_poll_number)
 
             poll_number = self.get_poll_number(birth_date)
             return (poll_number, birth_date)

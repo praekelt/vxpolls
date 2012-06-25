@@ -1063,6 +1063,15 @@ class LiveCustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
             ]
 
         yield self.run_inputs(inputs_and_expected)
+        # Check participant
+        participant = self.app.pm.get_participant(self.poll_id_prefix[:-1],
+                                            self.mkmsg_in(content='').user())
+        self.assertEqual(participant.labels.get('USER_STATUS'), '1')
+        self.assertEqual(participant.labels.get('REGISTRATION_DATE'),
+                '2012-05-21')
+        self.assertEqual(participant.labels.get('BIRTH_DATE'),
+                '2012-06-15')
+        self.assertTrue(participant.opted_in)
 
     @inlineCallbacks
     def test_partial_1_hiv(self):
@@ -1076,7 +1085,7 @@ class LiveCustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
             ('Any input', self.app.registration_completed_response),
             ]
 
-        pig = self.app.poll_id_generator(self.poll_id_prefix, "%s4" %
+        pig = self.app.poll_id_generator(self.poll_id_prefix, "%s1" %
                                             self.poll_id_prefix)
         poll_id = pig.next()
         inputs_and_expected = inputs_and_expected + [

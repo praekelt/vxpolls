@@ -223,13 +223,28 @@ class MultiPollApplication(PollApplication):
             present_year = current_date.year
             present_month = current_date.month
             present_day = current_date.day
-            month_delta = (m + 12.5 - present_month - present_day / 30.0) % 12
-            if month_delta > 8:
-                month_delta = 8
-            #print present_month + month_delta
-            start_week = int(round(40 - month_delta * 4))
+            #print m,
+            #print m + 12 - present_month,
+            #print (m + 12 - present_month) % 12,
+            year_offset = 0
+            if m < present_month:
+                year_offset = 1
+            #print year_offset,
+            birth_date = date(present_year + year_offset, m, 15)
+            #print birth_date
+            #month_delta = (m + 12.5 - present_month - present_day / 30.0) % 12
+            #if month_delta > 8:
+                #month_delta = 8
+            #print month_delta * 4,
+            weeks_till = (birth_date - current_date).days / 7
+            if weeks_till > 35:
+                weeks_till = 35
+            #print weeks_till
+            #start_week = int(round(40 - month_delta * 4))
+            #print start_week, 40 - weeks_till
+            start_week = 40 - weeks_till
             poll_number = start_week - 4
-            return (start_week, poll_number)
+            return (start_week, poll_number, birth_date)
 
         label_value = participant.get_label(poll_question.label)
         if participant.get_label('USER_STATUS') == '3':
@@ -245,6 +260,8 @@ class MultiPollApplication(PollApplication):
                                                 participant.scope_id),
                                 month_of_year_to_week(label_value)[1])
                         participant.set_label('JUMP_TO_POLL', poll_id)
+                        participant.set_label('BIRTH_DATE',
+                                str(month_of_year_to_week(label_value)[2]))
                         participant.set_label('REGISTRATION_DATE',
                                 str(self.get_current_date()))
             if poll_question.label == 'INITIAL_AGE' \

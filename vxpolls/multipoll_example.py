@@ -1,7 +1,7 @@
 # -*- test-case-name: tests.test_multipoll_example -*-
 # -*- coding: utf8 -*-
 
-from datetime import date
+from datetime import date, timedelta
 import redis
 
 from vxpolls.example import PollApplication
@@ -207,17 +207,26 @@ class MultiPollApplication(PollApplication):
             m = int(month)
             #m = 1
             week = (m - 1) * 4 + 1
+            current_date = self.get_current_date()
+            #present_year = current_date.year
+            #present_month = current_date.month
+            #present_day = current_date.day
+            birth_date = current_date - timedelta(weeks = week)
+            #print birth_date
+            #print week, (current_date - birth_date).days / 7
             poll_number = week + 36  # given prev poll set of 5 - 40 + reg
-            return (week, poll_number)
+            return (week, poll_number, birth_date)
 
         def month_of_year_to_week(month):
             m = int(month)
             current_date = self.get_current_date()
+            present_year = current_date.year
             present_month = current_date.month
             present_day = current_date.day
             month_delta = (m + 12.5 - present_month - present_day / 30.0) % 12
             if month_delta > 8:
                 month_delta = 8
+            #print present_month + month_delta
             start_week = int(round(40 - month_delta * 4))
             poll_number = start_week - 4
             return (start_week, poll_number)
@@ -250,6 +259,8 @@ class MultiPollApplication(PollApplication):
                                                 participant.scope_id),
                                 months_to_week(label_value)[1])
                         participant.set_label('JUMP_TO_POLL', poll_id)
+                        participant.set_label('BIRTH_DATE',
+                                str(months_to_week(label_value)[2]))
                         participant.set_label('REGISTRATION_DATE',
                                 str(self.get_current_date()))
 

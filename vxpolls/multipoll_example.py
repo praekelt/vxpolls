@@ -197,6 +197,9 @@ class MultiPollApplication(PollApplication):
         monday = current_date - timedelta(days=offset)
         return monday
 
+    def get_poll_number(self, birth_date):
+        return 36 - (birth_date - self.get_last_monday()).days / 7
+
     def custom_answer_logic_function(self, participant, answer, poll_question):
         # Override  custom logic to be called during answer handling here
 
@@ -215,8 +218,9 @@ class MultiPollApplication(PollApplication):
             current_date = self.get_current_date()
             last_monday = self.get_last_monday()
             birth_date = current_date - timedelta(weeks=week)
-            weeks_till = (birth_date - last_monday).days / 7
-            poll_number = 36 - weeks_till
+            #weeks_till = (birth_date - last_monday).days / 7
+            #poll_number = 36 - weeks_till
+            poll_number = self.get_poll_number(birth_date)
             return (poll_number, birth_date)
 
         def month_of_year_to_week(month):
@@ -232,10 +236,13 @@ class MultiPollApplication(PollApplication):
 
             # base switches between weekly surveys on monday of
             # current week, not current date
-            weeks_till = (birth_date - last_monday).days / 7
-            if weeks_till > 35:
-                weeks_till = 35
-            poll_number = 36 - weeks_till
+            #weeks_till = (birth_date - last_monday).days / 7
+            #if weeks_till > 35:
+                #weeks_till = 35
+            #poll_number = 36 - weeks_till
+            # TODO need a better way to eliminate impossible birth_dates
+            # and a test for it ...
+            poll_number = self.get_poll_number(birth_date)
             return (poll_number, birth_date)
 
         label_value = participant.get_label(poll_question.label)

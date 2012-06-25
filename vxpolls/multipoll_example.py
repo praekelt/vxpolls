@@ -191,6 +191,12 @@ class MultiPollApplication(PollApplication):
         else:
             return date.today()
 
+    def get_last_monday(self):
+        current_date = self.get_current_date()
+        offset = current_date.weekday()
+        monday = current_date - timedelta(days = offset)
+        return monday
+
     def custom_answer_logic_function(self, participant, answer, poll_question):
         # Override  custom logic to be called during answer handling here
 
@@ -223,6 +229,7 @@ class MultiPollApplication(PollApplication):
             present_year = current_date.year
             present_month = current_date.month
             present_day = current_date.day
+            last_monday = self.get_last_monday()
             #print m,
             #print m + 12 - present_month,
             #print (m + 12 - present_month) % 12,
@@ -236,7 +243,10 @@ class MultiPollApplication(PollApplication):
             #if month_delta > 8:
                 #month_delta = 8
             #print month_delta * 4,
-            weeks_till = (birth_date - current_date).days / 7
+
+            # base switches betwwen weekly surveys on monday of
+            # current week, not current date
+            weeks_till = (birth_date - last_monday).days / 7
             if weeks_till > 35:
                 weeks_till = 35
             #print weeks_till
@@ -244,6 +254,9 @@ class MultiPollApplication(PollApplication):
             #print start_week, 40 - weeks_till
             start_week = 40 - weeks_till
             poll_number = start_week - 4
+            print birth_date.weekday()
+            print self.get_current_date()
+            print self.get_last_monday()
             return (start_week, poll_number, birth_date)
 
         label_value = participant.get_label(poll_question.label)

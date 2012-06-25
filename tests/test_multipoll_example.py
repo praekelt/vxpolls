@@ -1075,6 +1075,7 @@ class LiveCustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
 
     @inlineCallbacks
     def test_partial_1_hiv(self):
+        self.app.current_date = date(2012, 5, 24)
         pig = self.app.poll_id_generator(self.poll_id_prefix)
         poll_id = pig.next()
         inputs_and_expected = [

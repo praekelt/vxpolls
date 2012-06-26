@@ -1101,6 +1101,15 @@ class LiveCustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
             ]
 
         yield self.run_inputs(inputs_and_expected)
+        # Check participant
+        participant = self.app.pm.get_participant(self.poll_id_prefix[:-1],
+                                            self.mkmsg_in(content='').user())
+        self.assertEqual(participant.labels.get('USER_STATUS'), '1')
+        self.assertEqual(participant.labels.get('REGISTRATION_DATE'),
+                '2012-05-24')
+        self.assertEqual(participant.labels.get('BIRTH_DATE'),
+                '2013-01-15')
+        self.assertTrue(participant.opted_in)
 
     @inlineCallbacks
     def test_partial_1_hiv_birth_date_fix(self):
@@ -1131,6 +1140,14 @@ class LiveCustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
             ]
 
         yield self.run_inputs(inputs_and_expected)
+        participant = self.app.pm.get_participant(self.poll_id_prefix[:-1],
+                                            self.mkmsg_in(content='').user())
+        self.assertEqual(participant.labels.get('USER_STATUS'), '1')
+        self.assertEqual(participant.labels.get('REGISTRATION_DATE'),
+                '2012-05-24')
+        self.assertEqual(participant.labels.get('BIRTH_DATE'),
+                '2013-01-21')
+        self.assertTrue(participant.opted_in)
 
 class RegisterMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
 

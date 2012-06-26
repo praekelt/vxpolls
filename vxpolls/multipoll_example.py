@@ -1,7 +1,7 @@
 # -*- test-case-name: tests.test_multipoll_example -*-
 # -*- coding: utf8 -*-
 
-from datetime import date, timedelta
+from datetime import date, timedelta, datetime
 import redis
 
 from vxpolls.example import PollApplication
@@ -60,6 +60,18 @@ class MultiPollApplication(PollApplication):
     @classmethod
     def get_first_poll_id(cls, poll_id_prefix):
         return "%s%s" % (poll_id_prefix, 0)
+
+    @classmethod
+    def get_first_poll_id(cls, poll_id_prefix):
+        return "%s%s" % (poll_id_prefix, 0)
+
+    @classmethod
+    def get_poll_id_for_number(cls, poll_id_prefix, number):
+        return "%s%s" % (poll_id_prefix, number)
+
+    @classmethod
+    def get_poll_index(cls, poll_id_prefix, id):
+        return int(id[len(poll_id_prefix):])
 
     @classmethod
     def get_next_poll_id(cls, poll_id_prefix, current_poll=None):
@@ -177,13 +189,31 @@ class MultiPollApplication(PollApplication):
             # they want HIV messages or not, are opting in
             participant.opted_in = 'True'
 
-        new_poll = participant.get_label('JUMP_TO_POLL')
         current_poll_id = participant.get_poll_id()
-        if new_poll and current_poll_id != self.get_first_poll_id(
+        bdate = participant.get_label("BIRTH_DATE")
+        if bdate and current_poll_id != self.get_first_poll_id(
                                                     self.make_poll_prefix(
                                                     participant.scope_id)):
-            self.try_go_to_specific_poll(participant, new_poll)
-            participant.set_label('JUMP_TO_POLL', None)
+            birth_date = datetime.strptime(bdate, "%Y-%m-%d").date()
+            new_poll_number = self.get_poll_number(birth_date)
+            current_poll_number = self.get_poll_index(
+                            self.make_poll_prefix(participant.scope_id),
+                            current_poll_id)
+            new_poll_id = self.get_poll_id_for_number(
+                            self.make_poll_prefix(participant.scope_id),
+                            new_poll_number)
+            if new_poll_id != current_poll_id \
+                and new_poll_number > current_poll_number:
+                print current_poll_id, new_poll_id
+                self.try_go_to_specific_poll(participant, new_poll_id)
+
+        #new_poll = participant.get_label('JUMP_TO_POLL')
+        #current_poll_id = participant.get_poll_id()
+        #if new_poll and current_poll_id != self.get_first_poll_id(
+                                                    #self.make_poll_prefix(
+                                                    #participant.scope_id)):
+            #self.try_go_to_specific_poll(participant, new_poll)
+            #participant.set_label('JUMP_TO_POLL', None)
 
     def get_current_date(self):
         if self.current_date:  # for testing
@@ -253,10 +283,10 @@ class MultiPollApplication(PollApplication):
                 participant.force_archive = True
             if poll_question.label == 'EXPECTED_MONTH' \
                     and label_value != '13':
-                        poll_id = "%s%s" % (self.make_poll_prefix(
-                                                participant.scope_id),
-                                month_of_year_to_week(label_value)[0])
-                        participant.set_label('JUMP_TO_POLL', poll_id)
+                        #poll_id = "%s%s" % (self.make_poll_prefix(
+                                                #participant.scope_id),
+                                #month_of_year_to_week(label_value)[0])
+                        #participant.set_label('JUMP_TO_POLL', poll_id)
                         participant.set_label('BIRTH_DATE',
                                 str(month_of_year_to_week(label_value)[1]))
                         participant.set_label('REGISTRATION_DATE',
@@ -269,10 +299,10 @@ class MultiPollApplication(PollApplication):
             if poll_question.label == 'INITIAL_AGE' \
                     and label_value != '6':  # max age for demo should be 5
                     #and label_value != '11':
-                        poll_id = "%s%s" % (self.make_poll_prefix(
-                                                participant.scope_id),
-                                months_to_week(label_value)[0])
-                        participant.set_label('JUMP_TO_POLL', poll_id)
+                        #poll_id = "%s%s" % (self.make_poll_prefix(
+                                                #participant.scope_id),
+                                #months_to_week(label_value)[0])
+                        #participant.set_label('JUMP_TO_POLL', poll_id)
                         participant.set_label('BIRTH_DATE',
                                 str(months_to_week(label_value)[1]))
                         participant.set_label('REGISTRATION_DATE',

@@ -206,6 +206,7 @@ class MultiPollApplication(PollApplication):
                 and new_poll_number > current_poll_number:
                 #print current_poll_id, new_poll_id
                 self.try_go_to_specific_poll(participant, new_poll_id)
+                participant.has_unanswered_question = False
 
     def get_current_date(self):
         if self.current_date:  # for testing

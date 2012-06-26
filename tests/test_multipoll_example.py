@@ -1215,6 +1215,14 @@ class LiveCustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
             ('Any input', self.default_questions_dict[poll_id][0]['copy'])]
         yield self.run_inputs(inputs_and_expected)
 
+        # jump 2 weeks forward
+        self.app.current_date = self.app.current_date + timedelta(days=14)
+        poll_id = pig.next()  # one week
+        poll_id = pig.next()  # second week
+        inputs_and_expected = [
+            ('Any input', self.default_questions_dict[poll_id][0]['copy'])]
+        yield self.run_inputs(inputs_and_expected)
+
         # Check participant
         participant = self.app.pm.get_participant(self.poll_id_prefix[:-1],
                                             self.mkmsg_in(content='').user())

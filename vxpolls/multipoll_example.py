@@ -204,16 +204,8 @@ class MultiPollApplication(PollApplication):
                             new_poll_number)
             if new_poll_id != current_poll_id \
                 and new_poll_number > current_poll_number:
-                print current_poll_id, new_poll_id
+                #print current_poll_id, new_poll_id
                 self.try_go_to_specific_poll(participant, new_poll_id)
-
-        #new_poll = participant.get_label('JUMP_TO_POLL')
-        #current_poll_id = participant.get_poll_id()
-        #if new_poll and current_poll_id != self.get_first_poll_id(
-                                                    #self.make_poll_prefix(
-                                                    #participant.scope_id)):
-            #self.try_go_to_specific_poll(participant, new_poll)
-            #participant.set_label('JUMP_TO_POLL', None)
 
     def get_current_date(self):
         if self.current_date:  # for testing
@@ -248,8 +240,6 @@ class MultiPollApplication(PollApplication):
             current_date = self.get_current_date()
             last_monday = self.get_last_monday()
             birth_date = current_date - timedelta(weeks=week)
-            #weeks_till = (birth_date - last_monday).days / 7
-            #poll_number = 36 - weeks_till
             poll_number = self.get_poll_number(birth_date)
             return (poll_number, birth_date)
 
@@ -283,10 +273,6 @@ class MultiPollApplication(PollApplication):
                 participant.force_archive = True
             if poll_question.label == 'EXPECTED_MONTH' \
                     and label_value != '13':
-                        #poll_id = "%s%s" % (self.make_poll_prefix(
-                                                #participant.scope_id),
-                                #month_of_year_to_week(label_value)[0])
-                        #participant.set_label('JUMP_TO_POLL', poll_id)
                         participant.set_label('BIRTH_DATE',
                                 str(month_of_year_to_week(label_value)[1]))
                         participant.set_label('REGISTRATION_DATE',
@@ -299,10 +285,6 @@ class MultiPollApplication(PollApplication):
             if poll_question.label == 'INITIAL_AGE' \
                     and label_value != '6':  # max age for demo should be 5
                     #and label_value != '11':
-                        #poll_id = "%s%s" % (self.make_poll_prefix(
-                                                #participant.scope_id),
-                                #months_to_week(label_value)[0])
-                        #participant.set_label('JUMP_TO_POLL', poll_id)
                         participant.set_label('BIRTH_DATE',
                                 str(months_to_week(label_value)[1]))
                         participant.set_label('REGISTRATION_DATE',

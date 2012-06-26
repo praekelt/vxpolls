@@ -1,5 +1,5 @@
 import json
-from datetime import date
+from datetime import date, timedelta
 
 from twisted.internet.defer import inlineCallbacks
 
@@ -1148,6 +1148,83 @@ class LiveCustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
         self.assertEqual(participant.labels.get('BIRTH_DATE'),
                 '2013-01-21')
         self.assertTrue(participant.opted_in)
+
+    @inlineCallbacks
+    def test_partial_1_hiv_advancing_date(self):
+        self.app.current_date = date(2012, 5, 24)
+        pig = self.app.poll_id_generator(self.poll_id_prefix)
+        poll_id = pig.next()
+        inputs_and_expected = [
+            ('Any input', self.default_questions_dict[poll_id][0]['copy']),
+            ('1', self.default_questions_dict[poll_id][1]['copy']),
+            ('1', self.default_questions_dict[poll_id][3]['copy']),
+            ('2', self.default_questions_dict[poll_id][4]['copy']),
+            ('Any input', self.app.registration_completed_response),
+            ]
+
+        pig = self.app.poll_id_generator(self.poll_id_prefix, "%s1" %
+                                            self.poll_id_prefix)
+        poll_id = pig.next()
+        inputs_and_expected = inputs_and_expected + [
+            ('Any input', self.default_questions_dict[poll_id][0]['copy']),
+            ('1', self.default_questions_dict[poll_id][1]['copy']),
+            ('Any input', self.default_questions_dict[poll_id][3]['copy']),
+            ('1', self.default_questions_dict[poll_id][4]['copy']),
+            ('Any input', self.app.survey_completed_response),
+            ('Any input', self.app.survey_completed_response),
+            ('Any input', self.app.survey_completed_response),
+            ('Any input', self.app.survey_completed_response),
+            ('Any input', self.app.survey_completed_response),
+            ]
+
+        yield self.run_inputs(inputs_and_expected)
+
+        self.app.current_date = date(2012, 5, 25)
+        inputs_and_expected = [
+            ('Any input', self.app.survey_completed_response)]
+        yield self.run_inputs(inputs_and_expected)
+
+        self.app.current_date = date(2012, 5, 26)
+        inputs_and_expected = [
+            ('Any input', self.app.survey_completed_response)]
+        yield self.run_inputs(inputs_and_expected)
+
+        self.app.current_date = date(2012, 5, 27)
+        inputs_and_expected = [
+            ('Any input', self.app.survey_completed_response)]
+        yield self.run_inputs(inputs_and_expected)
+
+        self.app.current_date = date(2012, 5, 28)
+        poll_id = pig.next()
+        inputs_and_expected = [
+            ('Any input', self.default_questions_dict[poll_id][0]['copy']),
+            ('1', self.default_questions_dict[poll_id][1]['copy']),
+            ('Any input', self.default_questions_dict[poll_id][3]['copy']),
+            ('1', self.default_questions_dict[poll_id][4]['copy']),
+            ('Any input', self.app.survey_completed_response),
+            ('Any input', self.app.survey_completed_response),
+            ('Any input', self.app.survey_completed_response),
+            ]
+        yield self.run_inputs(inputs_and_expected)
+
+        # jump 2 weeks forward
+        self.app.current_date = self.app.current_date + timedelta(days=14)
+        poll_id = pig.next()  # one week
+        poll_id = pig.next()  # second week
+        inputs_and_expected = [
+            ('Any input', self.default_questions_dict[poll_id][0]['copy'])]
+        yield self.run_inputs(inputs_and_expected)
+
+        # Check participant
+        participant = self.app.pm.get_participant(self.poll_id_prefix[:-1],
+                                            self.mkmsg_in(content='').user())
+        self.assertEqual(participant.labels.get('USER_STATUS'), '1')
+        self.assertEqual(participant.labels.get('REGISTRATION_DATE'),
+                '2012-05-24')
+        self.assertEqual(participant.labels.get('BIRTH_DATE'),
+                '2013-01-15')
+        self.assertTrue(participant.opted_in)
+
 
 class RegisterMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
 

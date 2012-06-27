@@ -1460,6 +1460,25 @@ class LiveRegisterMultiPollApplicationTestCase(
             ]
         yield self.run_inputs(follow_up_attempts)
 
+    @inlineCallbacks
+    def test_register_1_dont_know(self):
+        pig = self.app.poll_id_generator(self.poll_id_prefix)
+        poll_id = pig.next()
+        inputs_and_expected = [
+            ('Any input', self.default_questions_dict[poll_id][0]['copy']),
+            ('1', self.default_questions_dict[poll_id][1]['copy']),
+            ('13', self.default_questions_dict[poll_id][2]['copy']),
+            ('Any input', self.app.registration_completed_response),
+            ]
+        yield self.run_inputs(inputs_and_expected)
+        # Check abortive registration is archived
+        archived = self.app.pm.get_archive(self.poll_id_prefix[:-1],
+                                            self.mkmsg_in(content='').user())
+        self.assertEqual(archived[-1].labels.get('USER_STATUS'), '4')
+        self.assertFalse(archived[-1].opted_in)
+        # And confirm re-run is possible
+        yield self.run_inputs(inputs_and_expected)
+
 
 class ArchivingMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
 

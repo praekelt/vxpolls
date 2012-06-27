@@ -860,13 +860,6 @@ class LiveCustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
         for quiz in other_quizzes_list:
             self.default_questions_dict[pig.next()] = quiz
 
-        #pp = pprint.PrettyPrinter(indent=4)
-        #pp.pprint(default_questions_dict)
-        #i = 0
-        #for k, v in default_questions_dict.iteritems():
-            #i = i + len(v)
-        #print "QUESTIONS", i
-
         yield super(BaseMultiPollApplicationTestCase, self).setUp()
         self.config = {
             'poll_id_list': self.poll_id_list,

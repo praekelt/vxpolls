@@ -204,7 +204,6 @@ class MultiPollApplication(PollApplication):
                             new_poll_number)
             if new_poll_id != current_poll_id \
                 and new_poll_number > current_poll_number:
-                #print current_poll_id, new_poll_id
                 self.try_go_to_specific_poll(participant, new_poll_id)
                 participant.has_unanswered_question = False
 

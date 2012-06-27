@@ -1,7 +1,7 @@
 # -*- test-case-name: tests.test_multipoll_example -*-
 # -*- coding: utf8 -*-
 
-from datetime import date
+from datetime import date, timedelta, datetime
 import redis
 
 from vxpolls.example import PollApplication
@@ -33,6 +33,7 @@ class MultiPollApplication(PollApplication):
         self.dashboard_prefix = self.config.get('dashboard_path_prefix', '/')
         self.poll_prefix = self.config.get('poll_prefix', 'poll_manager')
         self.poll_name_list = self.config.get('poll_name_list', [])
+        self.is_demo = self.config.get('is_demo', False)
 
     def setup_application(self):
         self.r_server = self.get_redis(self.r_config)
@@ -59,6 +60,18 @@ class MultiPollApplication(PollApplication):
     @classmethod
     def get_first_poll_id(cls, poll_id_prefix):
         return "%s%s" % (poll_id_prefix, 0)
+
+    @classmethod
+    def get_first_poll_id(cls, poll_id_prefix):
+        return "%s%s" % (poll_id_prefix, 0)
+
+    @classmethod
+    def get_poll_id_for_number(cls, poll_id_prefix, number):
+        return "%s%s" % (poll_id_prefix, number)
+
+    @classmethod
+    def get_poll_index(cls, poll_id_prefix, id):
+        return int(id[len(poll_id_prefix):])
 
     @classmethod
     def get_next_poll_id(cls, poll_id_prefix, current_poll=None):
@@ -138,9 +151,12 @@ class MultiPollApplication(PollApplication):
         if participant.force_archive \
                 or not self.try_go_to_next_poll(participant):
             # Archive for demo purposes so we can redial in and start over.
-            self.pm.archive(participant.scope_id, participant)
+            if self.is_demo or participant.force_archive:
+                self.pm.archive(participant.scope_id, participant)
 
     def try_go_to_next_poll(self, participant):
+        if not self.is_demo and len(participant.polls) > 1:
+            return False
         current_poll_id = participant.get_poll_id()
         next_poll_id = self.get_next_poll_id(self.make_poll_prefix(
                                                 participant.scope_id),
@@ -173,13 +189,38 @@ class MultiPollApplication(PollApplication):
             # they want HIV messages or not, are opting in
             participant.opted_in = 'True'
 
-        new_poll = participant.get_label('JUMP_TO_POLL')
         current_poll_id = participant.get_poll_id()
-        if new_poll and current_poll_id != self.get_first_poll_id(
+        bdate = participant.get_label("BIRTH_DATE")
+        if bdate and current_poll_id != self.get_first_poll_id(
                                                     self.make_poll_prefix(
                                                     participant.scope_id)):
-            self.try_go_to_specific_poll(participant, new_poll)
-            participant.set_label('JUMP_TO_POLL', None)
+            birth_date = datetime.strptime(bdate, "%Y-%m-%d").date()
+            new_poll_number = self.get_poll_number(birth_date)
+            current_poll_number = self.get_poll_index(
+                            self.make_poll_prefix(participant.scope_id),
+                            current_poll_id)
+            new_poll_id = self.get_poll_id_for_number(
+                            self.make_poll_prefix(participant.scope_id),
+                            new_poll_number)
+            if new_poll_id != current_poll_id \
+                and new_poll_number > current_poll_number:
+                self.try_go_to_specific_poll(participant, new_poll_id)
+                participant.has_unanswered_question = False
+
+    def get_current_date(self):
+        if self.current_date:  # for testing
+            return self.current_date
+        else:
+            return date.today()
+
+    def get_last_monday(self):
+        current_date = self.get_current_date()
+        offset = current_date.weekday()
+        monday = current_date - timedelta(days=offset)
+        return monday
+
+    def get_poll_number(self, birth_date):
+        return 36 - (birth_date - self.get_last_monday()).days / 7
 
     def custom_answer_logic_function(self, participant, answer, poll_question):
         # Override  custom logic to be called during answer handling here
@@ -195,23 +236,32 @@ class MultiPollApplication(PollApplication):
 
         def months_to_week(month):
             m = int(month)
-            #m = 1
             week = (m - 1) * 4 + 1
-            poll_number = week + 36  # given prev poll set of 5 - 40 + reg
-            return (week, poll_number)
+            current_date = self.get_current_date()
+            last_monday = self.get_last_monday()
+            birth_date = current_date - timedelta(weeks=week)
+            poll_number = self.get_poll_number(birth_date)
+            return (poll_number, birth_date)
 
         def month_of_year_to_week(month):
             m = int(month)
-            current_date = date.today()
-            current_date = date(2012, 5, 21)  # For testing
+            current_date = self.get_current_date()
+            present_year = current_date.year
             present_month = current_date.month
-            present_day = current_date.day
-            month_delta = (m + 12.5 - present_month - present_day / 30.0) % 12
-            if month_delta > 8:
-                month_delta = 8
-            start_week = int(round(40 - month_delta * 4))
-            poll_number = start_week - 4
-            return (start_week, poll_number)
+            last_monday = self.get_last_monday()
+            year_offset = 0
+            if m < present_month:
+                year_offset = 1
+            birth_date = date(present_year + year_offset, m, 15)
+
+            # Revise birth date if too distant
+            check_poll_number = self.get_poll_number(birth_date)
+            if check_poll_number < 1:
+                birth_date = birth_date - timedelta(
+                                            weeks=1 - check_poll_number)
+
+            poll_number = self.get_poll_number(birth_date)
+            return (poll_number, birth_date)
 
         label_value = participant.get_label(poll_question.label)
         if participant.get_label('USER_STATUS') == '3':
@@ -223,10 +273,10 @@ class MultiPollApplication(PollApplication):
                 participant.force_archive = True
             if poll_question.label == 'EXPECTED_MONTH' \
                     and label_value != '13':
-                        poll_id = "%s%s" % (self.make_poll_prefix(
-                                                participant.scope_id),
-                                month_of_year_to_week(label_value)[1])
-                        participant.set_label('JUMP_TO_POLL', poll_id)
+                        participant.set_label('BIRTH_DATE',
+                                str(month_of_year_to_week(label_value)[1]))
+                        participant.set_label('REGISTRATION_DATE',
+                                str(self.get_current_date()))
             if poll_question.label == 'INITIAL_AGE' \
                     and label_value == '6':  # max age for demo should be 5
                     #and label_value == '11':
@@ -235,9 +285,9 @@ class MultiPollApplication(PollApplication):
             if poll_question.label == 'INITIAL_AGE' \
                     and label_value != '6':  # max age for demo should be 5
                     #and label_value != '11':
-                        poll_id = "%s%s" % (self.make_poll_prefix(
-                                                participant.scope_id),
-                                months_to_week(label_value)[1])
-                        participant.set_label('JUMP_TO_POLL', poll_id)
+                        participant.set_label('BIRTH_DATE',
+                                str(months_to_week(label_value)[1]))
+                        participant.set_label('REGISTRATION_DATE',
+                                str(self.get_current_date()))
 
     custom_answer_logic = custom_answer_logic_function

@@ -22,13 +22,15 @@ class MultiPollApplication(PollApplication):
                                 'please dial in again next week for more.'
 
     custom_answer_logic = None
+    is_demo = False
+    current_date = None
 
     def validate_config(self):
         self.questions_dict = self.config.get('questions_dict', {})
         self.poll_id_list = self.config.get('poll_id_list',
                                             [self.generate_unique_id()])
         self.r_config = self.config.get('redis_config', {})
-        self.batch_size = self.config.get('batch_size', 5)
+        self.batch_size = self.config.get('batch_size', 9)
         self.dashboard_port = int(self.config.get('dashboard_port', 8000))
         self.dashboard_prefix = self.config.get('dashboard_path_prefix', '/')
         self.poll_prefix = self.config.get('poll_prefix', 'poll_manager')

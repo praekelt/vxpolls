@@ -1,5 +1,4 @@
 from django import forms
-from django.forms.util import flatatt
 from django.utils.safestring import mark_safe
 
 
@@ -19,18 +18,18 @@ class CheckWidget(forms.MultiWidget):
 
     def __init__(self, attrs=None):
         widgets = (forms.TextInput(attrs=attrs),
-                   forms.TextInput(attrs=attrs))
+                    forms.Select(attrs=attrs),
+                    forms.TextInput(attrs=attrs))
         super(CheckWidget, self).__init__(widgets, attrs)
 
-    def format_output(self, widgets):
-        return mark_safe(u' '.join([
-            u'value of',
-            widgets[0],
-            u' equals ',
-            widgets[1],
-        ]))
-
     def decompress(self, value):
+        if isinstance(value, list) and len(value) == 3:
+            check_type, field_name, check_value = value
+            return [check_type, field_name, check_value]
+        return self.backwards_compatible_decompress
+
+    def backwards_compatible_decompress(self, value):
+        # This was the braindead old implementation
         equal = value.get('equal', {})
         if equal.items():
             return equal.items()[0]
@@ -42,19 +41,29 @@ class CheckField(forms.MultiValueField):
 
     widget = CheckWidget(attrs={'class': 'span1'})
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, choices=None, **kwargs):
+        self.choices = choices
         fields = (
             forms.CharField(),
+            forms.ChoiceField(choices=choices),
             forms.CharField(),
         )
-        super(CheckField, self).__init__(fields, *args, **kwargs)
+        super(CheckField, self).__init__(fields, **kwargs)
+        # Make sure the available choices are set in the widget
+        self.widget.widgets[1].choices = choices
 
     def compress(self, data_list):
-        if data_list:
-            return {
-                'equal': {
-                    data_list[0]: data_list[1],
-                }
-            }
-        else:
-            return {}
+        """
+        values are displayed as HTML widgets as follows:
+          [ ... name ... ] [ check_type select ] [ ... value ... ]
+        but are stored as:
+          ['check_type', 'name', 'value']
+        as a list of Strings in YAML.
+
+        This method makes sure the values are compressed in the right order.
+        """
+        return [
+            data_list[1],  # check type
+            data_list[0],  # name
+            data_list[2],  # value checked against
+        ]

@@ -1,3 +1,5 @@
+# -*- test-case-name: tests.test_forms -*-
+
 from django import forms
 from django.utils.datastructures import SortedDict
 from django.core.exceptions import ValidationError

@@ -1,18 +1,14 @@
 from django.test import TestCase
-from django.forms import Form
 from django.core.exceptions import ValidationError
+
 from vxpolls.content.fields import CheckField
+from vxpolls.content.forms import QuestionForm
 
 
 default_choices = [
     ('equal', 'equal'),
     ('not equal', 'not equal'),
     ]
-
-
-class TestForm(Form):
-    check = CheckField(choices=default_choices,
-                initial=['equal', 'a', 'b'])
 
 
 class FormTestCase(TestCase):
@@ -34,15 +30,12 @@ class FormTestCase(TestCase):
                             widget.render('name', ['a', 'equal', 'b']))
         self.assertEqual(f.help_text, 'value of')
 
-    def test_check_field_initial(self):
-        tf = TestForm({})
-        self.assertTrue('option value="equal"' in unicode(tf))
-
     def test_check_field_data(self):
-        tf = TestForm({
+        qf = QuestionForm({
             'check_0': 'a',
             'check_1': 'equal',
             'check_2': 'b',
             })
-        self.assertTrue(tf.is_valid())
-        self.assertEqual(tf.cleaned_data, {'check': ['equal', 'a', 'b']})
+        qf.is_valid()
+        self.assertTrue(qf.is_valid())
+        self.assertEqual(qf.cleaned_data['check'], ['equal', 'a', 'b'])

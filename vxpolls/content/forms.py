@@ -114,6 +114,17 @@ def _field_for(key):
     return key_map.get(key_type, forms.CharField(required=False))
 
 
+class QuestionForm(forms.Form):
+
+    copy = forms.CharField(required=False, widget=forms.Textarea)
+    check = fields.CheckField(choices=[
+        ('equal', 'equals'),
+        ('not_equal', 'does not equal'),
+    ])
+    label = forms.CharField(required=False)
+    responses = forms.CharField(required=False, widget=forms.Textarea)
+
+
 class VxpollForm(forms.BaseForm):
 
     def export(self):

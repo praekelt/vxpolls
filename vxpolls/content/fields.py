@@ -32,11 +32,22 @@ class CheckWidget(forms.MultiWidget):
     def decompress(self, value):
         if not value:
             return ('', '', '')
-        if isinstance(value, list) and len(value) == 3:
-            return value
-        return self.backwards_compatible_decompress(value)
+        if isinstance(value, dict):
+            return self.backwards_compatible_decompress(value)
+        return value
 
     def format_output(self, widgets):
+        """
+        Stuff is stored in the config in the format:
+
+            [`operation`, arg1, arg2, ...]
+
+        in the UI we want it shown as :
+
+            <input arg1> <select operation> <input arg2>
+
+        This is why the widgets 0 & 1 are swapped around when rendered.
+        """
         return u''.join([
             widgets[1],
             widgets[0],

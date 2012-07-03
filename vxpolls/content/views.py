@@ -1,4 +1,5 @@
 import redis
+import yaml
 
 from django.shortcuts import render, redirect
 from django.core.urlresolvers import reverse
@@ -32,19 +33,43 @@ def show(request, poll_id):
     })
 
 
+def clear_empties(cleaned_data):
+    """
+    FIXME:  this is a work around because for some reason Django is seeing
+            the new (empty) forms in the formsets as stuff that is to be
+            stored when it really should be discarded.
+    """
+    return [cd for cd in cleaned_data if cd['copy']]
+
+
 def formset(request, poll_id):
     pm = PollManager(redis, settings.VXPOLLS_PREFIX)
-    config = pm.get_config(poll_id)
+    poll_data = pm.get_config(poll_id)
+    questions_data = poll_data.get('questions', [])
     if request.method == 'POST':
+        # Set the poll_id
         post_data = request.POST.copy()
-        formset = forms.make_form_set(data=post_data)
-        if formset.is_valid():
-            pm.set(poll_id, formset.cleaned_data)
+        post_data.update({
+            'poll_id': poll_id,
+            })
+        # the questions & the forms are separate objects
+        # validate both, then merge the results into a single JSON hash
+        # that is stored in Redis
+        questions_form = forms.make_form_set(data=post_data)
+        poll_form = forms.PollForm(data=post_data)
+        if questions_form.is_valid() and poll_form.is_valid():
+            data = poll_form.cleaned_data.copy()
+            data.update({
+                'questions': clear_empties(questions_form.cleaned_data)
+            })
+            pm.set(poll_id, data)
             return redirect(reverse('content:formset', kwargs={
                 'poll_id': poll_id,
                 }))
     else:
-        formset = forms.make_form_set(initial=config)
+        poll_form = forms.PollForm(initial=poll_data)
+        questions_form = forms.make_form_set(initial=questions_data)
     return render(request, 'formset.html', {
-        'formset': formset,
+        'poll_form': poll_form,
+        'questions_form': questions_form,
         })

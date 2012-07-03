@@ -20,22 +20,24 @@ class FormTestCase(TestCase):
         self.assertEqual(f.choices, default_choices)
         self.assertEqual(
             ['equal', 'a', 'b'],
-            f.clean(['a', 'equal', 'b'])
+            f.clean(['equal', 'a', 'b'])
             )
 
     def test_check_widget_rendering(self):
         f = CheckField(choices=default_choices, help_text='value of')
         widget = f.widget
         self.assertTrue('"equal" selected="selected"' in
-                            widget.render('name', ['a', 'equal', 'b']))
+                            widget.render('name', ['equal', 'a', 'b']))
         self.assertEqual(f.help_text, 'value of')
 
     def test_check_field_data(self):
         qf = QuestionForm({
-            'check_0': 'a',
-            'check_1': 'equal',
-            'check_2': 'b',
+            'checks_0_0': 'equal',
+            'checks_0_1': 'a',
+            'checks_0_2': 'b',
             })
-        qf.is_valid()
         self.assertTrue(qf.is_valid())
-        self.assertEqual(qf.cleaned_data['check'], ['equal', 'a', 'b'])
+        self.assertEqual(qf.cleaned_data['checks'], [
+            ['equal', 'a', 'b'],
+            ['', '', ''],
+            ])

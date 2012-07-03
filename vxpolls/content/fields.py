@@ -1,12 +1,11 @@
 from django import forms
-from django.utils.safestring import mark_safe
 
 
 class CSVWidget(forms.Textarea):
 
     def render(self, name, value, attrs=None):
         if isinstance(value, list):
-            value = ', '.join(value)
+            value = ', '.join(map(unicode, value))
         return super(CSVWidget, self).render(name, value, attrs)
 
 
@@ -24,44 +23,48 @@ class CSVField(forms.Field):
 
 class CheckWidget(forms.MultiWidget):
 
-    def __init__(self, attrs=None):
-        widgets = (forms.TextInput(attrs=attrs),
-                    forms.Select(attrs=attrs),
+    def __init__(self, choices=None, attrs=None):
+        widgets = (forms.Select(attrs=attrs, choices=choices),
+                    forms.TextInput(attrs=attrs),
                     forms.TextInput(attrs=attrs))
         super(CheckWidget, self).__init__(widgets, attrs)
 
     def decompress(self, value):
-        if value is None:
+        if not value:
             return ('', '', '')
         if isinstance(value, list) and len(value) == 3:
-            check_type, field_name, check_value = value
-            return [check_type, field_name, check_value]
+            return value
         return self.backwards_compatible_decompress(value)
+
+    def format_output(self, widgets):
+        return u''.join([
+            widgets[1],
+            widgets[0],
+            widgets[2],
+            ])
 
     def backwards_compatible_decompress(self, value):
         # This was the braindead old implementation
         equal = value.get('equal', {})
         if equal.items():
             [(label, value)] = equal.items()
-            return (label, 'equal', value)
+            return ('equal', label, value)
         else:
             return ('', '', '')
 
 
 class CheckField(forms.MultiValueField):
 
-    widget = CheckWidget(attrs={'class': 'span1'})
-
     def __init__(self, choices=None, **kwargs):
         self.choices = choices
         fields = (
+            forms.ChoiceField(choices=self.choices),
             forms.CharField(),
-            forms.ChoiceField(choices=choices),
             forms.CharField(),
         )
+
+        self.widget = CheckWidget(choices=self.choices)
         super(CheckField, self).__init__(fields, **kwargs)
-        # Make sure the available choices are set in the widget
-        self.widget.widgets[1].choices = choices
 
     def compress(self, data_list):
         """
@@ -73,8 +76,44 @@ class CheckField(forms.MultiValueField):
 
         This method makes sure the values are compressed in the right order.
         """
-        return [
-            data_list[1],  # check type
-            data_list[0],  # name
-            data_list[2],  # value checked against
-        ]
+        if len(data_list) == 3:
+            return [
+                data_list[0],  # check type
+                data_list[1],  # name
+                data_list[2],  # value checked against
+            ]
+        return ['', '', '']
+
+
+class MultiCheckWidget(forms.MultiWidget):
+
+    def __init__(self, amount=2, choices=None, attrs=None):
+        self.amount = 2
+        widgets = [CheckWidget(attrs=attrs, choices=choices)
+                    for i in range(self.amount)]
+        super(MultiCheckWidget, self).__init__(widgets, attrs)
+
+    def format_output(self, widgets):
+        return '<div>%s</div>' % ('</div><div>'.join(widgets),)
+
+    def decompress(self, value):
+        if value is None:
+            return [['', '', ''] for i in range(self.amount)]
+        # backwards compatibility
+        if isinstance(value, dict):
+            [(type_check, dict_value)] = value.items()
+            [(label, label_value)] = dict_value.items()
+            return [[type_check, label, label_value]]
+        return value
+
+
+class MultipleCheckFields(forms.MultiValueField):
+
+    def __init__(self, amount=2, choices=None, **kwargs):
+        fields = [CheckField(choices=choices, **kwargs) for i in range(amount)]
+        self.widget = MultiCheckWidget(amount=amount, choices=choices,
+                                        attrs={'class': 'span1'})
+        super(MultipleCheckFields, self).__init__(fields)
+
+    def compress(self, data_list):
+        return data_list

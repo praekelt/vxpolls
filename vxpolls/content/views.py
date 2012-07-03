@@ -39,7 +39,7 @@ def clear_empties(cleaned_data):
             the new (empty) forms in the formsets as stuff that is to be
             stored when it really should be discarded.
     """
-    return [cd for cd in cleaned_data if cd['copy']]
+    return [cd for cd in cleaned_data if cd.get('copy')]
 
 
 def formset(request, poll_id):

@@ -86,7 +86,7 @@ class CheckField(forms.MultiValueField):
 class MultiCheckWidget(forms.MultiWidget):
 
     def __init__(self, amount=2, choices=None, attrs=None):
-        self.amount = 2
+        self.amount = amount
         widgets = [CheckWidget(attrs=attrs, choices=choices)
                     for i in range(self.amount)]
         super(MultiCheckWidget, self).__init__(widgets, attrs)

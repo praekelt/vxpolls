@@ -235,8 +235,9 @@ class Poll(object):
 
         for operation, key, value in question.checks:
             handler = operations_dispatcher.get(operation, lambda *a: True)
-            if not handler(key, value):
-                return False
+            if key and value:
+                if not handler(key, value):
+                    return False
 
         return True
 

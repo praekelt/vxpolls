@@ -37,7 +37,4 @@ class FormTestCase(TestCase):
             'checks_0_2': 'b',
             })
         self.assertTrue(qf.is_valid())
-        self.assertEqual(qf.cleaned_data['checks'], [
-            ['equal', 'a', 'b'],
-            ['', '', ''],
-            ])
+        self.assertEqual(qf.cleaned_data['checks'][0], ['equal', 'a', 'b'])

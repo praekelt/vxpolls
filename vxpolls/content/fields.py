@@ -29,13 +29,6 @@ class CheckWidget(forms.MultiWidget):
                     forms.TextInput(attrs=attrs))
         super(CheckWidget, self).__init__(widgets, attrs)
 
-    def decompress(self, value):
-        if not value:
-            return ('', '', '')
-        if isinstance(value, dict):
-            return self.backwards_compatible_decompress(value)
-        return value
-
     def format_output(self, widgets):
         """
         Stuff is stored in the config in the format:
@@ -53,6 +46,13 @@ class CheckWidget(forms.MultiWidget):
             widgets[0],
             widgets[2],
             ])
+
+    def decompress(self, value):
+        if not value:
+            return ('', '', '')
+        if isinstance(value, dict):
+            return self.backwards_compatible_decompress(value)
+        return value
 
     def backwards_compatible_decompress(self, value):
         # This was the braindead old implementation
@@ -78,22 +78,9 @@ class CheckField(forms.MultiValueField):
         super(CheckField, self).__init__(fields, **kwargs)
 
     def compress(self, data_list):
-        """
-        values are displayed as HTML widgets as follows:
-          [ ... name ... ] [ check_type select ] [ ... value ... ]
-        but are stored as:
-          ['check_type', 'name', 'value']
-        as a list of Strings in YAML.
-
-        This method makes sure the values are compressed in the right order.
-        """
-        if len(data_list) == 3:
-            return [
-                data_list[0],  # check type
-                data_list[1],  # name
-                data_list[2],  # value checked against
-            ]
-        return ['', '', '']
+        if not data_list:
+            return ['', '', '']
+        return data_list
 
 
 class MultiCheckWidget(forms.MultiWidget):

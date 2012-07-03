@@ -3,6 +3,8 @@
 from django import forms
 from django.utils.datastructures import SortedDict
 from django.core.exceptions import ValidationError
+from django.forms.formsets import formset_factory
+
 from vxpolls.content import fields
 
 
@@ -89,6 +91,9 @@ def _field_for(key):
             widget=forms.TextInput(attrs={'class': 'input-medium'}),
             required=False),
         'checks': fields.CheckField(
+            choices=[
+                ('equal', 'equals'),
+            ],
             label='Question %s should only be asked if the stored' % (
                 key_number,),
             help_text='Skip this question unless the value of the given '
@@ -117,12 +122,12 @@ def _field_for(key):
 class QuestionForm(forms.Form):
 
     copy = forms.CharField(required=False, widget=forms.Textarea)
-    check = fields.CheckField(choices=[
+    check = fields.CheckField(required=False, choices=[
         ('equal', 'equals'),
         ('not_equal', 'does not equal'),
     ])
     label = forms.CharField(required=False)
-    responses = forms.CharField(required=False, widget=forms.Textarea)
+    valid_responses = fields.CSVField(required=False)
 
 
 class VxpollForm(forms.BaseForm):
@@ -214,3 +219,7 @@ def make_form(**kwargs):
     questions = _roll_up_questions(data_questions)
     form_data.update(questions)
     return form_class(data=form_data, initial=config_data, **kwargs)
+
+def make_form_set(**kwargs):
+    QuestionFormset = formset_factory(QuestionForm, extra=1)
+    return QuestionFormset(**kwargs)

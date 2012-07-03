@@ -1,0 +1,11 @@
+<form action="" method="post">
+    <table>
+        {{ formset }}
+        <tr>
+            <td>
+                <input type="submit">
+            </td>
+        </tr>
+        {% csrf_token %}
+    </table>
+</form>

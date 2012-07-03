@@ -2,9 +2,17 @@ from django import forms
 from django.utils.safestring import mark_safe
 
 
+class CSVWidget(forms.Textarea):
+
+    def render(self, name, value, attrs=None):
+        if isinstance(value, list):
+            value = ', '.join(value)
+        return super(CSVWidget, self).render(name, value, attrs)
+
+
 class CSVField(forms.Field):
 
-    widget = forms.Textarea
+    widget = CSVWidget(attrs={'class': 'span1'})
 
     def to_python(self, value):
         "Normalize data to a list of strings."
@@ -23,18 +31,21 @@ class CheckWidget(forms.MultiWidget):
         super(CheckWidget, self).__init__(widgets, attrs)
 
     def decompress(self, value):
+        if value is None:
+            return ('', '', '')
         if isinstance(value, list) and len(value) == 3:
             check_type, field_name, check_value = value
             return [check_type, field_name, check_value]
-        return self.backwards_compatible_decompress
+        return self.backwards_compatible_decompress(value)
 
     def backwards_compatible_decompress(self, value):
         # This was the braindead old implementation
         equal = value.get('equal', {})
         if equal.items():
-            return equal.items()[0]
+            [(label, value)] = equal.items()
+            return (label, 'equal', value)
         else:
-            return ('', '')
+            return ('', '', '')
 
 
 class CheckField(forms.MultiValueField):

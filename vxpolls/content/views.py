@@ -30,3 +30,21 @@ def show(request, poll_id):
     return render(request, 'show.html', {
         'form': form,
     })
+
+
+def formset(request, poll_id):
+    pm = PollManager(redis, settings.VXPOLLS_PREFIX)
+    config = pm.get_config(poll_id)
+    if request.method == 'POST':
+        post_data = request.POST.copy()
+        formset = forms.make_form_set(data=post_data)
+        if formset.is_valid():
+            pm.set(poll_id, formset.cleaned_data)
+            return redirect(reverse('content:formset', kwargs={
+                'poll_id': poll_id,
+                }))
+    else:
+        formset = forms.make_form_set(initial=config)
+    return render(request, 'formset.html', {
+        'formset': formset,
+        })

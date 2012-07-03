@@ -30,8 +30,7 @@ class VxpollFormTestCase(TestCase):
           - '1'
           - '2'
         checks:
-          equal:
-              favorite color: '1'
+          - ['equal', 'favorite color', '1']
       - copy: 'What is your favorite fruit? 1. Apples 2. Oranges 3. Bananas'
         label: favorite fruit
         valid_responses:
@@ -57,11 +56,13 @@ class VxpollFormTestCase(TestCase):
         content_views.redis = self.r_server
 
     def test_form_creation(self):
-        form = forms.make_form(data=self.config.copy(), initial=self.config.copy())
+        form = forms.make_form(data=self.config.copy(),
+                                initial=self.config.copy())
         self.assertEqual(form.errors, {})
         self.assertTrue(form.is_valid())
         export = form.export()
-        self.assertEqual(export['transport_name'], self.config['transport_name'])
+        self.assertEqual(export['transport_name'],
+                          self.config['transport_name'])
         self.assertEqual(export['batch_size'], self.config['batch_size'])
         self.assertEqual(export['poll_id'], self.config['poll_id'])
         for index, question in enumerate(export['questions']):
@@ -92,3 +93,9 @@ class VxpollFormTestCase(TestCase):
         participant = self.poll_manager.get_participant('somemsisdn')
         question = poll.get_next_question(participant)
         self.assertEqual(question.copy, 'What is your favorite music?')
+
+    def test_form_set(self):
+        response = self.client.get(reverse('content:formset', kwargs={
+            'poll_id': self.poll_id,
+            }))
+        print response

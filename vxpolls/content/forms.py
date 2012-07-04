@@ -136,9 +136,11 @@ class QuestionForm(forms.Form):
         ('', 'Please select:'),
         ('equal', 'equals'),
         ('not equal', 'does not equal'),
-        ])
-    label = forms.CharField(required=False)
-    valid_responses = fields.CSVField(required=False)
+        ], label="Question should only be asked if the stored value of:")
+    label = forms.CharField(required=False,
+        label="The response is stored in the database as:")
+    valid_responses = fields.CSVField(required=False,
+        label="Valid responses (comma separated)")
 
 
 class VxpollForm(forms.BaseForm):
@@ -237,6 +239,6 @@ def make_form(**kwargs):
     return form_class(data=form_data, initial=config_data, **kwargs)
 
 
-def make_form_set(**kwargs):
-    QuestionFormset = formset_factory(QuestionForm, extra=1)
+def make_form_set(extra=1, **kwargs):
+    QuestionFormset = formset_factory(QuestionForm, extra=extra)
     return QuestionFormset(**kwargs)

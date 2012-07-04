@@ -41,7 +41,7 @@ class CheckWidget(forms.MultiWidget):
 
         This is why the widgets 0 & 1 are swapped around when rendered.
         """
-        return u''.join([
+        return u' '.join([
             widgets[1],
             widgets[0],
             widgets[2],
@@ -111,7 +111,7 @@ class MultipleCheckFields(forms.MultiValueField):
         fields = [CheckField(choices=choices, **kwargs) for i in range(amount)]
         self.widget = MultiCheckWidget(amount=amount, choices=choices,
                                         attrs={'class': 'span1'})
-        super(MultipleCheckFields, self).__init__(fields)
+        super(MultipleCheckFields, self).__init__(fields, **kwargs)
 
     def compress(self, data_list):
         return data_list

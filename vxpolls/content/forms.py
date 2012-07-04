@@ -132,7 +132,7 @@ class PollForm(forms.Form):
 class QuestionForm(forms.Form):
 
     copy = forms.CharField(required=False, widget=forms.Textarea)
-    checks = fields.MultipleCheckFields(amount=2, choices=[
+    checks = fields.MultipleCheckFields(amount=3, choices=[
         ('', 'Please select:'),
         ('equal', 'equals'),
         ('not equal', 'does not equal'),

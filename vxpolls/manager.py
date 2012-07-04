@@ -202,7 +202,7 @@ class Poll(object):
             return unicode(state.get(key)) != unicode(value)
 
         def exists(key, value=None):
-            return unicode(state.get(key)) is not None
+            return state.get(key)
 
         def not_exists(key, value=None):
             return state.get(key) is None
@@ -235,10 +235,9 @@ class Poll(object):
 
         for operation, key, value in question.checks:
             handler = operations_dispatcher.get(operation, lambda *a: True)
-            if key and value:
+            if key:
                 if not handler(key, value):
                     return False
-
         return True
 
     def submit_answer(self, participant, answer, custom_answer_logic=None):

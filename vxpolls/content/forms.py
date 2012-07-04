@@ -1,6 +1,10 @@
+# -*- test-case-name: tests.test_forms -*-
+
 from django import forms
 from django.utils.datastructures import SortedDict
 from django.core.exceptions import ValidationError
+from django.forms.formsets import formset_factory
+
 from vxpolls.content import fields
 
 
@@ -42,8 +46,9 @@ def _roll_up_questions(questions):
                 equal = value.get('equal', {})
                 if equal:
                     key, value = equal.items()[0]
-                    result['question--%s--checks_0' % (idx,)] = key
-                    result['question--%s--checks_1' % (idx,)] = value
+                    result['question--%s--checks_0' % (idx,)] = 'equal'
+                    result['question--%s--checks_1' % (idx,)] = key
+                    result['question--%s--checks_2' % (idx,)] = value
             else:
                 result['question--%s--%s' % (idx, key)] = value
     return result
@@ -87,6 +92,7 @@ def _field_for(key):
             widget=forms.TextInput(attrs={'class': 'input-medium'}),
             required=False),
         'checks': fields.CheckField(
+            choices=[('equal', 'equals')],
             label='Question %s should only be asked if the stored' % (
                 key_number,),
             help_text='Skip this question unless the value of the given '
@@ -112,6 +118,29 @@ def _field_for(key):
     return key_map.get(key_type, forms.CharField(required=False))
 
 
+class PollForm(forms.Form):
+    poll_id = forms.CharField(required=True, widget=forms.HiddenInput)
+    repeatable = forms.BooleanField(label='Can contacts interact repeatedly?',
+        required=False, initial=True)
+    survey_completed_response = forms.CharField(
+            label='Closing copy at survey completion',
+            help_text='The copy that is sent at the end of the session.',
+            initial='Thanks! You have completed the survey',
+            required=False, widget=forms.Textarea)
+
+
+class QuestionForm(forms.Form):
+
+    copy = forms.CharField(required=False, widget=forms.Textarea)
+    checks = fields.MultipleCheckFields(amount=2, choices=[
+        ('', 'Please select:'),
+        ('equal', 'equals'),
+        ('not equal', 'does not equal'),
+        ])
+    label = forms.CharField(required=False)
+    valid_responses = fields.CSVField(required=False)
+
+
 class VxpollForm(forms.BaseForm):
 
     def export(self):
@@ -121,6 +150,8 @@ class VxpollForm(forms.BaseForm):
             'batch_size': self.cleaned_data.get('batch_size', None),
             'repeatable': self.cleaned_data.get('repeatable', True),
             'questions': self._export_questions(),
+            'transport_name': self.cleaned_data.get('transport_name', ''),
+            'poll_id': self.cleaned_data.get('poll_id', '')
         }
         return data
 
@@ -140,6 +171,8 @@ class VxpollForm(forms.BaseForm):
                     data_key = 'question--%s--%s' % (index, key)
                     data = self.cleaned_data.get(data_key)
                     if data:
+                        if key == 'checks':
+                            data = [data]
                         question[key] = data
                 results.append(question)
         return results
@@ -179,6 +212,7 @@ def make_form_class(config_data, base_class):
         'base_fields': base_fields,
     })
 
+
 def make_form(**kwargs):
     """
     Create a form instance for the given configuration data.
@@ -201,3 +235,8 @@ def make_form(**kwargs):
     questions = _roll_up_questions(data_questions)
     form_data.update(questions)
     return form_class(data=form_data, initial=config_data, **kwargs)
+
+
+def make_form_set(**kwargs):
+    QuestionFormset = formset_factory(QuestionForm, extra=1)
+    return QuestionFormset(**kwargs)

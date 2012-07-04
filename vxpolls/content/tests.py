@@ -31,7 +31,7 @@ class VxpollFormTestCase(TestCase):
           - '2'
         checks:
           equal:
-              favorite color: '1'
+            favorite color: '1'
       - copy: 'What is your favorite fruit? 1. Apples 2. Oranges 3. Bananas'
         label: favorite fruit
         valid_responses:
@@ -57,38 +57,98 @@ class VxpollFormTestCase(TestCase):
         content_views.redis = self.r_server
 
     def test_form_creation(self):
-        form = forms.make_form(data=self.config.copy(), initial=self.config.copy())
+        form = forms.make_form(data=self.config.copy(),
+                                initial=self.config.copy())
         self.assertEqual(form.errors, {})
         self.assertTrue(form.is_valid())
         export = form.export()
-        self.assertEqual(export['transport_name'], self.config['transport_name'])
+        self.assertEqual(export['transport_name'],
+                          self.config['transport_name'])
         self.assertEqual(export['batch_size'], self.config['batch_size'])
         self.assertEqual(export['poll_id'], self.config['poll_id'])
+
+        def new_checks_style(config_question):
+            check = config_question.get('checks') or {'equal': {'': ''}}
+            equal = check['equal']
+            return [['equal', equal.keys()[0], equal.values()[0]]]
+
         for index, question in enumerate(export['questions']):
             config_question = self.config['questions'][index]
             self.assertEqual(config_question['copy'], question['copy'])
-            self.assertEqual(config_question.get('checks', {}),
-                                question.get('checks', {}))
+            self.assertEqual(new_checks_style(config_question),
+                                question.get('checks'))
             self.assertEqual(config_question.get('label'),
                                 question.get('label'))
             self.assertEqual(config_question['valid_responses'],
                                 question['valid_responses'])
 
-    def test_form_posting(self):
-        response = self.client.post(reverse('content:show', kwargs={
-            'poll_id': self.poll_id}), {
-            'transport_name': 'test_transport',
-            'question--0--copy': 'What is your favorite music?',
-            'question--0--label': 'favorite music',
-            'question--0--valid_responses': 'rock, jazz, techno',
+    def test_form_set(self):
+        response = self.client.post(reverse('content:formset', kwargs={
+            'poll_id': self.poll_id,
+            }), {
+            'form-TOTAL_FORMS': 1,
+            'form-INITIAL_FORMS': 0,
+            'form-MAX_NUM_FORMS': '',
+            'form-0-copy': 'What is your favorite music?',
+            'form-0-label': 'favorite music',
+            'form-0-valid_responses': 'rock, jazz, techno',
         })
         uid = self.poll_manager.get_latest_uid(self.poll_id)
         poll = self.poll_manager.get(self.poll_id, uid)
-        self.assertRedirects(response, reverse('content:show', kwargs={
+        self.assertRedirects(response, reverse('content:formset', kwargs={
             'poll_id': self.poll_id,
-        }))
+            }))
         self.assertEqual(len(poll.questions), 1)
-        # test that the new version is actually being server
-        participant = self.poll_manager.get_participant('somemsisdn')
+        # test that the new version is actually being served
+        participant = self.poll_manager.get_participant(self.poll_id,
+                'somemsisdn')
         question = poll.get_next_question(participant)
         self.assertEqual(question.copy, 'What is your favorite music?')
+
+    def test_form_set_checks(self):
+        response = self.client.post(reverse('content:formset', kwargs={
+            'poll_id': self.poll_id,
+            }), {
+            'form-TOTAL_FORMS': 3,
+            'form-INITIAL_FORMS': 0,
+            'form-MAX_NUM_FORMS': '',
+            'form-0-copy': 'What is your favorite music?',
+            'form-0-label': 'favorite music',
+            'form-0-valid_responses': 'rock, jazz, techno',
+            'form-1-copy': 'What is your favorite food?',
+            'form-1-label': 'favorite food',
+            'form-1-valid_responses': 'mexican, french, italian',
+            'form-2-copy': 'Which rock musician?',
+            'form-2-label': 'rock musician',
+            'form-2-checks_0_0': 'equal',
+            'form-2-checks_0_1': 'favorite music',
+            'form-2-checks_0_2': 'rock',
+            'form-2-checks_1_0': 'not equal',
+            'form-2-checks_1_1': 'favorite food',
+            'form-2-checks_1_2': 'mexican',
+        })
+        uid = self.poll_manager.get_latest_uid(self.poll_id)
+        poll = self.poll_manager.get(self.poll_id, uid)
+        self.assertRedirects(response, reverse('content:formset', kwargs={
+            'poll_id': self.poll_id,
+            }))
+        self.assertEqual(len(poll.questions), 3)
+        # prime the new participant with some historical data
+        participant = self.poll_manager.get_participant(self.poll_id,
+                'somemsisdn')
+        participant.has_unanswered_question = True
+        participant.set_last_question_index(1)
+
+        # These previous questions should trigger the next question
+        participant.set_label('favorite music', 'rock')
+        participant.set_label('favorite food', 'italian')
+        self.poll_manager.save_participant(self.poll_id, participant)
+        question = poll.get_next_question(participant)
+        self.assertEqual(question.copy, 'Which rock musician?')
+
+        # These previous questions should not trigger the next question
+        participant.set_label('favorite music', 'rock')
+        participant.set_label('favorite food', 'mexican')
+        self.poll_manager.save_participant(self.poll_id, participant)
+        question = poll.get_next_question(participant)
+        self.assertEqual(question, None)

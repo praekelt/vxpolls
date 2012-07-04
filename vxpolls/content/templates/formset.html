@@ -1,0 +1,12 @@
+<form action="" method="post">
+    <table>
+        {{ poll_form }}
+        {{ questions_form }}
+        <tr>
+            <td>
+                <input type="submit">
+            </td>
+        </tr>
+        {% csrf_token %}
+    </table>
+</form>

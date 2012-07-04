@@ -233,14 +233,13 @@ class Poll(object):
         if not question.checks:
             return True
 
-        for operation, params in question.checks.items():
-            handler = operations_dispatcher[operation]
-            key = params.keys()[0]
-            value = params.values()[0]
-            if handler(key, value):
-                return True
+        for operation, key, value in question.checks:
+            handler = operations_dispatcher.get(operation, lambda *a: True)
+            if key and value:
+                if not handler(key, value):
+                    return False
 
-        return False
+        return True
 
     def submit_answer(self, participant, answer, custom_answer_logic=None):
         poll_question = self.get_last_question(participant)
@@ -271,11 +270,16 @@ class Poll(object):
 
 
 class PollQuestion(object):
-    def __init__(self, index, copy, label=None, valid_responses=[], checks={}):
+    def __init__(self, index, copy, label=None, valid_responses=[],
+                    checks=None):
         self.index = index
         self.copy = copy
         self.label = label
         self.valid_responses = [unicode(a) for a in valid_responses]
+        # Backwards compatibility, convert dict style to list style
+        if isinstance(checks, dict):
+            checks = [[operation, params.keys()[0], params.values()[0]]
+                        for operation, params in checks.items()]
         self.checks = checks
         self.answered = False
 

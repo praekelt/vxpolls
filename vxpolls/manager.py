@@ -205,19 +205,19 @@ class Poll(object):
             return state.get(key)
 
         def not_exists(key, value=None):
-            return state.get(key) is None
+            return not exists(key, value)
 
         def less(key, value):
-            return unicode(state.get(key)) < unicode(value)
+            return state.get(key) < unicode(value)
 
         def less_equal(key, value):
-            return unicode(state.get(key)) <= unicode(value)
+            return state.get(key) <= unicode(value)
 
         def greater(key, value):
-            return unicode(state.get(key)) > unicode(value)
+            return state.get(key) > unicode(value)
 
         def greater_equal(key, value):
-            return unicode(state.get(key)) >= unicode(value)
+            return state.get(key) >= unicode(value)
 
         operations_dispatcher = {
             'equal': equals,
@@ -238,6 +238,7 @@ class Poll(object):
             if key:
                 if not handler(key, value):
                     return False
+
         return True
 
     def submit_answer(self, participant, answer, custom_answer_logic=None):

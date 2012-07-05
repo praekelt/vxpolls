@@ -135,8 +135,11 @@ class QuestionForm(forms.Form):
     checks = fields.MultipleCheckFields(amount=3, choices=[
         ('', 'Please select:'),
         ('equal', 'equals'),
-        ('exists', 'exists'),
         ('not equal', 'does not equal'),
+        ('exists', 'exists'),
+        ('not exists', 'does not exist'),
+        ('greater', 'greater than'),
+        ('less', 'less than'),
         ], label="Question should only be asked if the stored value of:")
     label = forms.CharField(required=False,
         label="The response is stored in the database as:")

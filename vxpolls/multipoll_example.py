@@ -280,13 +280,11 @@ class MultiPollApplication(PollApplication):
                         participant.set_label('REGISTRATION_DATE',
                                 str(self.get_current_date()))
             if poll_question.label == 'INITIAL_AGE' \
-                    and label_value == '6':  # max age for demo should be 5
-                    #and label_value == '11':
+                    and label_value == '11':
                 participant.set_label('USER_STATUS', '5')
                 participant.force_archive = True
             if poll_question.label == 'INITIAL_AGE' \
-                    and label_value != '6':  # max age for demo should be 5
-                    #and label_value != '11':
+                    and label_value != '11':
                         participant.set_label('BIRTH_DATE',
                                 str(months_to_week(label_value)[1]))
                         participant.set_label('REGISTRATION_DATE',

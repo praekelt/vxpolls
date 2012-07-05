@@ -123,21 +123,18 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
                         "3. 3\n" \
                         "4. 4\n" \
                         "5. 5\n" \
-                        #"6. 6\n" \
-                        #"7. 7\n" \
-                        #"8. 8\n" \
-                        #"9. 9\n" \
-                        #"10. 10\n" \
-                        #"11. 11 or more.",
-                #'valid_responses': [ '1', '2', '3', '4', '5', '6',
-                                    #'7', '8', '9', '10', '11'],
-                        "6. 6 or more.",
-                'valid_responses': ['1', '2', '3', '4', '5', '6'],
+                        "6. 6\n" \
+                        "7. 7\n" \
+                        "8. 8\n" \
+                        "9. 9\n" \
+                        "10. 10\n" \
+                        "11. 11 or more.",
+                'valid_responses': [ '1', '2', '3', '4', '5', '6',
+                                    '7', '8', '9', '10', '11'],
                 'label': 'INITIAL_AGE',
                 },
                 {
-                #'checks': {'equal': {'INITIAL_AGE': '11'}},
-                'checks': {'equal': {'INITIAL_AGE': '6'}},
+                'checks': {'equal': {'USER_STATUS': '5'}},
                 'copy': "Sorry, bye\n" \
                         "1. End",
                 'valid_responses': [],
@@ -393,9 +390,7 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
         inputs_and_expected = [
             ('Any input', self.default_questions_dict[poll_id][0]['copy']),
             ('2', self.default_questions_dict[poll_id][5]['copy']),
-            #('11', self.default_questions_dict[poll_id][6]['copy']),
-            # max age for demo should be 5
-            ('6', self.default_questions_dict[poll_id][6]['copy']),
+            ('11', self.default_questions_dict[poll_id][6]['copy']),
             ('Any input', self.app.registration_completed_response),
             ]
         yield self.run_inputs(inputs_and_expected)
@@ -686,21 +681,18 @@ class LiveCustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
                         "3. 3\n" \
                         "4. 4\n" \
                         "5. 5\n" \
-                        #"6. 6\n" \
-                        #"7. 7\n" \
-                        #"8. 8\n" \
-                        #"9. 9\n" \
-                        #"10. 10\n" \
-                        #"11. 11 or more.",
-                #'valid_responses': [ '1', '2', '3', '4', '5', '6',
-                                    #'7', '8', '9', '10', '11'],
-                        "6. 6 or more.",
-                'valid_responses': ['1', '2', '3', '4', '5', '6'],
+                        "6. 6\n" \
+                        "7. 7\n" \
+                        "8. 8\n" \
+                        "9. 9\n" \
+                        "10. 10\n" \
+                        "11. 11 or more.",
+                'valid_responses': [ '1', '2', '3', '4', '5', '6',
+                                    '7', '8', '9', '10', '11'],
                 'label': 'INITIAL_AGE',
                 },
                 {
-                #'checks': {'equal': {'INITIAL_AGE': '11'}},
-                'checks': {'equal': {'INITIAL_AGE': '6'}},
+                'checks': {'equal': {'USER_STATUS': '5'}},
                 'copy': "Sorry, bye\n" \
                         "1. End",
                 'valid_responses': [],
@@ -949,9 +941,7 @@ class LiveCustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
         inputs_and_expected = [
             ('Any input', self.default_questions_dict[poll_id][0]['copy']),
             ('2', self.default_questions_dict[poll_id][5]['copy']),
-            #('11', self.default_questions_dict[poll_id][6]['copy']),
-            # max age for demo should be 5
-            ('6', self.default_questions_dict[poll_id][6]['copy']),
+            ('11', self.default_questions_dict[poll_id][6]['copy']),
             ('Any input', self.app.registration_completed_response),
             ]
         yield self.run_inputs(inputs_and_expected)
@@ -1294,21 +1284,18 @@ class RegisterMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
                         "3. 3\n" \
                         "4. 4\n" \
                         "5. 5\n" \
-                        #"6. 6\n" \
-                        #"7. 7\n" \
-                        #"8. 8\n" \
-                        #"9. 9\n" \
-                        #"10. 10\n" \
-                        #"11. 11 or more.",
-                #'valid_responses': [ '1', '2', '3', '4', '5', '6',
-                                    #'7', '8', '9', '10', '11'],
-                        "6. 6 or more.",
-                'valid_responses': ['1', '2', '3', '4', '5', '6'],
+                        "6. 6\n" \
+                        "7. 7\n" \
+                        "8. 8\n" \
+                        "9. 9\n" \
+                        "10. 10\n" \
+                        "11. 11 or more.",
+                'valid_responses': [ '1', '2', '3', '4', '5', '6',
+                                    '7', '8', '9', '10', '11'],
                 'label': 'INITIAL_AGE',
                 },
                 {
-                #'checks': {'equal': {'INITIAL_AGE': '11'}},
-                'checks': {'equal': {'INITIAL_AGE': '6'}},
+                'checks': {'equal': {'USER_STATUS': '5'}},
                 'copy': "Sorry, bye\n" \
                         "1. End",
                 'valid_responses': [],

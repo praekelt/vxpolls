@@ -122,6 +122,8 @@ class PollForm(forms.Form):
     poll_id = forms.CharField(required=True, widget=forms.HiddenInput)
     repeatable = forms.BooleanField(label='Can contacts interact repeatedly?',
         required=False, initial=True)
+    include_labels = fields.CSVField(required=False,
+        label='Responses to include from previous sessions')
     survey_completed_response = forms.CharField(
             label='Closing copy at survey completion',
             help_text='The copy that is sent at the end of the session.',

@@ -277,7 +277,7 @@ class PollQuestion(object):
         if isinstance(checks, dict):
             checks = [[operation, params.keys()[0], params.values()[0]]
                         for operation, params in checks.items()]
-        self.checks = checks
+        self.checks = checks or []
         self.answered = False
 
     def label_or_copy(self):

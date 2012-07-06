@@ -230,9 +230,6 @@ class Poll(object):
             'greater or equal': greater_equal,
         }
 
-        if not question.checks:
-            return True
-
         for operation, key, value in question.checks:
             handler = operations_dispatcher.get(operation, lambda *a: True)
             if key:

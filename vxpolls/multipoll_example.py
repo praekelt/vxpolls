@@ -95,7 +95,7 @@ class MultiPollApplication(PollApplication):
         participant = self.pm.get_participant(scope_id, message.user())
         if participant:
             participant.scope_id = scope_id
-        self.custom_poll_logic_function(participant)
+        self.custom_poll_logic_function(participant, message)
         poll_id = participant.get_poll_id()
         if poll_id is None:
             poll_id = self.get_first_poll_id(self.make_poll_prefix(
@@ -183,12 +183,27 @@ class MultiPollApplication(PollApplication):
         self.pm.save_participant(participant.scope_id, participant)
         return question.copy
 
-    def custom_poll_logic_function(self, participant):
+    def custom_poll_logic_function(self, participant, message):
         # Override custom logic to be called during consume_user_message here
 
         if participant.get_label('HIV_MESSAGES'):
             # we assume participants who get as far as selecting whether
             # they want HIV messages or not, are opting in
+            current_poll_id = participant.get_poll_id()
+            sign_up_poll_id = self.get_first_poll_id(
+                                        self.make_poll_prefix(
+                                                    participant.scope_id))
+            greeting_sms_poll_id = self.get_first_poll_id(
+                                        self.make_poll_prefix(
+                                                    "%s_SMS" % (
+                                                        participant.scope_id)))
+            if current_poll_id == sign_up_poll_id:
+                try:
+                    print greeting_sms_poll_id
+                    print message.payload
+                    pass
+                except:
+                    pass
             participant.opted_in = 'True'
 
         current_poll_id = participant.get_poll_id()

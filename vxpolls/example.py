@@ -62,24 +62,11 @@ class PollApplication(ApplicationWorker):
             # If we have more questions for the participant, continue otherwise
             # end the session
             if poll.has_more_questions_for(participant):
-                # This would indicate we've got history of interactions
-                # and this isn't a first contact so it's a user that
-                # has dialed in again a second time but has possible
-                # skip a step in the survey because the participant
-                # has been primed with state based on earlier interactions
-                # for things like opt-ins
-                if not participant.interactions:
-                    self.init_session(participant, poll, message)
-                else:
-                    # Here we send a follow up question again that we might
-                    # have started at because earlier checks all passed
-                    # and so the input we're receiving might be the first init
-                    # sms
-                    next_question = poll.get_next_question(participant)
-                    participant.has_unanswered_question = True
-                    poll.set_last_question(participant, next_question)
-                    self.pm.save_participant(poll.poll_id, participant)
-                    self.on_message(participant, poll, message)
+                next_question = poll.get_next_question(participant)
+                participant.has_unanswered_question = True
+                poll.set_last_question(participant, next_question)
+                self.pm.save_participant(poll.poll_id, participant)
+                self.on_message(participant, poll, message)
             else:
                 self.end_session(participant, poll, message)
 
@@ -119,7 +106,8 @@ class PollApplication(ApplicationWorker):
                 self.pm.archive(poll.poll_id, participant)
 
     def init_session(self, participant, poll, message):
-        # brand new session
+        # brand new session, send the first question without inspecting
+        # the incoming message
         if poll.has_more_questions_for(participant):
             next_question = poll.get_next_question(participant)
             self.reply_to(message, self.ask_question(participant, poll, next_question))

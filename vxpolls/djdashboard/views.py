@@ -1,14 +1,12 @@
+import json
 from django.shortcuts import render, Http404
 from django.http import HttpResponse
 from django.conf import settings
-import json
-import redis
+from vumi.persist.redis_manager import RedisManager
 
 from vxpolls.manager import PollManager
 
-
-vxpolls_redis_config = settings.VXPOLLS_REDIS_CONFIG
-redis = redis.Redis(**vxpolls_redis_config)
+redis = RedisManager.from_config(settings.VXPOLLS_REDIS_CONFIG)
 
 poll_manager = PollManager(redis, settings.VXPOLLS_PREFIX)
 

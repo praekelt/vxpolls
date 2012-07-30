@@ -1,7 +1,6 @@
 # -*- test-case-name: tests.test_tools -*-
 import sys
 import yaml
-import json
 import redis
 from vxpolls.manager import PollManager
 from twisted.python import usage
@@ -36,7 +35,7 @@ class PollExporter(object):
             row_dict = {}
             row_number = i
             print ">>>>", i
-            template_i = json.loads(json.dumps(template) % {'poll_number': i})
+            template_i = yaml.load(yaml.dump(template) % {'poll_number': i})
             print template_i
             poll_id = "%s%s" % (poll_id_prefix, i)
             print "#"*11, poll_id
@@ -72,8 +71,11 @@ class PollExporter(object):
         print master_list
         for r in master_list:
             for c in r:
-                c = "\n".join(str(c).split("\r\n"))
-                output.write("%s%s" % (json.dumps(c), template['csv_separator']))
+                if isinstance(c, int) or isinstance(c, float):
+                    pass
+                else:
+                    c = "\n".join(str(c).split("\r\n"))
+                output.write("%s%s" % (repr(c), template['csv_separator']))
             output.write("\n")
 
 

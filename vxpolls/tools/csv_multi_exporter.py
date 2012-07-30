@@ -27,9 +27,9 @@ class PollExporter(object):
         config = self.pm.get_config(poll_id, uid)
         return config
 
-    def export(self, poll_id_prefix,
-                start_number, last_number,
-                template, output):
+    def export_data(self, poll_id_prefix,
+                    start_number, last_number,
+                    template, output_handle):
         row_list = []
         # Add the column names as the first row
         row_list.append(template['csv_column_names'])
@@ -83,7 +83,7 @@ class PollExporter(object):
 
         #print row_list
         delimiter = template.get('csv_delimiter', ',')
-        csv_writer = csv.writer(output,
+        csv_writer = csv.writer(output_handle,
                                 delimiter=delimiter,
                                 quoting=csv.QUOTE_MINIMAL)
         for r in row_list:
@@ -96,16 +96,18 @@ class Options(usage.Options):
         ["config", "u", None, "The config file to read"],
         ["poll-id-prefix", "p", None,
             "The prefix for a series of numbered polls"],
-        ["start-number", "i", "1", "The initial poll number [1]"],
-        ["last-number", "n", "1", "The final poll number [1]"],
+        ["start-number", "s", "1", "The initial poll number [1]"],
+        ["last-number", "l", "1", "The final poll number [1]"],
         ["template", "t", None, "A yaml template of a std poll"],
         ["output", "o", None, "Output csv file"],
     ]
 
     def postOptions(self):
-        if not (self['config'] and self['poll-id-prefix']):
+        if not (self['config'] \
+                and self['poll-id-prefix'] \
+                and self['output']):
             raise usage.UsageError(
-                "Please specify both --config and --poll-id")
+                "Please specify --config, --poll-id-prefix and --output")
 
 if __name__ == '__main__':
     options = Options()
@@ -119,21 +121,18 @@ if __name__ == '__main__':
     config_file = options['config']
     config = yaml.safe_load(open(config_file, 'r'))
 
+    output_file = options['output']
+    output_handle = open(output_file, 'w')
+
     template = None
     if options['template']:
         template_file = options['template']
         template = yaml.safe_load(open(template_file, 'r'))
 
-    output = None
-    if options['output']:
-        output_file = options['output']
-        output = open(output_file, 'w')
-
-
     exporter = PollExporter(config)
-    exporter.export(options['poll-id-prefix'],
-            int(options['start-number']),
-            int(options['last-number']),
-            template,
-            output,
-            )
+    exporter.export_data(options['poll-id-prefix'],
+                        int(options['start-number']),
+                        int(options['last-number']),
+                        template,
+                        output_handle,
+                        )

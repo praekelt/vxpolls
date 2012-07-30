@@ -35,7 +35,6 @@ class PollImporter(object):
         #print row_list
 
 
-
 class Options(usage.Options):
 
     optParameters = [

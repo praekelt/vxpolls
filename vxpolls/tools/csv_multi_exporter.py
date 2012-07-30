@@ -68,16 +68,13 @@ class PollExporter(object):
                 # the first row of the row_list as keys
                 cell_list = []
                 for x in row_list[0]:
-                    c = row_dict[x]
+                    cell = row_dict[x]
                     # Try and replace "\r\n" occurences with "\n"
                     try:
-                        c = "\n".join(c.split("\r\n"))
-                        if len(c) > 160:
-                            print c
-
+                        cell = "\n".join(cell.split("\r\n"))
                     except:
                         pass
-                    cell_list.append(row_dict[x])
+                    cell_list.append(cell)
                 row_list.append(cell_list)
 
         #print row_list

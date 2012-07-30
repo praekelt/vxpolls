@@ -30,17 +30,18 @@ class PollExporter(object):
     def export(self, poll_id_prefix,
                 start_number, last_number,
                 template, output):
-        master_list = []
-        master_list.append(template['csv_columns'])
+        row_list = []
+        # Add the column names as the first row
+        row_list.append(template['csv_column_names'])
         i = start_number
         while i <= last_number:
             row_dict = {}
             row_number = i
-            print ">>>>", i
+            #print ">>>>", i
             template_i = yaml.load(yaml.dump(template) % {'poll_number': i})
-            print template_i
+            #print template_i
             poll_id = "%s%s" % (poll_id_prefix, i)
-            print "#"*11, poll_id
+            #print "#"*11, poll_id
             i += 1
             if poll_id not in self.pm.polls():
                 raise ValueError('Poll does not exist')
@@ -49,36 +50,44 @@ class PollExporter(object):
                 labeled_copy = {}
                 for q in config['questions']:
                     labeled_copy[q.get('label')] = q.get('copy')
-                print labeled_copy
-                for n, v in enumerate(template['csv_columns']):
+                #print labeled_copy
+                for n, v in enumerate(template['csv_column_names']):
                     if n == 0:
                         row_dict[v] = row_number
                     else:
                         label = "%s%s%s%s%s" % (
-                                template['csv_columns'][0],
-                                template['csv_connector'],
+                                template['csv_column_names'][0],
+                                template['csv_name_connector'],
                                 row_number,
-                                template['csv_connector'],
+                                template['csv_name_connector'],
                                 v,
                                 )
-                        print label
+                        #print label
                         copy = config['questions']
                         row_dict[v] = labeled_copy.get(label)
-                l = []
-                for x in master_list[0]:
-                    l.append(row_dict[x])
-                master_list.append(l)
+                # Extract values from row_dict using the values in
+                # the first row of the row_list as keys
+                cell_list = []
+                for x in row_list[0]:
+                    c = row_dict[x]
+                    # Try and replace "\r\n" occurences with "\n"
+                    try:
+                        c = "\n".join(c.split("\r\n"))
+                        if len(c) > 160:
+                            print c
 
-                #yaml.safe_dump(config, self.stdout)
-        print master_list
-        for r in master_list:
-            for c in r:
-                if isinstance(c, int) or isinstance(c, float):
-                    pass
-                else:
-                    c = "\n".join(str(c).split("\r\n"))
-                output.write("%s%s" % (json.dumps(c), template['csv_separator']))
-            output.write("\n")
+                    except:
+                        pass
+                    cell_list.append(row_dict[x])
+                row_list.append(cell_list)
+
+        #print row_list
+        delimiter = template.get('csv_delimiter', ',')
+        csv_writer = csv.writer(output,
+                                delimiter=delimiter,
+                                quoting=csv.QUOTE_MINIMAL)
+        for r in row_list:
+                csv_writer.writerow(r)
 
 
 class Options(usage.Options):

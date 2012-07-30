@@ -1,4 +1,5 @@
 # -*- test-case-name: tests.test_tools -*-
+import json
 import sys
 import yaml
 import redis
@@ -75,7 +76,7 @@ class PollExporter(object):
                     pass
                 else:
                     c = "\n".join(str(c).split("\r\n"))
-                output.write("%s%s" % (repr(c), template['csv_separator']))
+                output.write("%s%s" % (json.dumps(c), template['csv_separator']))
             output.write("\n")
 
 

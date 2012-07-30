@@ -1,4 +1,5 @@
 # -*- test-case-name: tests.test_tools -*-
+import csv
 import json
 import sys
 import yaml

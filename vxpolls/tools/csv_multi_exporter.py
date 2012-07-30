@@ -85,8 +85,8 @@ class PollExporter(object):
         csv_writer = csv.writer(output_handle,
                                 delimiter=delimiter,
                                 quoting=csv.QUOTE_MINIMAL)
-        for r in row_list:
-                csv_writer.writerow(r)
+        for row in row_list:
+                csv_writer.writerow(row)
 
 
 class Options(usage.Options):

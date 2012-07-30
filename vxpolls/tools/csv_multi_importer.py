@@ -24,7 +24,16 @@ class PollImporter(object):
                     template, input_handle):
         # well we don't want to write anything yet
         #self.pm.set(poll_id, config)
-        pass
+        delimiter = template.get('csv_delimiter', ',')
+        csv_reader = csv.reader(input_handle,
+                                delimiter=delimiter,
+                                quoting=csv.QUOTE_MINIMAL)
+        row_list = []
+        for row in csv_reader:
+            row_list.append(row)
+            print row
+        #print row_list
+
 
 
 class Options(usage.Options):
@@ -59,7 +68,7 @@ if __name__ == '__main__':
     config = yaml.safe_load(open(config_file, 'r'))
 
     input_file = options['input']
-    input_handle = open(input_file, 'w')
+    input_handle = open(input_file, 'r')
 
     template = None
     if options['template']:

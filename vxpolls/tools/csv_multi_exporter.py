@@ -50,17 +50,21 @@ class PollExporter(object):
                 for q in config['questions']:
                     labeled_copy[q.get('label')] = q.get('copy')
                 #print labeled_copy
+                connector = template.get('csv_name_connector')
                 for n, v in enumerate(template['csv_column_names']):
                     if n == 0:
                         row_dict[v] = row_number
                     else:
-                        label = "%s%s%s%s%s" % (
-                                template['csv_column_names'][0],
-                                template['csv_name_connector'],
-                                row_number,
-                                template['csv_name_connector'],
-                                v,
-                                )
+                        if connector:
+                            label = "%s%s%s%s%s" % (
+                                    template['csv_column_names'][0],
+                                    template['csv_name_connector'],
+                                    row_number,
+                                    template['csv_name_connector'],
+                                    v,
+                                    )
+                        else:
+                            label = template['csv_column_names'][n]
                         #print label
                         copy = config['questions']
                         row_dict[v] = labeled_copy.get(label)

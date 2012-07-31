@@ -1,0 +1,47 @@
+csv_column_names:
+- WEEK
+- QUESTION_1
+- QUESTION_2
+- QUESTION_3
+csv_name_connector: "_"
+csv_delimiter: ","
+
+batch_size: null
+questions:
+- copy: ""
+  label: WEEK_%(poll_number)s_QUESTION_1
+  valid_responses: ['1', '2']
+- checks:
+    equal: {WEEK_%(poll_number)s_QUESTION_1: '1'}
+  copy: ""
+  label: x
+- checks:
+    equal: {WEEK_%(poll_number)s_QUESTION_1: '2'}
+  copy: ""
+  label: x
+- checks:
+    equal: {HIV_MESSAGES: '2'}
+  copy: ""
+  label: WEEK_%(poll_number)s_QUESTION_2
+  valid_responses: ['1', '2']
+- checks:
+    equal: {WEEK_%(poll_number)s_QUESTION_2: '1'}
+  copy: ""
+  label: x
+- checks:
+    equal: {WEEK_%(poll_number)s_QUESTION_2: '2'}
+  copy: ""
+  label: x
+- checks:
+    equal: {HIV_MESSAGES: '1'}
+  copy: ""
+  label: WEEK_%(poll_number)s_QUESTION_3
+  valid_responses: ['1', '2']
+- checks:
+    equal: {WEEK_%(poll_number)s_QUESTION_3: '1'}
+  copy: ""
+  label: x
+- checks:
+    equal: {WEEK_%(poll_number)s_QUESTION_3: '2'}
+  copy: ""
+  label: x

@@ -1,0 +1,13 @@
+csv_column_names:
+- WEEK
+- MESSAGE_1
+- MESSAGE_2
+- HIV_MESSAGE
+csv_delimiter: ","
+
+batch_size: null
+questions:
+- {copy: "", label: MESSAGE_1}
+- {copy: "", label: MESSAGE_2}
+- {copy: "", label: HIV_MESSAGE}
+repeatable: true

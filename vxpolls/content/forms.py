@@ -122,6 +122,8 @@ class PollForm(forms.Form):
     poll_id = forms.CharField(required=True, widget=forms.HiddenInput)
     repeatable = forms.BooleanField(label='Can contacts interact repeatedly?',
         required=False, initial=True)
+    case_sensitive = forms.BooleanField(label='Are the valid responses for '
+        'each question case sensitive?', required=False, initial=True)
     include_labels = fields.CSVField(required=False,
         label='Responses to include from previous sessions')
     survey_completed_response = forms.CharField(
@@ -157,6 +159,7 @@ class VxpollForm(forms.BaseForm):
         data = {
             'batch_size': self.cleaned_data.get('batch_size', None),
             'repeatable': self.cleaned_data.get('repeatable', True),
+            'case_sensitive': self.cleaned_data.get('case_sensitive', True),
             'questions': self._export_questions(),
             'transport_name': self.cleaned_data.get('transport_name', ''),
             'poll_id': self.cleaned_data.get('poll_id', '')

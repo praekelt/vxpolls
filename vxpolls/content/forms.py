@@ -159,6 +159,7 @@ class VxpollForm(forms.BaseForm):
         data = {
             'batch_size': self.cleaned_data.get('batch_size', None),
             'repeatable': self.cleaned_data.get('repeatable', True),
+            'case_sensitive': self.cleaned_data.get('case_sensitive', True),
             'questions': self._export_questions(),
             'transport_name': self.cleaned_data.get('transport_name', ''),
             'poll_id': self.cleaned_data.get('poll_id', '')

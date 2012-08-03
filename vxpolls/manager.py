@@ -73,9 +73,10 @@ class PollManager(object):
         version = self.get_config(poll_id, uid)
         try:
             repeatable = version.get('repeatable', True)
+            case_sensitive = version.get('case_sensitive', True)
             return Poll(self.r_server, poll_id, uid, version['questions'],
                 version.get('batch_size'), r_prefix=self.r_key('poll'),
-                repeatable=repeatable)
+                repeatable=repeatable, case_sensitive=case_sensitive)
         except:
             return None
 
@@ -142,7 +143,7 @@ class PollManager(object):
 
 class Poll(object):
     def __init__(self, r_server, poll_id, uid, questions, batch_size=None,
-        r_prefix='poll', repeatable=True):
+        r_prefix='poll', repeatable=True, case_sensitive=True):
         self.r_server = r_server
         self.poll_id = poll_id
         self.uid = uid
@@ -150,6 +151,7 @@ class Poll(object):
         self.r_prefix = r_prefix
         self.batch_size = batch_size
         self.repeatable = repeatable
+        self.case_sensitive = case_sensitive
         # Result Manager keeps track of what was answered
         # to which question. We need to tell it about the options
         # before hand.
@@ -157,7 +159,8 @@ class Poll(object):
                                                 self.r_key('results'))
         self.results_manager.register_collection(self.poll_id)
         for index, question_data in enumerate(self.questions):
-            question = PollQuestion(index, **question_data)
+            question = PollQuestion(index, case_sensitive=self.case_sensitive,
+                                        **question_data)
             self.results_manager.register_question(self.poll_id,
                 question.label_or_copy(), question.valid_responses)
 
@@ -262,13 +265,14 @@ class Poll(object):
 
     def get_question(self, index):
         if self.has_question(index):
-            return PollQuestion(index, **self.questions[index])
+            return PollQuestion(index, case_sensitive=self.case_sensitive,
+                **self.questions[index])
         return None
 
 
 class PollQuestion(object):
     def __init__(self, index, copy, label=None, valid_responses=[],
-                    checks=None):
+                    checks=None, case_sensitive=True):
         self.index = index
         self.copy = copy
         self.label = label
@@ -278,13 +282,20 @@ class PollQuestion(object):
             checks = [[operation, params.keys()[0], params.values()[0]]
                         for operation, params in checks.items()]
         self.checks = checks or []
+        self.case_sensitive = case_sensitive
         self.answered = False
 
     def label_or_copy(self):
         return self.label or self.copy
 
     def answer(self, answer):
-        if self.valid_responses and (answer not in self.valid_responses):
+        if self.case_sensitive:
+            valid_responses, answer = self.valid_responses, answer
+        else:
+            valid_responses = [r.lower() for r in self.valid_responses]
+            answer = answer.lower()
+
+        if valid_responses and (answer not in valid_responses):
             return False
         else:
             self.answer = answer

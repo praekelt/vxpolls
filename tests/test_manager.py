@@ -75,6 +75,39 @@ class PollManagerTestCase(TestCase):
             elif index == len(self.default_questions):
                 self.assertEqual(None, next_question)
 
+    def test_case_insensitivity(self):
+        poll = self.poll_manager.register(self.poll_id, {
+            'questions': self.default_questions,
+            'case_sensitive': False,
+        })
+        participant = self.poll_manager.get_participant(self.poll_id,
+            'user_id')
+
+        expected_question = 'What is your favorite colour?'
+        valid_input = 'RED'  # capitalized answer but should still pass
+        question = poll.get_next_question(participant)
+        poll.set_last_question(participant, question)
+        self.assertEqual(question.copy, expected_question)
+        response = poll.submit_answer(participant, valid_input)
+        self.assertEqual(None, response)
+
+    def test_case_sensitivity(self):
+        poll = self.poll_manager.register(self.poll_id, {
+            'questions': self.default_questions,
+            'case_sensitive': True,
+        })
+        participant = self.poll_manager.get_participant(self.poll_id,
+            'user_id')
+
+        expected_question = 'What is your favorite colour?'
+        valid_input = 'RED'  # capitalized answer but should fail
+        question = poll.get_next_question(participant)
+        poll.set_last_question(participant, question)
+        self.assertEqual(question.copy, expected_question)
+        response = poll.submit_answer(participant, valid_input)
+        # original question should be repeated
+        self.assertEqual(expected_question, response)
+
 
 class MultiLevelPollManagerTestCase(TestCase):
 

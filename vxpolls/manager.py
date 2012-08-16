@@ -289,6 +289,9 @@ class PollQuestion(object):
         return self.label or self.copy
 
     def answer(self, answer):
+        if answer is None:
+            return False
+
         if self.case_sensitive:
             valid_responses, answer = self.valid_responses, answer
         else:

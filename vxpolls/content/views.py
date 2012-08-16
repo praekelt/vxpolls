@@ -1,12 +1,12 @@
+import redis
 from django.shortcuts import render, redirect
 from django.core.urlresolvers import reverse
 from django.conf import settings
 from vxpolls.content import forms
 from vxpolls.manager import PollManager
-from vumi.persist.redis_manager import RedisManager
 
 
-redis = RedisManager.from_config(settings.VXPOLLS_REDIS_CONFIG)
+redis = redis.Redis(settings.VXPOLLS_REDIS_CONFIG)
 
 
 def show(request, poll_id):

@@ -2,8 +2,10 @@
 # -*- coding: utf8 -*-
 import hashlib
 import json
-import redis
 
+from twisted.internet.defer import inlineCallbacks
+
+from vumi.persist.txredis_manager import TxRedisManager
 from vumi.application.base import ApplicationWorker
 
 from vxpolls.manager import PollManager
@@ -18,7 +20,7 @@ class PollApplication(ApplicationWorker):
 
     def validate_config(self):
         self.questions = self.config.get('questions', [])
-        self.r_config = self.config.get('redis_config', {})
+        self.r_config = self.config.get('redis_manager', {})
         self.batch_size = self.config.get('batch_size', 5)
         self.dashboard_port = int(self.config.get('dashboard_port', 8000))
         self.dashboard_prefix = self.config.get('dashboard_path_prefix', '/')
@@ -28,17 +30,15 @@ class PollApplication(ApplicationWorker):
     def generate_unique_id(self):
         return hashlib.md5(json.dumps(self.config)).hexdigest()
 
+    @inlineCallbacks
     def setup_application(self):
-        self.r_server = self.get_redis()
+        self.r_server = yield TxRedisManager.from_config(self.redis_config)
         self.pm = PollManager(self.r_server, self.poll_prefix)
         if not self.pm.exists(self.poll_id):
             self.pm.register(self.poll_id, {
                 'questions': self.questions,
                 'batch_size': self.batch_size,
             })
-
-    def get_redis(self):
-        return redis.Redis(**self.r_config)
 
     def teardown_application(self):
         self.pm.stop()

@@ -3,7 +3,10 @@ import time
 import json
 import hashlib
 
+from twisted.internet.defer import returnValue
+
 from vumi.application import SessionManager
+from vumi.persist.redis_base import Manager
 
 from vxpolls.participant import PollParticipant
 from vxpolls.results import ResultManager
@@ -11,7 +14,8 @@ from vxpolls.results import ResultManager
 
 class PollManager(object):
     def __init__(self, r_server, r_prefix='poll_manager'):
-        self.r_server = r_server
+        # create a manager attribute so the @calls_manager works
+        self.r_server = self.manager = r_server
         self.r_prefix = r_prefix
         self.session_manager = SessionManager(self.r_server,
                                                 self.r_key('session'))
@@ -55,11 +59,13 @@ class PollManager(object):
     def get_session_key(self, poll_id, user_id):
         return '%s-%s' % (poll_id, user_id)
 
+    @Manager.calls_manager
     def get_config(self, poll_id, uid=None):
-        uid = uid or self.get_latest_uid(poll_id)
+        uid = uid or (yield self.get_latest_uid(poll_id))
         if uid:
             versions_key = self.r_key('versions', poll_id)
-            return json.loads(self.r_server.hget(versions_key, uid))
+            json_data = yield self.r_server.hget(versions_key, uid)
+            return json.loads(json_data)
         else:
             return {}
 
@@ -67,10 +73,11 @@ class PollManager(object):
         versions_key = self.r_key('versions', poll_id)
         return self.r_server.hexists(versions_key, uid)
 
+    @Manager.calls_manager
     def get(self, poll_id, uid=None):
-        if not self.uid_exists(poll_id, uid):
-            uid = self.get_latest_uid(poll_id)
-        version = self.get_config(poll_id, uid)
+        if not (yield self.uid_exists(poll_id, uid)):
+            uid = yield self.get_latest_uid(poll_id)
+        version = yield self.get_config(poll_id, uid)
         try:
             repeatable = version.get('repeatable', True)
             case_sensitive = version.get('case_sensitive', True)
@@ -81,6 +88,7 @@ class PollManager(object):
             return None
 
     def get_participant(self, poll_id, user_id):
+        # TODO
         session_key = self.get_session_key(poll_id, user_id)
         session_data = self.session_manager.load_session(session_key)
         participant = PollParticipant(user_id, session_data)
@@ -90,12 +98,14 @@ class PollManager(object):
         return self.get(poll_id, participant.get_poll_uid())
 
     def save_participant(self, poll_id, participant):
+        # TODO
         participant.updated_at = time.time()
         session_key = self.get_session_key(poll_id, participant.user_id)
         self.session_manager.save_session(session_key,
                                     participant.clean_dump())
 
     def clone_participant(self, participant, poll_id, new_id):
+        # TODO
         participant.updated_at = time.time()
         session_key = self.get_session_key(poll_id, new_id)
         self.session_manager.save_session(session_key,
@@ -103,6 +113,7 @@ class PollManager(object):
         return self.get_participant(poll_id, new_id)
 
     def active_participants(self, poll_id):
+        # TODO
         active_sessions = self.session_manager.active_sessions()
         all_participants = [PollParticipant(session.get('user_id'), session)
                             for session_id, session in active_sessions]
@@ -113,26 +124,34 @@ class PollManager(object):
         archive_key = self.r_key('archive')
         return self.r_server.smembers(archive_key)
 
+    @Manager.calls_manager
     def archive(self, poll_id, participant):
         user_id = participant.user_id
         session_key = self.get_session_key(poll_id, user_id)
         archive_key = self.r_key('archive')
-        self.r_server.sadd(archive_key, session_key)
+        yield self.r_server.sadd(archive_key, session_key)
 
         session_archive_key = self.r_key('session_archive', session_key)
-        self.r_server.zadd(session_archive_key, **{
+        yield self.r_server.zadd(session_archive_key, **{
             json.dumps(participant.clean_dump()): participant.updated_at,
         })
+        # TODO
         self.session_manager.clear_session(session_key)
 
+    @Manager.calls_manager
     def get_all_archives(self):
-        for user_id in self.inactive_participant_user_ids():
-            yield self.get_archive(user_id)
+        user_ids = yield self.inactive_participant_user_ids()
+        archives = []
+        for user_id in user_ids:
+            archive = yield self.get_archive(user_id)
+            archives.append(archive)
+        returnValue(archives)
 
+    @Manager.calls_manager
     def get_archive(self, poll_id, user_id):
         session_key = self.get_session_key(poll_id, user_id)
         archive_key = self.r_key('session_archive', session_key)
-        archived_sessions = self.r_server.zrange(archive_key, 0, -1,
+        archived_sessions = yield self.r_server.zrange(archive_key, 0, -1,
                                                     desc=True)
         return [PollParticipant(user_id, json.loads(data)) for
                     data in archived_sessions]

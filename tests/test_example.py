@@ -1,7 +1,7 @@
 from twisted.internet.defer import inlineCallbacks
 
 from vumi.application.tests.test_base import ApplicationTestCase
-from vumi.tests.utils import FakeRedis
+from vumi.persist.fake_redis import FakeRedis
 
 from vxpolls.example import PollApplication
 
@@ -33,13 +33,13 @@ class BasePollApplicationTestCase(ApplicationTestCase):
     @inlineCallbacks
     def setUp(self):
         yield super(BasePollApplicationTestCase, self).setUp()
-        self.r_server = FakeRedis()
-        self.patch(PollApplication, 'get_redis', lambda *a: self.r_server)
+        self.r_server = FakeRedis(async=True)
         self.config = {
             'poll_id': self.poll_id,
             'questions': self.default_questions,
             'transport_name': self.transport_name,
             'batch_size': 2,
+            'FAKE_REDIS': self.r_server,
         }
         self.app = yield self.get_application(self.config)
 

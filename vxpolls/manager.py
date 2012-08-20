@@ -65,9 +65,9 @@ class PollManager(object):
         if uid:
             versions_key = self.r_key('versions', poll_id)
             json_data = yield self.r_server.hget(versions_key, uid)
-            return json.loads(json_data)
-        else:
-            return {}
+            returnValue(json.loads(json_data))
+
+        returnValue({})
 
     def uid_exists(self, poll_id, uid):
         versions_key = self.r_key('versions', poll_id)
@@ -81,11 +81,12 @@ class PollManager(object):
         try:
             repeatable = version.get('repeatable', True)
             case_sensitive = version.get('case_sensitive', True)
-            return Poll(self.r_server, poll_id, uid, version['questions'],
+            poll = Poll(self.r_server, poll_id, uid, version['questions'],
                 version.get('batch_size'), r_prefix=self.r_key('poll'),
                 repeatable=repeatable, case_sensitive=case_sensitive)
+            returnValue(poll)
         except:
-            return None
+            return
 
     def get_participant(self, poll_id, user_id):
         # TODO
@@ -153,8 +154,9 @@ class PollManager(object):
         archive_key = self.r_key('session_archive', session_key)
         archived_sessions = yield self.r_server.zrange(archive_key, 0, -1,
                                                     desc=True)
-        return [PollParticipant(user_id, json.loads(data)) for
+        archive = [PollParticipant(user_id, json.loads(data)) for
                     data in archived_sessions]
+        returnValue(archive)
 
     def stop(self):
         self.session_manager.stop()

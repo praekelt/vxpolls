@@ -57,7 +57,7 @@ class ResultManager(object):
     def register_collection(self, collection_id):
         collection_key = self.r_key(self.collections_prefix)
         yield self.r_server.sadd(collection_key, collection_id)
-        return collection_key
+        returnValue(collection_key)
 
     @Manager.calls_manager
     def get_collections(self):
@@ -167,7 +167,7 @@ class ResultManager(object):
             answers = []
             for answer, value in results.items():
                 answers.append((answer, int(value)))
-            return dict(answers)
+            returnValue(dict(answers))
 
     @Manager.calls_manager
     def get_users(self, collection_id):
@@ -210,7 +210,7 @@ class ResultManager(object):
             }
             data.update(user_data)
             writer.writerow(self.encode_as_utf8(data))
-        return sio
+        returnValue(sio)
 
     @Manager.calls_manager
     def get_results_as_csv(self, collection_id):
@@ -220,7 +220,7 @@ class ResultManager(object):
         for question, results in results.items():
             writer.writerow([''] + results.keys())
             writer.writerow([question.encode('utf8')] + results.values())
-        return sio
+        returnValue(sio)
 
 
 class ContextResultManager(object):

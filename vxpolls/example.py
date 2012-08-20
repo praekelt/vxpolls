@@ -32,7 +32,7 @@ class PollApplication(ApplicationWorker):
 
     @inlineCallbacks
     def setup_application(self):
-        self.r_server = yield TxRedisManager.from_config(self.redis_config)
+        self.r_server = yield TxRedisManager.from_config(self.r_config)
         self.pm = PollManager(self.r_server, self.poll_prefix)
         if not self.pm.exists(self.poll_id):
             self.pm.register(self.poll_id, {

@@ -94,7 +94,8 @@ class ResultManager(object):
         yield self.r_server.sadd(questions_key, question)
         answers_key = self.get_answers_key(collection_id, question)
         if possible_answers:
-            yield self.r_server.sadd(answers_key, *possible_answers)
+            for answer in possible_answers:
+                yield self.r_server.sadd(answers_key, answer)
         answers = yield self.get_answers(collection_id, question)
         returnValue(answers)
 

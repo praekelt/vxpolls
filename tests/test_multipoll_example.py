@@ -321,7 +321,7 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
             msg = self.mkmsg_in(content=io[0])
             msg['helper_metadata']['poll_id'] = self.poll_id_prefix[:-1]
             yield self.dispatch(msg)
-            responses = yield self.wait_for_dispatched_messages(counter + 1)
+            responses = yield self.wait_for_dispatched_messages(counter)
             output = responses[-1]['content']
             event = responses[-1].get('session_event')
             if do_print:
@@ -448,49 +448,46 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
             ('1', self.default_questions_dict[poll_id][8]['copy']),
             ('Any input', self.app.registration_completed_response),
             ]
-        yield self.run_inputs(inputs_and_expected, True)
 
         pig = self.app.poll_id_generator(self.poll_id_prefix, "%s52" %
                                             self.poll_id_prefix)
+
         poll_id = pig.next()
-        inputs_and_expected = [
+        inputs_and_expected = inputs_and_expected + [
             ('Any input', self.default_questions_dict[poll_id][0]['copy']),
             ('2', self.default_questions_dict[poll_id][2]['copy']),
             ('Any input', self.default_questions_dict[poll_id][3]['copy']),
             ('1', self.default_questions_dict[poll_id][4]['copy']),
             ('Any input', self.app.survey_completed_response),
             ]
-        yield self.run_inputs(inputs_and_expected, True)
 
         poll_id = pig.next()
-        inputs_and_expected = [
+        inputs_and_expected = inputs_and_expected + [
             ('Any input', self.default_questions_dict[poll_id][0]['copy']),
             ('2', self.default_questions_dict[poll_id][2]['copy']),
             ('Any input', self.default_questions_dict[poll_id][6]['copy']),
             ('1', self.default_questions_dict[poll_id][7]['copy']),
             ('Any input', self.app.survey_completed_response),
             ]
-        yield self.run_inputs(inputs_and_expected, True)
 
         poll_id = pig.next()
-        inputs_and_expected = [
+        inputs_and_expected = inputs_and_expected + [
             ('Any input', self.default_questions_dict[poll_id][0]['copy']),
             ('2', self.default_questions_dict[poll_id][2]['copy']),
             ('Any input', self.default_questions_dict[poll_id][3]['copy']),
             ('1', self.default_questions_dict[poll_id][4]['copy']),
             ('Any input', self.app.survey_completed_response),
             ]
-        yield self.run_inputs(inputs_and_expected, True)
 
         poll_id = pig.next()
-        inputs_and_expected = [
+        inputs_and_expected = inputs_and_expected + [
             ('Any input', self.default_questions_dict[poll_id][0]['copy']),
             ('2', self.default_questions_dict[poll_id][2]['copy']),
             ('Any input', self.default_questions_dict[poll_id][6]['copy']),
             ('1', self.default_questions_dict[poll_id][7]['copy']),
             ('Any input', self.app.survey_completed_response),
             ]
-        yield self.run_inputs(inputs_and_expected, True)
+        yield self.run_inputs(inputs_and_expected, False)
         # Check participant is archived
         archived = yield self.app.pm.get_archive(self.poll_id_prefix[:-1],
                                             self.mkmsg_in(content='').user())

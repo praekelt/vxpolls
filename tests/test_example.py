@@ -1,6 +1,4 @@
 from twisted.internet.defer import inlineCallbacks, returnValue
-from twisted.internet.base import DelayedCall
-DelayedCall.debug = True
 
 from vumi.application.tests.test_base import ApplicationTestCase
 

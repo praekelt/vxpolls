@@ -86,12 +86,13 @@ class PollManager(object):
         if not (yield self.uid_exists(poll_id, uid)):
             uid = yield self.get_latest_uid(poll_id)
         version = yield self.get_config(poll_id, uid)
-        repeatable = version.get('repeatable', True)
-        case_sensitive = version.get('case_sensitive', True)
-        poll = Poll(self.r_server, poll_id, uid, version['questions'],
-            version.get('batch_size'), r_prefix=self.r_key('poll'),
-            repeatable=repeatable, case_sensitive=case_sensitive)
-        returnValue(poll)
+        if version:
+            repeatable = version.get('repeatable', True)
+            case_sensitive = version.get('case_sensitive', True)
+            poll = Poll(self.r_server, poll_id, uid, version['questions'],
+                version.get('batch_size'), r_prefix=self.r_key('poll'),
+                repeatable=repeatable, case_sensitive=case_sensitive)
+            returnValue(poll)
 
     @Manager.calls_manager
     def get_participant(self, poll_id, user_id):

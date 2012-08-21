@@ -24,6 +24,9 @@ class BaseMultiPollApplicationTestCase(ApplicationTestCase):
             'transport_name': self.transport_name,
             'batch_size': 2,
             'is_demo': True,
+            'redis_manager': {
+                'FAKE_REDIS': 'yes',
+            }
         }
         self.app = yield self.get_application(self.config)
 
@@ -281,10 +284,6 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
     @inlineCallbacks
     def setUp(self):
 
-        # Patch the class to return an instance of FakeRedis for this test
-        self.patch(CustomMultiPollApplication, 'get_redis',
-            lambda *args: FakeRedis())
-
         pig = self.application_class.poll_id_generator(self.poll_id_prefix)
         pig.next()  # To skip the id for registration
         other_quizzes_list = self.make_quiz_list(1, 56, pig)
@@ -309,17 +308,20 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
             'transport_name': self.transport_name,
             'batch_size': 9,
             'is_demo': True,
+            'redis_manager': {
+                'FAKE_REDIS': 'yes'
+            },
         }
         self.app = yield self.get_application(self.config)
         self.app.current_date = date(2012, 5, 21)
 
     @inlineCallbacks
     def run_inputs(self, inputs_and_expected, do_print=False):
-        for io in inputs_and_expected:
+        for counter, io in enumerate(inputs_and_expected):
             msg = self.mkmsg_in(content=io[0])
             msg['helper_metadata']['poll_id'] = self.poll_id_prefix[:-1]
             yield self.dispatch(msg)
-            responses = self.get_dispatched_messages()
+            responses = yield self.wait_for_dispatched_messages(counter + 1)
             output = responses[-1]['content']
             event = responses[-1].get('session_event')
             if do_print:
@@ -363,7 +365,7 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
             ]
         yield self.run_inputs(inputs_and_expected)
         # Check abortive registration is archived
-        archived = self.app.pm.get_archive(self.poll_id_prefix[:-1],
+        archived = yield self.app.pm.get_archive(self.poll_id_prefix[:-1],
                                             self.mkmsg_in(content='').user())
         self.assertEqual(archived[-1].labels.get('USER_STATUS'), '4')
         self.assertFalse(archived[-1].opted_in)
@@ -395,7 +397,7 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
             ]
         yield self.run_inputs(inputs_and_expected)
         # Check abortive registration is archived
-        archived = self.app.pm.get_archive(self.poll_id_prefix[:-1],
+        archived = yield self.app.pm.get_archive(self.poll_id_prefix[:-1],
                                             self.mkmsg_in(content='').user())
         self.assertEqual(archived[-1].labels.get('USER_STATUS'), '5')
         self.assertFalse(archived[-1].opted_in)
@@ -446,47 +448,51 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
             ('1', self.default_questions_dict[poll_id][8]['copy']),
             ('Any input', self.app.registration_completed_response),
             ]
+        yield self.run_inputs(inputs_and_expected, True)
 
         pig = self.app.poll_id_generator(self.poll_id_prefix, "%s52" %
                                             self.poll_id_prefix)
         poll_id = pig.next()
-        inputs_and_expected = inputs_and_expected + [
+        inputs_and_expected = [
             ('Any input', self.default_questions_dict[poll_id][0]['copy']),
             ('2', self.default_questions_dict[poll_id][2]['copy']),
             ('Any input', self.default_questions_dict[poll_id][3]['copy']),
             ('1', self.default_questions_dict[poll_id][4]['copy']),
             ('Any input', self.app.survey_completed_response),
             ]
+        yield self.run_inputs(inputs_and_expected, True)
 
         poll_id = pig.next()
-        inputs_and_expected = inputs_and_expected + [
+        inputs_and_expected = [
             ('Any input', self.default_questions_dict[poll_id][0]['copy']),
             ('2', self.default_questions_dict[poll_id][2]['copy']),
             ('Any input', self.default_questions_dict[poll_id][6]['copy']),
             ('1', self.default_questions_dict[poll_id][7]['copy']),
             ('Any input', self.app.survey_completed_response),
             ]
+        yield self.run_inputs(inputs_and_expected, True)
 
         poll_id = pig.next()
-        inputs_and_expected = inputs_and_expected + [
+        inputs_and_expected = [
             ('Any input', self.default_questions_dict[poll_id][0]['copy']),
             ('2', self.default_questions_dict[poll_id][2]['copy']),
             ('Any input', self.default_questions_dict[poll_id][3]['copy']),
             ('1', self.default_questions_dict[poll_id][4]['copy']),
             ('Any input', self.app.survey_completed_response),
             ]
+        yield self.run_inputs(inputs_and_expected, True)
 
         poll_id = pig.next()
-        inputs_and_expected = inputs_and_expected + [
+        inputs_and_expected = [
             ('Any input', self.default_questions_dict[poll_id][0]['copy']),
             ('2', self.default_questions_dict[poll_id][2]['copy']),
             ('Any input', self.default_questions_dict[poll_id][6]['copy']),
             ('1', self.default_questions_dict[poll_id][7]['copy']),
             ('Any input', self.app.survey_completed_response),
             ]
-        yield self.run_inputs(inputs_and_expected, False)
+        yield self.run_inputs(inputs_and_expected, True)
         # Check participant is archived
-        archived = self.app.pm.get_archive(self.poll_id_prefix[:-1],
+        archived = yield self.app.pm.get_archive(self.poll_id_prefix[:-1],
                                             self.mkmsg_in(content='').user())
         self.assertEqual(archived[-1].labels.get('USER_STATUS'), '2')
         self.assertTrue(archived[-1].opted_in)
@@ -838,11 +844,6 @@ class LiveCustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
 
     @inlineCallbacks
     def setUp(self):
-
-        # Patch the class to return an instance of FakeRedis for this test
-        self.patch(CustomMultiPollApplication, 'get_redis',
-            lambda *args: FakeRedis())
-
         pig = self.application_class.poll_id_generator(self.poll_id_prefix)
         pig.next()  # To skip the id for registration
         other_quizzes_list = self.make_quiz_list(1, 56, pig)
@@ -860,6 +861,9 @@ class LiveCustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
             'transport_name': self.transport_name,
             'batch_size': 9,
             #'is_demo': True,
+            'redis_manager': {
+                'FAKE_REDIS': 'yes'
+            },
         }
         self.app = yield self.get_application(self.config)
         self.app.current_date = date(2012, 5, 21)
@@ -1333,11 +1337,6 @@ class RegisterMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
 
     @inlineCallbacks
     def setUp(self):
-
-        # Patch the class to return an instance of FakeRedis for this test
-        self.patch(CustomMultiPollApplication, 'get_redis',
-            lambda *args: FakeRedis())
-
         pig = self.application_class.poll_id_generator(self.poll_id_prefix)
         self.default_questions_dict = {pig.next(): self.register_questions}
 
@@ -1349,6 +1348,9 @@ class RegisterMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
             'transport_name': self.transport_name,
             'batch_size': 9,
             'is_demo': True,
+            'redis_manager': {
+                'FAKE_REDIS': 'yes'
+            },
         }
         self.app = yield self.get_application(self.config)
         self.app.current_date = date(2012, 5, 21)
@@ -1391,11 +1393,6 @@ class LiveRegisterMultiPollApplicationTestCase(
                                 RegisterMultiPollApplicationTestCase):
     @inlineCallbacks
     def setUp(self):
-
-        # Patch the class to return an instance of FakeRedis for this test
-        self.patch(CustomMultiPollApplication, 'get_redis',
-            lambda *args: FakeRedis())
-
         pig = self.application_class.poll_id_generator(self.poll_id_prefix)
         self.default_questions_dict = {pig.next(): self.register_questions}
 
@@ -1491,11 +1488,6 @@ class ArchivingMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
 
     @inlineCallbacks
     def setUp(self):
-
-        # Patch the class to return an instance of FakeRedis for this test
-        self.patch(CustomMultiPollApplication, 'get_redis',
-            lambda *args: FakeRedis())
-
         pig = self.application_class.poll_id_generator(self.poll_id_prefix)
         self.default_questions_dict = {pig.next(): self.register_questions}
 
@@ -1507,6 +1499,9 @@ class ArchivingMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
             'transport_name': self.transport_name,
             'batch_size': 9,
             'is_demo': True,
+            'redis_manager': {
+                'FAKE_REDIS': 'yes'
+            },
         }
         self.app = yield self.get_application(self.config)
         self.app.current_date = date(2012, 5, 21)

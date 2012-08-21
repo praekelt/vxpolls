@@ -108,14 +108,17 @@ class PollApplication(ApplicationWorker):
                 # Archive for demo purposes so we can redial in and start over.
                 yield self.pm.archive(poll.poll_id, participant)
 
+    @inlineCallbacks
     def init_session(self, participant, poll, message):
         # brand new session, send the first question without inspecting
         # the incoming message
         if poll.has_more_questions_for(participant):
             next_question = poll.get_next_question(participant)
-            self.reply_to(message, self.ask_question(participant, poll, next_question))
+            question_copy = yield self.ask_question(participant, poll,
+                next_question)
+            yield self.reply_to(message, question_copy)
         else:
-            self.end_session(participant, poll, message)
+            yield self.end_session(participant, poll, message)
 
     def ask_question(self, participant, poll, question):
         participant.has_unanswered_question = True

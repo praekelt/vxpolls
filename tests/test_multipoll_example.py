@@ -582,7 +582,7 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
             ('Any input', self.app.survey_completed_response),
             ]
 
-        yield self.run_inputs(inputs_and_expected)
+        yield self.run_inputs(inputs_and_expected, True)
 
     #@inlineCallbacks
     #def test_full_2_hiv_with_deliberate_555_force_achive(self):

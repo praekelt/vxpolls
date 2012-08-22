@@ -24,9 +24,6 @@ class BaseMultiPollApplicationTestCase(ApplicationTestCase):
             'transport_name': self.transport_name,
             'batch_size': 2,
             'is_demo': True,
-            'redis_manager': {
-                'FAKE_REDIS': 'yes',
-            }
         }
         self.app = yield self.get_application(self.config)
 
@@ -308,9 +305,6 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
             'transport_name': self.transport_name,
             'batch_size': 9,
             'is_demo': True,
-            'redis_manager': {
-                'FAKE_REDIS': 'yes'
-            },
         }
         self.app = yield self.get_application(self.config)
         self.app.current_date = date(2012, 5, 21)
@@ -435,7 +429,8 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
             ('1', self.default_questions_dict[poll_id][7]['copy']),
             ('Any input', self.app.survey_completed_response),
             ]
-        yield self.run_inputs(inputs_and_expected)
+
+        yield self.run_inputs(inputs_and_expected, False)
 
     @inlineCallbacks
     def test_full_2_hiv_to_archive(self):
@@ -609,7 +604,7 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
 
         yield self.run_inputs(inputs_and_expected)
         # Check participant is archived
-        archived = self.app.pm.get_archive(self.poll_id_prefix[:-1],
+        archived = yield self.app.pm.get_archive(self.poll_id_prefix[:-1],
                                             self.mkmsg_in(content='').user())
         self.assertEqual(archived[-1].labels.get('USER_STATUS'), '2')
         self.assertTrue(archived[-1].opted_in)
@@ -858,9 +853,6 @@ class LiveCustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
             'transport_name': self.transport_name,
             'batch_size': 9,
             #'is_demo': True,
-            'redis_manager': {
-                'FAKE_REDIS': 'yes'
-            },
         }
         self.app = yield self.get_application(self.config)
         self.app.current_date = date(2012, 5, 21)
@@ -1345,9 +1337,6 @@ class RegisterMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
             'transport_name': self.transport_name,
             'batch_size': 9,
             'is_demo': True,
-            'redis_manager': {
-                'FAKE_REDIS': 'yes'
-            },
         }
         self.app = yield self.get_application(self.config)
         self.app.current_date = date(2012, 5, 21)
@@ -1496,9 +1485,6 @@ class ArchivingMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
             'transport_name': self.transport_name,
             'batch_size': 9,
             'is_demo': True,
-            'redis_manager': {
-                'FAKE_REDIS': 'yes'
-            },
         }
         self.app = yield self.get_application(self.config)
         self.app.current_date = date(2012, 5, 21)

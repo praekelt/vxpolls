@@ -156,8 +156,8 @@ class MultiPollApplication(PollApplication):
 
     @inlineCallbacks
     def next_poll_or_archive(self, participant, poll):
-        if participant.force_archive \
-                or not self.try_go_to_next_poll(participant):
+        try_next_poll = yield self.try_go_to_next_poll(participant)
+        if participant.force_archive or not try_next_poll:
             # Archive for demo purposes so we can redial in and start over.
             if self.is_demo or participant.force_archive:
                 yield self.pm.archive(participant.scope_id, participant)
@@ -170,7 +170,8 @@ class MultiPollApplication(PollApplication):
         next_poll_id = self.get_next_poll_id(self.make_poll_prefix(
                                                 participant.scope_id),
                                                     current_poll_id)
-        if self.pm.get(next_poll_id):
+        next_poll = yield self.pm.get(next_poll_id)
+        if next_poll:
             participant.set_poll_id(next_poll_id)
             yield self.pm.save_participant(participant.scope_id, participant)
             returnValue(True)
@@ -192,6 +193,7 @@ class MultiPollApplication(PollApplication):
         yield self.pm.save_participant(participant.scope_id, participant)
         returnValue(question.copy)
 
+    @inlineCallbacks
     def custom_poll_logic_function(self, participant):
         # Override custom logic to be called during consume_user_message here
 

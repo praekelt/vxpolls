@@ -907,7 +907,7 @@ class LiveCustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
             ]
         yield self.run_inputs(inputs_and_expected)
         # Check abortive registration is archived
-        archived = self.app.pm.get_archive(self.poll_id_prefix[:-1],
+        archived = yield self.app.pm.get_archive(self.poll_id_prefix[:-1],
                                             self.mkmsg_in(content='').user())
         self.assertEqual(archived[-1].labels.get('USER_STATUS'), '4')
         self.assertFalse(archived[-1].opted_in)
@@ -939,7 +939,7 @@ class LiveCustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
             ]
         yield self.run_inputs(inputs_and_expected)
         # Check abortive registration is archived
-        archived = self.app.pm.get_archive(self.poll_id_prefix[:-1],
+        archived = yield self.app.pm.get_archive(self.poll_id_prefix[:-1],
                                             self.mkmsg_in(content='').user())
         self.assertEqual(archived[-1].labels.get('USER_STATUS'), '5')
         self.assertFalse(archived[-1].opted_in)
@@ -1003,8 +1003,8 @@ class LiveCustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
 
         yield self.run_inputs(inputs_and_expected, False)
         # Check participant
-        participant = self.app.pm.get_participant(self.poll_id_prefix[:-1],
-                                            self.mkmsg_in(content='').user())
+        participant = yield self.app.pm.get_participant(
+            self.poll_id_prefix[:-1], self.mkmsg_in(content='').user())
         self.assertEqual(participant.labels.get('USER_STATUS'), '2')
         self.assertEqual(participant.labels.get('REGISTRATION_DATE'),
                 '2012-05-21')
@@ -1039,8 +1039,8 @@ class LiveCustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
 
         yield self.run_inputs(inputs_and_expected)
         # Check participant
-        participant = self.app.pm.get_participant(self.poll_id_prefix[:-1],
-                                            self.mkmsg_in(content='').user())
+        participant = yield self.app.pm.get_participant(
+            self.poll_id_prefix[:-1], self.mkmsg_in(content='').user())
         self.assertEqual(participant.labels.get('USER_STATUS'), '1')
         self.assertEqual(participant.labels.get('REGISTRATION_DATE'),
                 '2012-05-21')
@@ -1078,8 +1078,8 @@ class LiveCustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
 
         yield self.run_inputs(inputs_and_expected)
         # Check participant
-        participant = self.app.pm.get_participant(self.poll_id_prefix[:-1],
-                                            self.mkmsg_in(content='').user())
+        participant = yield self.app.pm.get_participant(
+            self.poll_id_prefix[:-1], self.mkmsg_in(content='').user())
         self.assertEqual(participant.labels.get('USER_STATUS'), '1')
         self.assertEqual(participant.labels.get('REGISTRATION_DATE'),
                 '2012-05-24')
@@ -1116,8 +1116,8 @@ class LiveCustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
             ]
 
         yield self.run_inputs(inputs_and_expected)
-        participant = self.app.pm.get_participant(self.poll_id_prefix[:-1],
-                                            self.mkmsg_in(content='').user())
+        participant = yield self.app.pm.get_participant(
+            self.poll_id_prefix[:-1], self.mkmsg_in(content='').user())
         self.assertEqual(participant.labels.get('USER_STATUS'), '1')
         self.assertEqual(participant.labels.get('REGISTRATION_DATE'),
                 '2012-05-24')
@@ -1200,8 +1200,8 @@ class LiveCustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
         yield self.run_inputs(inputs_and_expected)
 
         # Check participant
-        participant = self.app.pm.get_participant(self.poll_id_prefix[:-1],
-                                            self.mkmsg_in(content='').user())
+        participant = yield self.app.pm.get_participant(
+            self.poll_id_prefix[:-1], self.mkmsg_in(content='').user())
         self.assertEqual(participant.labels.get('USER_STATUS'), '1')
         self.assertEqual(participant.labels.get('REGISTRATION_DATE'),
                 '2012-05-24')

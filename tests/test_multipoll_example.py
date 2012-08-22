@@ -1367,7 +1367,7 @@ class RegisterMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
             ]
         yield self.run_inputs(inputs_and_expected)
         # Check participant is archived
-        archived = self.app.pm.get_archive(self.poll_id_prefix[:-1],
+        archived = yield self.app.pm.get_archive(self.poll_id_prefix[:-1],
                                             self.mkmsg_in(content='').user())
         self.assertEqual(archived[-1].labels.get('USER_STATUS'), '1')
         self.assertTrue(archived[-1].opted_in)
@@ -1396,6 +1396,7 @@ class LiveRegisterMultiPollApplicationTestCase(
     @inlineCallbacks
     def test_register_1_archive_and_repeat(self):
         yield None
+        # TODO: write test?
 
     @inlineCallbacks
     def test_register_1_and_re_attempt(self):

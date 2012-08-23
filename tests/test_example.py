@@ -43,10 +43,8 @@ class BasePollApplicationTestCase(ApplicationTestCase):
         }
         self.app = yield self.get_application(self.config)
 
-    @inlineCallbacks
     def get_poll(self, poll_id, participant):
-        poll = yield self.app.pm.get_poll_for_participant(poll_id, participant)
-        returnValue(poll)
+        return self.app.pm.get_poll_for_participant(poll_id, participant)
 
     @inlineCallbacks
     def get_participant_and_poll(self, user_id, poll_id=None):

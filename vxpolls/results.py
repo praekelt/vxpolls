@@ -53,29 +53,21 @@ class ResultManager(object):
         return self.r_key(self.collections_prefix, collection_id,
             self.users_prefix, self.results_prefix, user_id)
 
-    @Manager.calls_manager
     def register_collection(self, collection_id):
         collection_key = self.r_key(self.collections_prefix)
-        yield self.r_server.sadd(collection_key, collection_id)
-        returnValue(collection_key)
+        return self.r_server.sadd(collection_key, collection_id)
 
-    @Manager.calls_manager
     def get_collections(self):
         collection_key = self.r_key(self.collections_prefix)
-        members = yield self.r_server.smembers(collection_key)
-        returnValue(members)
+        return self.r_server.smembers(collection_key)
 
-    @Manager.calls_manager
     def get_questions(self, collection_id):
         questions_key = self.get_questions_key(collection_id)
-        members = yield self.r_server.smembers(questions_key)
-        returnValue(members)
+        return self.r_server.smembers(questions_key)
 
-    @Manager.calls_manager
     def get_answers(self, collection_id, question):
         answers_key = self.get_answers_key(collection_id, question)
-        members = yield self.r_server.smembers(answers_key)
-        returnValue(members)
+        return self.r_server.smembers(answers_key)
 
     @Manager.calls_manager
     def register_question(self, collection_id, question,

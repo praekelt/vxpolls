@@ -99,10 +99,8 @@ class PollManager(object):
         participant = PollParticipant(user_id, session_data)
         returnValue(participant)
 
-    @Manager.calls_manager
     def get_poll_for_participant(self, poll_id, participant):
-        poll = yield self.get(poll_id, participant.get_poll_uid())
-        returnValue(poll)
+        return self.get(poll_id, participant.get_poll_uid())
 
     @Manager.calls_manager
     def save_participant(self, poll_id, participant):
@@ -129,11 +127,9 @@ class PollManager(object):
                     if participant.get_poll_id() == poll_id]
         returnValue(active_participants)
 
-    @Manager.calls_manager
     def inactive_participant_session_keys(self):
         archive_key = self.r_key('archive')
-        members = yield self.r_server.smembers(archive_key)
-        returnValue(members)
+        return self.r_server.smembers(archive_key)
 
     @Manager.calls_manager
     def archive(self, poll_id, participant):

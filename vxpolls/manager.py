@@ -54,9 +54,7 @@ class PollManager(object):
     @Manager.calls_manager
     def get_latest_uid(self, poll_id):
         timestamps_key = self.r_key('version_timestamps', poll_id)
-        d = self.r_server.zrange(timestamps_key, 0, -1, desc=True)
-        d.addErrback(log.err)
-        uids = yield d
+        uids = yield self.r_server.zrange(timestamps_key, 0, -1, desc=True)
         if uids:
             returnValue(uids[0])
 

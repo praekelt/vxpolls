@@ -4,7 +4,9 @@ from django.conf import settings
 from django.test.client import Client
 from django.test import TestCase
 from django.core.urlresolvers import reverse
-from vumi.tests.utils import FakeRedis
+
+from vumi.persist.redis_manager import RedisManager
+
 from vxpolls.manager import PollManager
 from vxpolls.content import forms
 from vxpolls.content import views as content_views
@@ -48,7 +50,9 @@ class VxpollFormTestCase(TestCase):
 
     def setUp(self):
         self.config = yaml.load(self.config_data)
-        self.r_server = FakeRedis()
+        self.r_server = RedisManager.from_config({
+            'FAKE_REDIS': 'yes'
+            })
         self.poll_manager = PollManager(self.r_server, settings.VXPOLLS_PREFIX)
         self.poll_id = self.config['poll_id']
         self.poll = self.poll_manager.register(self.poll_id, self.config)

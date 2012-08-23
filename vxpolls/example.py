@@ -2,8 +2,10 @@
 # -*- coding: utf8 -*-
 import hashlib
 import json
-import redis
 
+from twisted.internet.defer import inlineCallbacks
+
+from vumi.persist.txredis_manager import TxRedisManager
 from vumi.application.base import ApplicationWorker
 
 from vxpolls.manager import PollManager
@@ -18,7 +20,7 @@ class PollApplication(ApplicationWorker):
 
     def validate_config(self):
         self.questions = self.config.get('questions', [])
-        self.r_config = self.config.get('redis_config', {})
+        self.r_config = self.config.get('redis_manager', {})
         self.batch_size = self.config.get('batch_size', 5)
         self.dashboard_port = int(self.config.get('dashboard_port', 8000))
         self.dashboard_prefix = self.config.get('dashboard_path_prefix', '/')
@@ -28,25 +30,25 @@ class PollApplication(ApplicationWorker):
     def generate_unique_id(self):
         return hashlib.md5(json.dumps(self.config)).hexdigest()
 
+    @inlineCallbacks
     def setup_application(self):
-        self.r_server = self.get_redis()
+        self.r_server = yield TxRedisManager.from_config(self.r_config)
         self.pm = PollManager(self.r_server, self.poll_prefix)
-        if not self.pm.exists(self.poll_id):
-            self.pm.register(self.poll_id, {
+        exists = yield self.pm.exists(self.poll_id)
+        if not exists:
+            yield self.pm.register(self.poll_id, {
                 'questions': self.questions,
                 'batch_size': self.batch_size,
             })
 
-    def get_redis(self):
-        return redis.Redis(**self.r_config)
-
     def teardown_application(self):
         self.pm.stop()
 
+    @inlineCallbacks
     def consume_user_message(self, message):
         poll_id = message['helper_metadata']['poll_id']
-        participant = self.pm.get_participant(poll_id, message.user())
-        poll = self.pm.get_poll_for_participant(poll_id, participant)
+        participant = yield self.pm.get_participant(poll_id, message.user())
+        poll = yield self.pm.get_poll_for_participant(poll_id, participant)
 
         # store the uid so we get this one on the next time around
         # even if the content changes.
@@ -65,7 +67,7 @@ class PollApplication(ApplicationWorker):
                 next_question = poll.get_next_question(participant)
                 participant.has_unanswered_question = True
                 poll.set_last_question(participant, next_question)
-                self.pm.save_participant(poll.poll_id, participant)
+                yield self.pm.save_participant(poll.poll_id, participant)
                 self.on_message(participant, poll, message)
             else:
                 self.end_session(participant, poll, message)
@@ -84,35 +86,39 @@ class PollApplication(ApplicationWorker):
             else:
                 self.end_session(participant, poll, message)
 
+    @inlineCallbacks
     def end_session(self, participant, poll, message):
         participant.interactions = 0
         participant.has_unanswered_question = False
         next_question = poll.get_next_question(participant)
-        config = self.pm.get_config(poll.poll_id)
+        config = yield self.pm.get_config(poll.poll_id)
         if next_question:
             response = config.get('batch_completed_response',
                                     self.batch_completed_response)
-            self.reply_to(message, response, continue_session=False)
-            self.pm.save_participant(poll.poll_id, participant)
+            yield self.reply_to(message, response, continue_session=False)
+            yield self.pm.save_participant(poll.poll_id, participant)
         else:
             response = config.get('survey_completed_response',
                                     self.survey_completed_response)
-            self.reply_to(message, response, continue_session=False)
+            yield self.reply_to(message, response, continue_session=False)
             participant.poll_id = None
             participant.set_poll_uid(None)
-            self.pm.save_participant(poll.poll_id, participant)
+            yield self.pm.save_participant(poll.poll_id, participant)
             if poll.repeatable:
                 # Archive for demo purposes so we can redial in and start over.
-                self.pm.archive(poll.poll_id, participant)
+                yield self.pm.archive(poll.poll_id, participant)
 
+    @inlineCallbacks
     def init_session(self, participant, poll, message):
         # brand new session, send the first question without inspecting
         # the incoming message
         if poll.has_more_questions_for(participant):
             next_question = poll.get_next_question(participant)
-            self.reply_to(message, self.ask_question(participant, poll, next_question))
+            question_copy = yield self.ask_question(participant, poll,
+                next_question)
+            yield self.reply_to(message, question_copy)
         else:
-            self.end_session(participant, poll, message)
+            yield self.end_session(participant, poll, message)
 
     def ask_question(self, participant, poll, question):
         participant.has_unanswered_question = True

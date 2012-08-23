@@ -3,6 +3,11 @@ import csv
 from functools import partial
 from StringIO import StringIO
 
+from twisted.internet.defer import returnValue
+
+from vumi.persist.redis_base import Manager
+
+
 class ResultManagerException(Exception): pass
 class CollectionException(ResultManagerException): pass
 
@@ -10,7 +15,8 @@ class CollectionException(ResultManagerException): pass
 class ResultManager(object):
 
     def __init__(self, r_server, r_prefix='results'):
-        self.r_server = r_server
+        # create a manager instances so the @calls_manager works
+        self.r_server = self.manager = r_server
         self.r_prefix = r_prefix
         self.collections_prefix = 'collections'
         self.questions_prefix = 'questions'
@@ -49,8 +55,7 @@ class ResultManager(object):
 
     def register_collection(self, collection_id):
         collection_key = self.r_key(self.collections_prefix)
-        self.r_server.sadd(collection_key, collection_id)
-        return collection_key
+        return self.r_server.sadd(collection_key, collection_id)
 
     def get_collections(self):
         collection_key = self.r_key(self.collections_prefix)
@@ -64,6 +69,7 @@ class ResultManager(object):
         answers_key = self.get_answers_key(collection_id, question)
         return self.r_server.smembers(answers_key)
 
+    @Manager.calls_manager
     def register_question(self, collection_id, question,
         possible_answers=None):
         """
@@ -72,16 +78,20 @@ class ResultManager(object):
         :param possible_answers:    the list of possible answers this question
                                     can expect.
         """
-        if collection_id not in self.get_collections():
+        collection_ids = yield self.get_collections()
+        if collection_id not in collection_ids:
             raise CollectionException('%s is an unknown collection' % (
                                         collection_id,))
         questions_key = self.get_questions_key(collection_id)
-        self.r_server.sadd(questions_key, question)
+        yield self.r_server.sadd(questions_key, question)
         answers_key = self.get_answers_key(collection_id, question)
         if possible_answers:
-            self.r_server.sadd(answers_key, *possible_answers)
-        return self.get_answers(collection_id, question)
+            for answer in possible_answers:
+                yield self.r_server.sadd(answers_key, answer)
+        answers = yield self.get_answers(collection_id, question)
+        returnValue(answers)
 
+    @Manager.calls_manager
     def add_result(self, collection_id, user_id, question, answer):
         """
         :param collection_id:   the unique id of the collection we're tracking
@@ -92,97 +102,118 @@ class ResultManager(object):
         :param question:        the question we're tracking answers for.
         :param answer:          the answer we're counting votes for
         """
-        if collection_id not in self.get_collections():
+        collection_ids = yield self.get_collections()
+        if collection_id not in collection_ids:
             raise CollectionException('%s is an unknown collection.' % (
                                         collection_id,))
 
-        if question not in self.get_questions(collection_id):
+        questions = yield self.get_questions(collection_id)
+        if question not in questions:
             raise ResultManagerException('%s is an unknown question.' % (
                                 question,))
 
         users_key = self.get_users_key(collection_id)
-        self.r_server.sadd(users_key, user_id)
+        yield self.r_server.sadd(users_key, user_id)
         users_answers_key = self.get_user_answers_key(collection_id, user_id)
         results_key = self.get_results_key(collection_id, question)
-        previous_answer = self.r_server.hget(users_answers_key, question)
+        previous_answer = yield self.r_server.hget(users_answers_key, question)
         if previous_answer:
             # we've already seen an answer for this question before
             # so we need to shuffle things around instead of just
             # incrementing.
-            self.r_server.hincrby(results_key, answer, 1)
-            self.r_server.hincrby(results_key, previous_answer, -1)
+            yield self.r_server.hincrby(results_key, answer, 1)
+            yield self.r_server.hincrby(results_key, previous_answer, -1)
         elif previous_answer != answer:
             # we've not seen this entry for this user yet so just
             # simply increment a counter
-            self.r_server.hincrby(results_key, answer, 1)
+            yield self.r_server.hincrby(results_key, answer, 1)
 
-        self.r_server.hset(users_answers_key, question, answer)
-        return results_key
+        yield self.r_server.hset(users_answers_key, question, answer)
+        returnValue(results_key)
 
+    @Manager.calls_manager
     def get_results(self, collection_id):
-        return dict([(
-            question,
-            self.get_results_for_question(collection_id, question)
-        ) for question in self.get_questions(collection_id)])
+        questions = yield self.get_questions(collection_id)
+        results = []
+        for question in questions:
+            result = yield self.get_results_for_question(collection_id,
+                question)
+            results.append((question, result))
+        returnValue(dict(results))
 
+    @Manager.calls_manager
     def get_results_for_question(self, collection_id, question):
         results_key = self.get_results_key(collection_id, question)
-        answers = self.get_answers(collection_id, question)
+        answers = yield self.get_answers(collection_id, question)
         # If we've been given a list of possible answers, return the
         # full list of possible answers and automatically set 0
         # as the value for the answers that haven't been given
         # any votes
         if answers:
-            return dict([
-                (
-                    answer,
-                    int(self.r_server.hget(results_key, answer) or 0)
-                ) for answer in answers])
+            results = []
+            for answer in answers:
+                result = yield self.r_server.hget(results_key, answer)
+                results.append((answer, int(result or 0)))
+            returnValue(dict(results))
         else:
-            return dict([(
-                answer,
-                int(value)
-            ) for answer, value in self.r_server.hgetall(results_key).items()])
+            results = yield self.r_server.hgetall(results_key)
+            answers = []
+            for answer, value in results.items():
+                answers.append((answer, int(value)))
+            returnValue(dict(answers))
 
+    @Manager.calls_manager
     def get_users(self, collection_id):
         users_key = self.get_users_key(collection_id)
-        for user_id in self.r_server.smembers(users_key):
-            yield user_id, self.get_user(collection_id, user_id)
+        user_ids = yield self.r_server.smembers(users_key)
+        users = []
+        for user_id in user_ids:
+            user = yield self.get_user(collection_id, user_id)
+            users.append((user_id, user))
+        returnValue(users)
 
+    @Manager.calls_manager
     def get_user(self, collection_id, user_id):
         answers_key = self.get_user_answers_key(collection_id, user_id)
-        return dict([(
-            question,
-            self.r_server.hget(answers_key, question)
-        ) for question in self.get_questions(collection_id)])
+        questions = yield self.get_questions(collection_id)
+        user_results = []
+        for question in questions:
+            answer = yield self.r_server.hget(answers_key, question)
+            user_results.append((question, answer))
+        returnValue(dict(user_results))
 
     def encode_as_utf8(self, dictionary):
         return dict((k.encode('utf8'), (v or '').encode('utf8'))
                         for k, v in dictionary.items())
 
+    @Manager.calls_manager
     def get_users_as_csv(self, collection_id):
         sio = StringIO()
         fieldnames = ['user_id']
-        fieldnames.extend(self.get_questions(collection_id))
+        questions = yield self.get_questions(collection_id)
+        fieldnames.extend(questions)
         fieldnames = [fn.encode('utf8') for fn in fieldnames]
         headers = self.encode_as_utf8(dict((n, n) for n in fieldnames))
         writer = csv.DictWriter(sio, fieldnames=fieldnames)
         writer.writerow(headers)
-        for user_id, user_data in self.get_users(collection_id):
+        users = yield self.get_users(collection_id)
+        for user_id, user_data in users:
             data = {
                 'user_id': user_id,
             }
             data.update(user_data)
             writer.writerow(self.encode_as_utf8(data))
-        return sio
+        returnValue(sio)
 
+    @Manager.calls_manager
     def get_results_as_csv(self, collection_id):
         sio = StringIO()
         writer = csv.writer(sio)
-        for question, results in self.get_results(collection_id).items():
+        results = yield self.get_results(collection_id)
+        for question, results in results.items():
             writer.writerow([''] + results.keys())
             writer.writerow([question.encode('utf8')] + results.values())
-        return sio
+        returnValue(sio)
 
 
 class ContextResultManager(object):

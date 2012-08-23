@@ -2,7 +2,9 @@
 # -*- coding: utf8 -*-
 
 from datetime import date, timedelta, datetime
-import redis
+
+from twisted.internet.defer import inlineCallbacks, returnValue
+from vumi.persist.txredis_manager import TxRedisManager
 
 from vxpolls.example import PollApplication
 from vxpolls import PollManager
@@ -29,7 +31,7 @@ class MultiPollApplication(PollApplication):
         self.questions_dict = self.config.get('questions_dict', {})
         self.poll_id_list = self.config.get('poll_id_list',
                                             [self.generate_unique_id()])
-        self.r_config = self.config.get('redis_config', {})
+        self.r_config = self.config.get('redis_manager', {})
         self.batch_size = self.config.get('batch_size', 9)
         self.dashboard_port = int(self.config.get('dashboard_port', 8000))
         self.dashboard_prefix = self.config.get('dashboard_path_prefix', '/')
@@ -37,18 +39,17 @@ class MultiPollApplication(PollApplication):
         self.poll_name_list = self.config.get('poll_name_list', [])
         self.is_demo = self.config.get('is_demo', False)
 
+    @inlineCallbacks
     def setup_application(self):
-        self.r_server = self.get_redis(self.r_config)
+        self.r_server = yield TxRedisManager.from_config(self.r_config)
         self.pm = PollManager(self.r_server, self.poll_prefix)
         for poll_id in self.poll_id_list:
-            if not self.pm.exists(poll_id):
-                self.pm.register(poll_id, {
+            exists = yield self.pm.exists(poll_id)
+            if not exists:
+                yield self.pm.register(poll_id, {
                     'questions': self.questions_dict.get(poll_id, []),
                     'batch_size': self.batch_size,
                     })
-
-    def get_redis(self, config):
-        return redis.Redis(**self.r_config)
 
     @classmethod
     def poll_id_generator(cls, poll_id_prefix, last_id=None):
@@ -90,42 +91,46 @@ class MultiPollApplication(PollApplication):
     def make_poll_prefix(cls, other_id):
         return "%s_" % other_id
 
+    @inlineCallbacks
     def consume_user_message(self, message):
         scope_id = message['helper_metadata'].get('poll_id', '')
-        participant = self.pm.get_participant(scope_id, message.user())
+        participant = yield self.pm.get_participant(scope_id, message.user())
         if participant:
             participant.scope_id = scope_id
-        self.custom_poll_logic_function(participant)
+        yield self.custom_poll_logic_function(participant)
         poll_id = participant.get_poll_id()
         if poll_id is None:
             poll_id = self.get_first_poll_id(self.make_poll_prefix(
                                                     participant.scope_id))
-        poll = self.pm.get_poll_for_participant(poll_id, participant)
+        poll = yield self.pm.get_poll_for_participant(poll_id, participant)
         # store the uid so we get this one on the next time around
         # even if the content changes.
         participant.set_poll_id(poll.poll_id)
         participant.set_poll_uid(poll.uid)
         participant.questions_per_session = poll.batch_size
         if participant.has_unanswered_question:
-            self.on_message(participant, poll, message)
+            yield self.on_message(participant, poll, message)
         else:
             self.init_session(participant, poll, message)
 
+    @inlineCallbacks
     def on_message(self, participant, poll, message):
         # receive a message as part of a live session
         content = message['content']
         error_message = poll.submit_answer(participant, content,
                                             self.custom_answer_logic)
         if error_message:
-            self.reply_to(message, error_message)
+            yield self.reply_to(message, error_message)
         else:
             if poll.has_more_questions_for(participant):
                 next_question = poll.get_next_question(participant)
-                self.reply_to(message, self.ask_question(participant, poll,
-                                                            next_question))
+                question_copy = yield self.ask_question(participant,
+                    poll, next_question)
+                yield self.reply_to(message, question_copy)
             else:
-                self.end_session(participant, poll, message)
+                yield self.end_session(participant, poll, message)
 
+    @inlineCallbacks
     def end_session(self, participant, poll, message):
         first_poll_id = self.get_first_poll_id(self.make_poll_prefix(
                                                     participant.scope_id))
@@ -139,50 +144,56 @@ class MultiPollApplication(PollApplication):
         participant.has_unanswered_question = False
         next_question = poll.get_next_question(participant)
         if next_question:
-            self.reply_to(message, batch_completed_response,
+            yield self.reply_to(message, batch_completed_response,
                 continue_session=False)
-            self.pm.save_participant(participant)
+            yield self.pm.save_participant(participant)
         else:
-            self.reply_to(message, survey_completed_response,
+            yield self.reply_to(message, survey_completed_response,
                 continue_session=False)
-            self.pm.save_participant(participant.scope_id, participant)
+            yield self.pm.save_participant(participant.scope_id, participant)
             # Move on to the next poll if possible
-            self.next_poll_or_archive(participant, poll)
+            yield self.next_poll_or_archive(participant, poll)
 
+    @inlineCallbacks
     def next_poll_or_archive(self, participant, poll):
-        if participant.force_archive \
-                or not self.try_go_to_next_poll(participant):
+        try_next_poll = yield self.try_go_to_next_poll(participant)
+        if participant.force_archive or not try_next_poll:
             # Archive for demo purposes so we can redial in and start over.
             if self.is_demo or participant.force_archive:
-                self.pm.archive(participant.scope_id, participant)
+                yield self.pm.archive(participant.scope_id, participant)
 
+    @inlineCallbacks
     def try_go_to_next_poll(self, participant):
         if not self.is_demo and len(participant.polls) > 1:
-            return False
+            returnValue(False)
         current_poll_id = participant.get_poll_id()
         next_poll_id = self.get_next_poll_id(self.make_poll_prefix(
                                                 participant.scope_id),
                                                     current_poll_id)
-        if self.pm.get(next_poll_id):
+        next_poll = yield self.pm.get(next_poll_id)
+        if next_poll:
             participant.set_poll_id(next_poll_id)
-            self.pm.save_participant(participant.scope_id, participant)
-            return True
-        return False
+            yield self.pm.save_participant(participant.scope_id, participant)
+            returnValue(True)
+        returnValue(False)
 
+    @inlineCallbacks
     def try_go_to_specific_poll(self, participant, poll_id):
         current_poll_id = participant.get_poll_id()
         if poll_id != current_poll_id and self.pm.get(poll_id):
             participant.set_poll_id(poll_id)
-            self.pm.save_participant(participant.scope_id, participant)
-            return True
-        return False
+            yield self.pm.save_participant(participant.scope_id, participant)
+            returnValue(True)
+        returnValue(False)
 
+    @inlineCallbacks
     def ask_question(self, participant, poll, question):
         participant.has_unanswered_question = True
         poll.set_last_question(participant, question)
-        self.pm.save_participant(participant.scope_id, participant)
-        return question.copy
+        yield self.pm.save_participant(participant.scope_id, participant)
+        returnValue(question.copy)
 
+    @inlineCallbacks
     def custom_poll_logic_function(self, participant):
         # Override custom logic to be called during consume_user_message here
 
@@ -206,7 +217,7 @@ class MultiPollApplication(PollApplication):
                             new_poll_number)
             if new_poll_id != current_poll_id \
                 and new_poll_number > current_poll_number:
-                self.try_go_to_specific_poll(participant, new_poll_id)
+                yield self.try_go_to_specific_poll(participant, new_poll_id)
                 participant.has_unanswered_question = False
 
     def get_current_date(self):

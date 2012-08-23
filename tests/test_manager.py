@@ -3,7 +3,7 @@ import random
 from twisted.trial.unittest import TestCase
 from twisted.internet.defer import inlineCallbacks
 
-from vumi.tests.utils import FakeRedis
+from vumi.persist.txredis_manager import TxRedisManager
 
 from vxpolls.manager import PollManager
 
@@ -23,14 +23,17 @@ class PollManagerTestCase(TestCase):
         'valid_responses': ['apple', 'orange'],
     }]
 
+    @inlineCallbacks
     def setUp(self):
-        self.r_server = FakeRedis()
+        self.r_server = yield TxRedisManager.from_config({
+            'FAKE_REDIS': 'yes'
+            })
         self.poll_manager = PollManager(self.r_server)
         self.poll_id = 'poll-id'
-        self.poll = self.poll_manager.register(self.poll_id, {
+        self.poll = yield self.poll_manager.register(self.poll_id, {
             'questions': self.default_questions
         })
-        self.participant = self.poll_manager.get_participant(self.poll_id,
+        self.participant = yield self.poll_manager.get_participant(self.poll_id,
             'user_id')
 
     @inlineCallbacks
@@ -75,12 +78,13 @@ class PollManagerTestCase(TestCase):
             elif index == len(self.default_questions):
                 self.assertEqual(None, next_question)
 
+    @inlineCallbacks
     def test_case_insensitivity(self):
-        poll = self.poll_manager.register(self.poll_id, {
+        poll = yield self.poll_manager.register(self.poll_id, {
             'questions': self.default_questions,
             'case_sensitive': False,
         })
-        participant = self.poll_manager.get_participant(self.poll_id,
+        participant = yield self.poll_manager.get_participant(self.poll_id,
             'user_id')
 
         expected_question = 'What is your favorite colour?'
@@ -91,12 +95,13 @@ class PollManagerTestCase(TestCase):
         response = poll.submit_answer(participant, valid_input)
         self.assertEqual(None, response)
 
+    @inlineCallbacks
     def test_case_sensitivity(self):
-        poll = self.poll_manager.register(self.poll_id, {
+        poll = yield self.poll_manager.register(self.poll_id, {
             'questions': self.default_questions,
             'case_sensitive': True,
         })
-        participant = self.poll_manager.get_participant(self.poll_id,
+        participant = yield self.poll_manager.get_participant(self.poll_id,
             'user_id')
 
         expected_question = 'What is your favorite colour?'
@@ -133,14 +138,17 @@ class MultiLevelPollManagerTestCase(TestCase):
         'valid_responses': ['apple', 'orange'],
     }]
 
+    @inlineCallbacks
     def setUp(self):
-        self.r_server = FakeRedis()
+        self.r_server = yield TxRedisManager.from_config({
+            'FAKE_REDIS': 'yes'
+            })
         self.poll_manager = PollManager(self.r_server)
         self.poll_id = 'poll-id'
-        self.poll = self.poll_manager.register(self.poll_id, {
+        self.poll = yield self.poll_manager.register(self.poll_id, {
             'questions': self.default_questions,
         })
-        self.participant = self.poll_manager.get_participant(self.poll_id,
+        self.participant = yield self.poll_manager.get_participant(self.poll_id,
             'user_id')
 
     @inlineCallbacks
@@ -186,15 +194,16 @@ class MultiLevelPollManagerTestCase(TestCase):
         next_question = self.poll.get_next_question(self.participant)
         self.assertEqual(next_question.copy, next_question_copy)
 
+    @inlineCallbacks
     def test_clone_participant(self):
         self.participant.age = 23
-        clone = self.poll_manager.clone_participant(self.participant,
+        clone = yield self.poll_manager.clone_participant(self.participant,
                                                     self.poll_id, "clone_id")
-        self.poll_manager.save_participant(self.poll_id, clone)
+        yield self.poll_manager.save_participant(self.poll_id, clone)
         self.assertEqual(self.participant.age, clone.age)
         clone.age = 27
-        self.poll_manager.save_participant(self.poll_id, clone)
-        retrieved_clone = self.poll_manager.get_participant(self.poll_id,
+        yield self.poll_manager.save_participant(self.poll_id, clone)
+        retrieved_clone = yield self.poll_manager.get_participant(self.poll_id,
                                                                 "clone_id")
         self.assertEqual(retrieved_clone.age, 27)
         self.assertEqual(self.participant.age, 23)

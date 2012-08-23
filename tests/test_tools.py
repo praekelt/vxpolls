@@ -5,13 +5,16 @@ from twisted.trial.unittest import TestCase
 from vxpolls.tools.exporter import PollExporter
 from vxpolls.tools.importer import PollImporter
 from vxpolls.manager import PollManager
-from vumi.tests.utils import FakeRedis
+
+from vumi.persist.redis_manager import RedisManager
 
 
 class ExportTestCase(TestCase):
 
     def setUp(self):
-        self.r_server = FakeRedis()
+        self.r_server = RedisManager.from_config({
+            'FAKE_REDIS': 'yes'
+            })
         self.poll_prefix = 'poll_prefix'
         self.patch(PollExporter, 'get_redis',
             lambda *a: self.r_server)
@@ -49,7 +52,9 @@ class ExportTestCase(TestCase):
 class ImportTestCase(TestCase):
 
     def setUp(self):
-        self.r_server = FakeRedis()
+        self.r_server = RedisManager.from_config({
+            'FAKE_REDIS': 'yes'
+            })
         self.poll_prefix = 'poll_prefix'
         self.patch(PollImporter, 'get_redis',
             lambda *a: self.r_server)

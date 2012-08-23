@@ -281,10 +281,6 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
     @inlineCallbacks
     def setUp(self):
 
-        # Patch the class to return an instance of FakeRedis for this test
-        self.patch(CustomMultiPollApplication, 'get_redis',
-            lambda *args: FakeRedis())
-
         pig = self.application_class.poll_id_generator(self.poll_id_prefix)
         pig.next()  # To skip the id for registration
         other_quizzes_list = self.make_quiz_list(1, 56, pig)
@@ -315,11 +311,11 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
 
     @inlineCallbacks
     def run_inputs(self, inputs_and_expected, do_print=False):
-        for io in inputs_and_expected:
+        for counter, io in enumerate(inputs_and_expected):
             msg = self.mkmsg_in(content=io[0])
             msg['helper_metadata']['poll_id'] = self.poll_id_prefix[:-1]
             yield self.dispatch(msg)
-            responses = self.get_dispatched_messages()
+            responses = yield self.wait_for_dispatched_messages(counter)
             output = responses[-1]['content']
             event = responses[-1].get('session_event')
             if do_print:
@@ -363,7 +359,7 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
             ]
         yield self.run_inputs(inputs_and_expected)
         # Check abortive registration is archived
-        archived = self.app.pm.get_archive(self.poll_id_prefix[:-1],
+        archived = yield self.app.pm.get_archive(self.poll_id_prefix[:-1],
                                             self.mkmsg_in(content='').user())
         self.assertEqual(archived[-1].labels.get('USER_STATUS'), '4')
         self.assertFalse(archived[-1].opted_in)
@@ -395,7 +391,7 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
             ]
         yield self.run_inputs(inputs_and_expected)
         # Check abortive registration is archived
-        archived = self.app.pm.get_archive(self.poll_id_prefix[:-1],
+        archived = yield self.app.pm.get_archive(self.poll_id_prefix[:-1],
                                             self.mkmsg_in(content='').user())
         self.assertEqual(archived[-1].labels.get('USER_STATUS'), '5')
         self.assertFalse(archived[-1].opted_in)
@@ -433,7 +429,8 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
             ('1', self.default_questions_dict[poll_id][7]['copy']),
             ('Any input', self.app.survey_completed_response),
             ]
-        yield self.run_inputs(inputs_and_expected)
+
+        yield self.run_inputs(inputs_and_expected, False)
 
     @inlineCallbacks
     def test_full_2_hiv_to_archive(self):
@@ -449,6 +446,7 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
 
         pig = self.app.poll_id_generator(self.poll_id_prefix, "%s52" %
                                             self.poll_id_prefix)
+
         poll_id = pig.next()
         inputs_and_expected = inputs_and_expected + [
             ('Any input', self.default_questions_dict[poll_id][0]['copy']),
@@ -486,7 +484,7 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
             ]
         yield self.run_inputs(inputs_and_expected, False)
         # Check participant is archived
-        archived = self.app.pm.get_archive(self.poll_id_prefix[:-1],
+        archived = yield self.app.pm.get_archive(self.poll_id_prefix[:-1],
                                             self.mkmsg_in(content='').user())
         self.assertEqual(archived[-1].labels.get('USER_STATUS'), '2')
         self.assertTrue(archived[-1].opted_in)
@@ -606,7 +604,7 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
 
         yield self.run_inputs(inputs_and_expected)
         # Check participant is archived
-        archived = self.app.pm.get_archive(self.poll_id_prefix[:-1],
+        archived = yield self.app.pm.get_archive(self.poll_id_prefix[:-1],
                                             self.mkmsg_in(content='').user())
         self.assertEqual(archived[-1].labels.get('USER_STATUS'), '2')
         self.assertTrue(archived[-1].opted_in)
@@ -838,11 +836,6 @@ class LiveCustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
 
     @inlineCallbacks
     def setUp(self):
-
-        # Patch the class to return an instance of FakeRedis for this test
-        self.patch(CustomMultiPollApplication, 'get_redis',
-            lambda *args: FakeRedis())
-
         pig = self.application_class.poll_id_generator(self.poll_id_prefix)
         pig.next()  # To skip the id for registration
         other_quizzes_list = self.make_quiz_list(1, 56, pig)
@@ -914,7 +907,7 @@ class LiveCustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
             ]
         yield self.run_inputs(inputs_and_expected)
         # Check abortive registration is archived
-        archived = self.app.pm.get_archive(self.poll_id_prefix[:-1],
+        archived = yield self.app.pm.get_archive(self.poll_id_prefix[:-1],
                                             self.mkmsg_in(content='').user())
         self.assertEqual(archived[-1].labels.get('USER_STATUS'), '4')
         self.assertFalse(archived[-1].opted_in)
@@ -946,7 +939,7 @@ class LiveCustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
             ]
         yield self.run_inputs(inputs_and_expected)
         # Check abortive registration is archived
-        archived = self.app.pm.get_archive(self.poll_id_prefix[:-1],
+        archived = yield self.app.pm.get_archive(self.poll_id_prefix[:-1],
                                             self.mkmsg_in(content='').user())
         self.assertEqual(archived[-1].labels.get('USER_STATUS'), '5')
         self.assertFalse(archived[-1].opted_in)
@@ -1010,8 +1003,8 @@ class LiveCustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
 
         yield self.run_inputs(inputs_and_expected, False)
         # Check participant
-        participant = self.app.pm.get_participant(self.poll_id_prefix[:-1],
-                                            self.mkmsg_in(content='').user())
+        participant = yield self.app.pm.get_participant(
+            self.poll_id_prefix[:-1], self.mkmsg_in(content='').user())
         self.assertEqual(participant.labels.get('USER_STATUS'), '2')
         self.assertEqual(participant.labels.get('REGISTRATION_DATE'),
                 '2012-05-21')
@@ -1046,8 +1039,8 @@ class LiveCustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
 
         yield self.run_inputs(inputs_and_expected)
         # Check participant
-        participant = self.app.pm.get_participant(self.poll_id_prefix[:-1],
-                                            self.mkmsg_in(content='').user())
+        participant = yield self.app.pm.get_participant(
+            self.poll_id_prefix[:-1], self.mkmsg_in(content='').user())
         self.assertEqual(participant.labels.get('USER_STATUS'), '1')
         self.assertEqual(participant.labels.get('REGISTRATION_DATE'),
                 '2012-05-21')
@@ -1085,8 +1078,8 @@ class LiveCustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
 
         yield self.run_inputs(inputs_and_expected)
         # Check participant
-        participant = self.app.pm.get_participant(self.poll_id_prefix[:-1],
-                                            self.mkmsg_in(content='').user())
+        participant = yield self.app.pm.get_participant(
+            self.poll_id_prefix[:-1], self.mkmsg_in(content='').user())
         self.assertEqual(participant.labels.get('USER_STATUS'), '1')
         self.assertEqual(participant.labels.get('REGISTRATION_DATE'),
                 '2012-05-24')
@@ -1123,8 +1116,8 @@ class LiveCustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
             ]
 
         yield self.run_inputs(inputs_and_expected)
-        participant = self.app.pm.get_participant(self.poll_id_prefix[:-1],
-                                            self.mkmsg_in(content='').user())
+        participant = yield self.app.pm.get_participant(
+            self.poll_id_prefix[:-1], self.mkmsg_in(content='').user())
         self.assertEqual(participant.labels.get('USER_STATUS'), '1')
         self.assertEqual(participant.labels.get('REGISTRATION_DATE'),
                 '2012-05-24')
@@ -1207,8 +1200,8 @@ class LiveCustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
         yield self.run_inputs(inputs_and_expected)
 
         # Check participant
-        participant = self.app.pm.get_participant(self.poll_id_prefix[:-1],
-                                            self.mkmsg_in(content='').user())
+        participant = yield self.app.pm.get_participant(
+            self.poll_id_prefix[:-1], self.mkmsg_in(content='').user())
         self.assertEqual(participant.labels.get('USER_STATUS'), '1')
         self.assertEqual(participant.labels.get('REGISTRATION_DATE'),
                 '2012-05-24')
@@ -1333,11 +1326,6 @@ class RegisterMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
 
     @inlineCallbacks
     def setUp(self):
-
-        # Patch the class to return an instance of FakeRedis for this test
-        self.patch(CustomMultiPollApplication, 'get_redis',
-            lambda *args: FakeRedis())
-
         pig = self.application_class.poll_id_generator(self.poll_id_prefix)
         self.default_questions_dict = {pig.next(): self.register_questions}
 
@@ -1379,7 +1367,7 @@ class RegisterMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
             ]
         yield self.run_inputs(inputs_and_expected)
         # Check participant is archived
-        archived = self.app.pm.get_archive(self.poll_id_prefix[:-1],
+        archived = yield self.app.pm.get_archive(self.poll_id_prefix[:-1],
                                             self.mkmsg_in(content='').user())
         self.assertEqual(archived[-1].labels.get('USER_STATUS'), '1')
         self.assertTrue(archived[-1].opted_in)
@@ -1391,11 +1379,6 @@ class LiveRegisterMultiPollApplicationTestCase(
                                 RegisterMultiPollApplicationTestCase):
     @inlineCallbacks
     def setUp(self):
-
-        # Patch the class to return an instance of FakeRedis for this test
-        self.patch(CustomMultiPollApplication, 'get_redis',
-            lambda *args: FakeRedis())
-
         pig = self.application_class.poll_id_generator(self.poll_id_prefix)
         self.default_questions_dict = {pig.next(): self.register_questions}
 
@@ -1413,6 +1396,7 @@ class LiveRegisterMultiPollApplicationTestCase(
     @inlineCallbacks
     def test_register_1_archive_and_repeat(self):
         yield None
+        # TODO: write test?
 
     @inlineCallbacks
     def test_register_1_and_re_attempt(self):
@@ -1427,8 +1411,8 @@ class LiveRegisterMultiPollApplicationTestCase(
             ]
         yield self.run_inputs(inputs_and_expected)
         # Check participant
-        participant = self.app.pm.get_participant(self.poll_id_prefix[:-1],
-                                            self.mkmsg_in(content='').user())
+        participant = yield self.app.pm.get_participant(
+            self.poll_id_prefix[:-1], self.mkmsg_in(content='').user())
         self.assertEqual(participant.labels.get('USER_STATUS'), '1')
         self.assertEqual(participant.labels.get('REGISTRATION_DATE'),
                 '2012-05-21')
@@ -1452,7 +1436,7 @@ class LiveRegisterMultiPollApplicationTestCase(
             ]
         yield self.run_inputs(inputs_and_expected)
         # Check abortive registration is archived
-        archived = self.app.pm.get_archive(self.poll_id_prefix[:-1],
+        archived = yield self.app.pm.get_archive(self.poll_id_prefix[:-1],
                                             self.mkmsg_in(content='').user())
         self.assertEqual(archived[-1].labels.get('USER_STATUS'), '4')
         self.assertFalse(archived[-1].opted_in)
@@ -1491,11 +1475,6 @@ class ArchivingMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
 
     @inlineCallbacks
     def setUp(self):
-
-        # Patch the class to return an instance of FakeRedis for this test
-        self.patch(CustomMultiPollApplication, 'get_redis',
-            lambda *args: FakeRedis())
-
         pig = self.application_class.poll_id_generator(self.poll_id_prefix)
         self.default_questions_dict = {pig.next(): self.register_questions}
 
@@ -1534,7 +1513,7 @@ class ArchivingMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
             ]
         yield self.run_inputs(inputs_and_expected)
         # Check participant is archived
-        archived = self.app.pm.get_archive(self.poll_id_prefix[:-1],
+        archived = yield self.app.pm.get_archive(self.poll_id_prefix[:-1],
                                             self.mkmsg_in(content='').user())
         self.assertEqual(archived[-1].labels.get('TEST'), '1')
         # And confirm re-run is possible

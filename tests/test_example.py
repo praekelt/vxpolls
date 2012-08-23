@@ -239,21 +239,21 @@ class PollManagerVersioningTestCase(BasePollApplicationTestCase):
     @inlineCallbacks
     def test_first_question(self):
         # update the poll with new content
-        self.app.pm.register(self.poll_id, {
+        yield self.app.pm.register(self.poll_id, {
             'questions': self.updated_questions
         })
         msg = self.mkmsg_in(content=None, helper_metadata={
             'poll_id': self.poll_id,
         })
         yield self.dispatch(msg)
-        [response] = self.get_dispatched_messages()
+        [response] = yield self.wait_for_dispatched_messages(1)
         # make sure we get the first question as a response
         self.assertResponse(response, self.updated_questions[0]['copy'])
         # the session event should be none so it is expecting
         # a response
         self.assertEvent(response, None)
         # get the participant and check the state after the first interaction
-        participant, poll = self.get_participant_and_poll(msg.user())
+        participant, poll = yield self.get_participant_and_poll(msg.user())
         next_question = poll.get_next_question(participant)
         self.assertEqual(next_question.copy, self.updated_questions[1]['copy'])
 
@@ -261,15 +261,15 @@ class PollManagerVersioningTestCase(BasePollApplicationTestCase):
     def test_storing_of_poll_uid(self):
         msg = self.mkmsg_in(content=None)
         yield self.dispatch(msg)
-        [response] = self.get_dispatched_messages()
+        [response] = yield self.wait_for_dispatched_messages(1)
         self.assertResponse(response, self.default_questions[0]['copy'])
-        participant, poll = self.get_participant_and_poll(msg.user())
+        participant, poll = yield self.get_participant_and_poll(msg.user())
         self.assertEqual(participant.get_poll_uid(), poll.uid)
 
         # update the poll with new content but the system should
         # still remember that we're working with an older version
         # of the poll.
-        self.app.pm.register(self.poll_id, {
+        yield self.app.pm.register(self.poll_id, {
             'questions': self.updated_questions
         })
 

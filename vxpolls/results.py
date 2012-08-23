@@ -160,7 +160,7 @@ class ResultManager(object):
         if answers:
             results = []
             for answer in answers:
-                result = self.r_server.hget(results_key, answer)
+                result = yield self.r_server.hget(results_key, answer)
                 results.append((answer, result or 0))
             returnValue(dict(results))
         else:

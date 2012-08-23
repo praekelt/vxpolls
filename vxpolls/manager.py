@@ -6,7 +6,7 @@ import hashlib
 from twisted.internet.defer import returnValue
 from twisted.python import log
 
-from vumi.application import SessionManager
+from vumi.components.session import SessionManager
 from vumi.persist.redis_base import Manager
 
 from vxpolls.participant import PollParticipant
@@ -18,8 +18,7 @@ class PollManager(object):
         # create a manager attribute so the @calls_manager works
         self.r_server = self.manager = r_server
         self.r_prefix = r_prefix
-        self.session_manager = SessionManager(self.r_server,
-                                                self.r_key('session'))
+        self.session_manager = SessionManager(self.r_server)
 
     def r_key(self, *args):
         parts = [self.r_prefix]
@@ -123,13 +122,14 @@ class PollManager(object):
         clone = yield self.get_participant(poll_id, new_id)
         returnValue(clone)
 
+    @Manager.calls_manager
     def active_participants(self, poll_id):
-        # TODO
-        active_sessions = self.session_manager.active_sessions()
+        active_sessions = yield self.session_manager.active_sessions()
         all_participants = [PollParticipant(session.get('user_id'), session)
                             for session_id, session in active_sessions]
-        return [participant for participant in all_participants
+        active_participants = [participant for participant in all_participants
                     if participant.get_poll_id() == poll_id]
+        returnValue(active_participants)
 
     @Manager.calls_manager
     def inactive_participant_session_keys(self):
@@ -149,7 +149,7 @@ class PollManager(object):
             json.dumps(participant.clean_dump()): participant.updated_at,
         })
         # TODO
-        self.session_manager.clear_session(session_key)
+        yield self.session_manager.clear_session(session_key)
 
     @Manager.calls_manager
     def get_all_archives(self):

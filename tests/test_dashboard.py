@@ -9,7 +9,7 @@ from twisted.web.client import getPage
 from vxpolls.manager import PollManager
 from vxpolls.dashboard import PollDashboardServer
 
-from vumi.tests.utils import FakeRedis
+from vumi.persist.txredis_manager import TxRedisManager
 
 
 class PollDashboardTestCase(TestCase):
@@ -30,19 +30,21 @@ class PollDashboardTestCase(TestCase):
 
     @inlineCallbacks
     def setUp(self):
-        self.r_server = FakeRedis()
+        self.r_server = yield TxRedisManager.from_config({
+            'FAKE_REDIS': 'yes',
+        })
         self.poll_manager = PollManager(self.r_server)
-        self.poll = self.poll_manager.register(self.poll_id, {
+        self.poll = yield self.poll_manager.register(self.poll_id, {
             'questions': self.questions,
         })
-        self.results_manager = self.poll.results_manager
+        self.results_manager = yield self.poll.results_manager
         # Let the results manager know what collections it should be
         # aware of.
-        self.results_manager.register_collection(self.poll_id)
+        yield self.results_manager.register_collection(self.poll_id)
         # let the results manager know of the questions available and
         # what it is tracking results for.
         for entry in self.questions:
-            self.results_manager.register_question(self.poll_id, entry['copy'],
+            yield self.results_manager.register_question(self.poll_id, entry['copy'],
                 [resp.lower() for resp in entry['valid_responses']])
 
         self.service = PollDashboardServer(self.poll_manager,
@@ -73,9 +75,10 @@ class PollDashboardTestCase(TestCase):
                                 timeout=1)
         returnValue(csv.reader(data))
 
+    @inlineCallbacks
     def submit_answers(self, *answers, **kwargs):
         for answer in answers:
-            participant = self.poll_manager.get_participant(self.poll_id,
+            participant = yield self.poll_manager.get_participant(self.poll_id,
                             kwargs.get('user_id', 'user_id'))
             participant.set_poll_id(self.poll_id)
             question = self.poll.get_next_question(participant)
@@ -83,7 +86,7 @@ class PollDashboardTestCase(TestCase):
             error_message = self.poll.submit_answer(participant, answer)
             if error_message:
                 raise ValueError(error_message)
-            self.poll_manager.save_participant(self.poll_id, participant)
+            yield self.poll_manager.save_participant(self.poll_id, participant)
 
     @inlineCallbacks
     def test_question_output(self):
@@ -112,7 +115,7 @@ class PollDashboardTestCase(TestCase):
             "item": starting_output,
         })
 
-        self.submit_answers('red', 'orange', 'apple')
+        yield self.submit_answers('red', 'orange', 'apple')
 
         updated_output = starting_output[:]
         updated_output[0] = {

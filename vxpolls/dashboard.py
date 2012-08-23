@@ -6,7 +6,7 @@ from twisted.web.server import Site, NOT_DONE_YET
 from twisted.web.resource import Resource
 from twisted.web import http
 from twisted.internet import reactor
-from twisted.internet.defer import inlineCallbacks
+from twisted.internet.defer import inlineCallbacks, returnValue
 
 
 class GeckoboardResourceBase(Resource):
@@ -36,13 +36,14 @@ class GeckoboardResourceBase(Resource):
 
 class PollResultsResource(GeckoboardResourceBase):
 
+    @inlineCallbacks
     def get_data(self, request):
         collection_id = request.args['collection_id'][0]
         question = request.args['question'][0].decode('utf8')
         results_manager = self.results_manager
-        results = results_manager.get_results_for_question(
+        results = yield results_manager.get_results_for_question(
                                     collection_id, question)
-        return {
+        returnValue({
             "type": "standard",
             "percentage": "hide",
             "item": sorted([
@@ -51,17 +52,21 @@ class PollResultsResource(GeckoboardResourceBase):
                     "value": v
                 } for l, v in results.items()
             ], key=lambda d: d['value'], reverse=True)
-        }
+        })
 
 
 class PollActiveResource(GeckoboardResourceBase):
 
+    @inlineCallbacks
     def get_data(self, request):
         poll_id = request.args['poll_id'][0]
         poll_manager = self.poll_manager
-        active_count = len(poll_manager.active_participants(poll_id))
-        inactive_count = len(poll_manager.inactive_participant_session_keys())
-        return {
+        active_participants = yield poll_manager.active_participants(poll_id)
+        active_count = len(active_participants)
+        d = poll_manager.inactive_participant_session_keys()
+        inactive_participants = yield d
+        inactive_count = len(inactive_participants)
+        returnValue({
             "item": sorted([
                 {
                     "label": "Active",
@@ -74,7 +79,7 @@ class PollActiveResource(GeckoboardResourceBase):
                     "colour": "#992E2D",
                 },
             ], key=lambda d: d['value'], reverse=True)
-        }
+        })
 
 
 class PollCompletedResource(GeckoboardResourceBase):
@@ -111,13 +116,17 @@ class PollResultsCSVResource(Resource):
         Resource.__init__(self)
         self.results_manager = results_manager
 
-    def render_GET(self, request):
+    @inlineCallbacks
+    def do_render_GET(self, request):
         collection_id = request.args['collection_id'][0]
         request.setResponseCode(http.OK)
         request.setHeader("content-type", "application/csv")
-        results = self.results_manager.get_results_as_csv(collection_id)
+        results = yield self.results_manager.get_results_as_csv(collection_id)
         request.write(results.getvalue())
         request.finish()
+
+    def render_GET(self, request):
+        self.do_render_GET(request)
         return NOT_DONE_YET
 
 
@@ -129,13 +138,17 @@ class PollUsersCSVResource(Resource):
         Resource.__init__(self)
         self.results_manager = results_manager
 
-    def render_GET(self, request):
+    @inlineCallbacks
+    def do_render_GET(self, request):
         collection_id = request.args['collection_id'][0]
         request.setResponseCode(http.OK)
         request.setHeader("content-type", "application/csv")
-        results = self.results_manager.get_users_as_csv(collection_id)
+        results = yield self.results_manager.get_users_as_csv(collection_id)
         request.write(results.getvalue())
         request.finish()
+
+    def render_GET(self, request):
+        self.do_render_GET(request)
         return NOT_DONE_YET
 
 

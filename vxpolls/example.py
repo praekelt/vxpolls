@@ -3,7 +3,7 @@
 import hashlib
 import json
 
-from twisted.internet.defer import inlineCallbacks
+from twisted.internet.defer import inlineCallbacks, returnValue, maybeDeferred
 
 from vumi.persist.txredis_manager import TxRedisManager
 from vumi.application.base import ApplicationWorker
@@ -57,34 +57,48 @@ class PollApplication(ApplicationWorker):
         participant.questions_per_session = poll.batch_size
 
         # If we have an unanswered question then we always need to reply
-        # as its a resuming session.
+        # as it's a resuming session.
         if participant.has_unanswered_question:
-            self.on_message(participant, poll, message)
+            yield self.on_message(participant, poll, message)
         else:
             # If we have more questions for the participant, continue otherwise
             # end the session
             if poll.has_more_questions_for(participant):
                 next_question = poll.get_next_question(participant)
-                participant.has_unanswered_question = True
                 poll.set_last_question(participant, next_question)
-                yield self.pm.save_participant(poll.poll_id, participant)
-                self.on_message(participant, poll, message)
+                yield self.on_message(participant, poll, message)
             else:
-                self.end_session(participant, poll, message)
+                participant.has_unanswered_question = False
+                yield self.end_session(participant, poll, message)
 
+        yield self.pm.save_participant(poll.poll_id, participant)
+
+    @inlineCallbacks
     def on_message(self, participant, poll, message):
-        # receive a message as part of a live session
         content = message['content']
-        error_message = poll.submit_answer(participant, content)
-        if error_message:
-            self.reply_to(message, error_message)
+        # Only validate input if the last question asked actually
+        # had something to validate against.
+        last_question = poll.get_last_question(participant)
+        if last_question and last_question.valid_responses:
+            error_message = yield poll.submit_answer(participant, content)
+            if error_message:
+                yield self.reply_to(message, error_message)
+                return
+        elif last_question:
+            reply = yield maybeDeferred(self.ask_question, participant, poll,
+                last_question)
+            yield self.reply_to(message, reply)
+            return
+
+        if poll.has_more_questions_for(participant):
+            question = poll.get_next_question(participant)
+            reply = yield maybeDeferred(self.ask_question, participant, poll,
+                question)
+            participant.has_unanswered_question = False
+            yield self.reply_to(message, reply)
         else:
-            if poll.has_more_questions_for(participant):
-                next_question = poll.get_next_question(participant)
-                reply = self.ask_question(participant, poll, next_question)
-                self.reply_to(message, reply)
-            else:
-                self.end_session(participant, poll, message)
+            participant.has_unanswered_question = False
+            yield self.end_session(participant, poll, message)
 
     @inlineCallbacks
     def end_session(self, participant, poll, message):
@@ -96,14 +110,12 @@ class PollApplication(ApplicationWorker):
             response = config.get('batch_completed_response',
                                     self.batch_completed_response)
             yield self.reply_to(message, response, continue_session=False)
-            yield self.pm.save_participant(poll.poll_id, participant)
         else:
             response = config.get('survey_completed_response',
                                     self.survey_completed_response)
             yield self.reply_to(message, response, continue_session=False)
             participant.poll_id = None
             participant.set_poll_uid(None)
-            yield self.pm.save_participant(poll.poll_id, participant)
             if poll.repeatable:
                 # Archive for demo purposes so we can redial in and start over.
                 yield self.pm.archive(poll.poll_id, participant)
@@ -114,8 +126,8 @@ class PollApplication(ApplicationWorker):
         # the incoming message
         if poll.has_more_questions_for(participant):
             next_question = poll.get_next_question(participant)
-            question_copy = yield self.ask_question(participant, poll,
-                next_question)
+            question_copy = yield maybeDeferred(self.ask_question, participant,
+                poll, next_question)
             yield self.reply_to(message, question_copy)
         else:
             yield self.end_session(participant, poll, message)
@@ -123,5 +135,4 @@ class PollApplication(ApplicationWorker):
     def ask_question(self, participant, poll, question):
         participant.has_unanswered_question = True
         poll.set_last_question(participant, question)
-        self.pm.save_participant(poll.poll_id, participant)
         return question.copy

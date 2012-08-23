@@ -171,7 +171,7 @@ class PollManager(object):
 class Poll(object):
     def __init__(self, r_server, poll_id, uid, questions, batch_size=None,
         r_prefix='poll', repeatable=True, case_sensitive=True):
-        self.r_server = r_server
+        self.r_server = self.manager = r_server
         self.poll_id = poll_id
         self.uid = uid
         self.questions = questions
@@ -268,20 +268,21 @@ class Poll(object):
 
         return True
 
+    @Manager.calls_manager
     def submit_answer(self, participant, answer, custom_answer_logic=None):
         poll_question = self.get_last_question(participant)
         assert poll_question, 'Need a question to submit an answer for'
-        if poll_question.answer(answer):
-            self.results_manager.add_result(self.poll_id, participant.user_id,
-                poll_question.label_or_copy(), answer)
+        if answer and poll_question.answer(answer):
+            yield self.results_manager.add_result(self.poll_id,
+                participant.user_id, poll_question.label_or_copy(), answer)
             if poll_question.label is not None:
                 participant.set_label(poll_question.label, answer)
                 if custom_answer_logic:
-                    custom_answer_logic(participant, answer, poll_question)
-            participant.has_unanswered_question = False
+                    yield custom_answer_logic(participant, answer,
+                        poll_question)
             participant.interactions += 1
         else:
-            return poll_question.copy
+            returnValue(poll_question.copy)
 
     def has_more_questions_for(self, participant):
         next_question = self.get_next_question(participant)

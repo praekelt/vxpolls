@@ -83,7 +83,7 @@ class PollDashboardTestCase(TestCase):
             participant.set_poll_id(self.poll_id)
             question = self.poll.get_next_question(participant)
             self.poll.set_last_question(participant, question)
-            error_message = self.poll.submit_answer(participant, answer)
+            error_message = yield self.poll.submit_answer(participant, answer)
             if error_message:
                 raise ValueError(error_message)
             yield self.poll_manager.save_participant(self.poll_id, participant)

@@ -6,25 +6,21 @@ from vxpolls.tools.exporter import PollExporter
 from vxpolls.tools.importer import PollImporter
 from vxpolls.manager import PollManager
 
-from vumi.persist.redis_manager import RedisManager
-
 
 class ExportTestCase(TestCase):
 
     def setUp(self):
-        self.r_server = RedisManager.from_config({
-            'FAKE_REDIS': 'yes'
-            })
         self.poll_prefix = 'poll_prefix'
-        self.patch(PollExporter, 'get_redis',
-            lambda *a: self.r_server)
         self.exporter = PollExporter({
             'vxpolls': {
                 'prefix': self.poll_prefix,
+            },
+            'redis_manager': {
+                'FAKE_REDIS': 'yes',
             }
         })
         self.exporter.stdout = StringIO()
-        self.manager = PollManager(self.r_server, self.poll_prefix)
+        self.manager = PollManager(self.exporter.r_server, self.poll_prefix)
 
     def create_poll(self, poll_id, config):
         self.manager.set(poll_id, config)
@@ -52,18 +48,16 @@ class ExportTestCase(TestCase):
 class ImportTestCase(TestCase):
 
     def setUp(self):
-        self.r_server = RedisManager.from_config({
-            'FAKE_REDIS': 'yes'
-            })
         self.poll_prefix = 'poll_prefix'
-        self.patch(PollImporter, 'get_redis',
-            lambda *a: self.r_server)
         self.importer = PollImporter({
             'vxpolls': {
                 'prefix': self.poll_prefix,
+            },
+            'redis_manager': {
+                'FAKE_REDIS': 'yes'
             }
         })
-        self.manager = PollManager(self.r_server, self.poll_prefix)
+        self.manager = PollManager(self.importer.r_server, self.poll_prefix)
         self.config = {
             'batch_size': None,
             'questions': [{

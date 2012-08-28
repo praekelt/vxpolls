@@ -117,7 +117,7 @@ class MultiPollApplication(PollApplication):
     def on_message(self, participant, poll, message):
         # receive a message as part of a live session
         content = message['content']
-        error_message = poll.submit_answer(participant, content,
+        error_message = yield poll.submit_answer(participant, content,
                                             self.custom_answer_logic)
         if error_message:
             yield self.reply_to(message, error_message)

@@ -40,26 +40,29 @@ class PollManagerTestCase(TestCase):
     def tearDown(self):
         yield self.poll_manager.stop()
 
+    @inlineCallbacks
     def test_invalid_input_response(self):
         expected_question = 'What is your favorite colour?'
         invalid_input = 'I LOVE TURTLES!!'
         question = self.poll.get_next_question(self.participant)
         self.poll.set_last_question(self.participant, question)
         self.assertEqual(question.copy, expected_question)
-        response = self.poll.submit_answer(self.participant,
+        response = yield self.poll.submit_answer(self.participant,
                                                     invalid_input)
         self.assertEqual(response, expected_question)
 
+    @inlineCallbacks
     def test_valid_input_response(self):
         expected_question = 'What is your favorite colour?'
         valid_input = 'red'
         question = self.poll.get_next_question(self.participant)
         self.poll.set_last_question(self.participant, question)
         self.assertEqual(question.copy, expected_question)
-        response = self.poll.submit_answer(self.participant,
+        response = yield self.poll.submit_answer(self.participant,
                                                     valid_input)
         self.assertEqual(None, response)
 
+    @inlineCallbacks
     def test_iterating(self):
         for index, question in enumerate(self.default_questions):
             valid_input = random.choice(question['valid_responses'])
@@ -71,7 +74,7 @@ class PollManagerTestCase(TestCase):
                                                 self.participant)
             self.poll.set_last_question(self.participant,
                                                 next_question)
-            self.poll.submit_answer(self.participant,
+            yield self.poll.submit_answer(self.participant,
                                                 valid_input)
             if not index:
                 self.assertEqual(None, last_question)
@@ -92,7 +95,7 @@ class PollManagerTestCase(TestCase):
         question = poll.get_next_question(participant)
         poll.set_last_question(participant, question)
         self.assertEqual(question.copy, expected_question)
-        response = poll.submit_answer(participant, valid_input)
+        response = yield poll.submit_answer(participant, valid_input)
         self.assertEqual(None, response)
 
     @inlineCallbacks
@@ -109,7 +112,7 @@ class PollManagerTestCase(TestCase):
         question = poll.get_next_question(participant)
         poll.set_last_question(participant, question)
         self.assertEqual(question.copy, expected_question)
-        response = poll.submit_answer(participant, valid_input)
+        response = yield poll.submit_answer(participant, valid_input)
         # original question should be repeated
         self.assertEqual(expected_question, response)
 
@@ -155,6 +158,7 @@ class MultiLevelPollManagerTestCase(TestCase):
     def tearDown(self):
         yield self.poll_manager.stop()
 
+    @inlineCallbacks
     def test_checks_skip(self):
         expected_question = 'What is your favorite colour?'
         valid_input = 'red'
@@ -163,7 +167,7 @@ class MultiLevelPollManagerTestCase(TestCase):
         self.assertEqual(question.valid_responses, ['red', 'green', 'blue'])
         self.poll.set_last_question(self.participant, question)
         self.assertEqual(question.copy, expected_question)
-        response = self.poll.submit_answer(self.participant,
+        response = yield self.poll.submit_answer(self.participant,
                                                     valid_input)
         self.assertEqual(None, response)
 
@@ -171,6 +175,7 @@ class MultiLevelPollManagerTestCase(TestCase):
         next_question = self.poll.get_next_question(self.participant)
         self.assertEqual(next_question.copy, next_question_copy)
 
+    @inlineCallbacks
     def test_checks_follow_up(self):
         expected_question = 'What is your favorite colour?'
         valid_input = 'green'
@@ -179,7 +184,7 @@ class MultiLevelPollManagerTestCase(TestCase):
         self.assertEqual(question.valid_responses, ['red', 'green', 'blue'])
         self.poll.set_last_question(self.participant, question)
         self.assertEqual(question.copy, expected_question)
-        response = self.poll.submit_answer(self.participant,
+        response = yield self.poll.submit_answer(self.participant,
                                                     valid_input)
         self.assertEqual(None, response)
 
@@ -187,7 +192,7 @@ class MultiLevelPollManagerTestCase(TestCase):
         next_question = self.poll.get_next_question(self.participant)
         self.poll.set_last_question(self.participant, next_question)
         self.assertEqual(next_question.copy, next_question_copy)
-        response = self.poll.submit_answer(self.participant, 'dark')
+        response = yield self.poll.submit_answer(self.participant, 'dark')
         self.assertEqual(None, response)
 
         next_question_copy = 'Orange, Yellow or Black?'

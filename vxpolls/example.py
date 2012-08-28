@@ -81,22 +81,15 @@ class PollApplication(ApplicationWorker):
         # Only validate input if the last question asked actually
         # had something to validate against.
         last_question = poll.get_last_question(participant)
-        if last_question and last_question.valid_responses:
+        if last_question:
             error_message = yield poll.submit_answer(participant, content)
             if error_message:
                 yield self.reply_to(message, error_message)
                 return
-        elif last_question:
-            reply = yield maybeDeferred(self.ask_question, participant, poll,
-                last_question)
-            yield self.reply_to(message, reply)
-            return
-
         if poll.has_more_questions_for(participant):
             question = poll.get_next_question(participant)
             reply = yield maybeDeferred(self.ask_question, participant, poll,
-                question)
-            participant.has_unanswered_question = False
+                                        question)
             yield self.reply_to(message, reply)
         else:
             participant.has_unanswered_question = False

@@ -335,7 +335,6 @@ class VxpollsRegressionsTestCase(ApplicationTestCase):
         msg['helper_metadata']['poll_id'] = self.poll_id
         return msg
 
-
     @inlineCallbacks
     def get_participant_and_poll(self, user_id, poll_id=None):
         poll_id = poll_id or self.poll_id
@@ -372,13 +371,19 @@ class VxpollsRegressionsTestCase(ApplicationTestCase):
 
         # check that we're not expecting an answer for this participant
         # which would mean the conversation was server initiated.
-        msg = self.mkmsg_in(content='hi')
+        msg = self.mkmsg_in(content=None)
         participant = yield manager.get_participant(self.poll_id, msg.user())
         self.assertFalse(participant.has_unanswered_question)
 
         yield self.dispatch(msg)
         [response] = yield self.wait_for_dispatched_messages(1)
         self.assertEqual('first question', response['content'])
+        yield self.dispatch(self.mkmsg_in(content='foo'))
+        [_, response] = yield self.wait_for_dispatched_messages(2)
+        self.assertEqual('second question', response['content'])
+        yield self.dispatch(self.mkmsg_in(content='yes'))
+        [_, _, response] = yield self.wait_for_dispatched_messages(3)
+        self.assertEqual(app.survey_completed_response, response['content'])
 
 
 class PollManagerVersioningTestCase(BasePollApplicationTestCase):

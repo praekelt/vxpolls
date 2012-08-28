@@ -71,7 +71,9 @@ class PollApplication(ApplicationWorker):
                 participant.has_unanswered_question = False
                 yield self.end_session(participant, poll, message)
 
-        yield self.pm.save_participant(poll.poll_id, participant)
+        if participant.poll_id is not None or not poll.repeatable:
+            # None indicates the poll has been archived
+            yield self.pm.save_participant(poll.poll_id, participant)
 
     @inlineCallbacks
     def on_message(self, participant, poll, message):

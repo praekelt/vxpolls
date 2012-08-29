@@ -79,22 +79,17 @@ class PollApplication(ApplicationWorker):
     @inlineCallbacks
     def on_message(self, participant, poll, message):
         content = message['content']
-        # Only validate input if the last question asked actually
-        # had something to validate against.
-        last_question = poll.get_last_question(participant)
-        if last_question:
-            error_message = yield poll.submit_answer(participant, content)
-            if error_message:
-                yield self.reply_to(message, error_message)
-                return
-        if poll.has_more_questions_for(participant):
-            question = poll.get_next_question(participant)
-            reply = yield maybeDeferred(self.ask_question, participant, poll,
-                                        question)
-            yield self.reply_to(message, reply)
+        error_message = yield poll.submit_answer(participant, content)
+        if error_message:
+            yield self.reply_to(message, error_message)
         else:
-            participant.has_unanswered_question = False
-            yield self.end_session(participant, poll, message)
+            if poll.has_more_questions_for(participant):
+                next_question = poll.get_next_question(participant)
+                reply = yield self.ask_question(participant, poll, next_question)
+                yield self.reply_to(message, reply)
+            else:
+                yield self.end_session(participant, poll, message)
+
 
     @inlineCallbacks
     def end_session(self, participant, poll, message):

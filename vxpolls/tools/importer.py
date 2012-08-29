@@ -1,22 +1,22 @@
 # -*- test-case-name: tests.test_tools -*-
 import sys
 import yaml
-import redis
+
+from vumi.persist.redis_manager import RedisManager
+
 from vxpolls.manager import PollManager
+
 from twisted.python import usage
 
 
 class PollImporter(object):
 
     def __init__(self, config):
-        r_config = config.get('redis', {})
+        r_config = config.get('redis_manager', {})
         vxp_config = config.get('vxpolls', {})
         poll_prefix = vxp_config.get('prefix', 'poll_manager')
-        self.r_server = self.get_redis(r_config)
+        self.r_server = self.manager = RedisManager.from_config(r_config)
         self.pm = PollManager(self.r_server, poll_prefix)
-
-    def get_redis(self, config):
-        return redis.Redis(**config)
 
     def import_config(self, poll_id, config, force=False):
         if poll_id in self.pm.polls() and not force:

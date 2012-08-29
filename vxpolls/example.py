@@ -66,6 +66,7 @@ class PollApplication(ApplicationWorker):
             if poll.has_more_questions_for(participant):
                 next_question = poll.get_next_question(participant)
                 poll.set_last_question(participant, next_question)
+                participant.has_unanswered_question = True
                 yield self.on_message(participant, poll, message)
             else:
                 participant.has_unanswered_question = False

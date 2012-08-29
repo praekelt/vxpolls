@@ -326,8 +326,7 @@ class VxpollsRegressionsTestCase(ApplicationTestCase):
           valid_responses: []
         - copy: second question
           label: second question
-          valid_responses: [yes, no]
-
+          valid_responses: ['yes', 'no']
     """)
 
     def mkmsg_in(self, **kwargs):

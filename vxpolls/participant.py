@@ -112,7 +112,7 @@ class PollParticipant(object):
         self.questions_per_session = typed(session_data,
             'questions_per_session', int)
         self.interactions = typed(session_data,
-            'interactions', int)
+            'interactions', int, default=0)
         self.opted_in = typed(session_data,
             'opted_in', lambda v: v == 'True')
         self.age = typed(session_data,

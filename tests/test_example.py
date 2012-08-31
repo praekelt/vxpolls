@@ -252,8 +252,8 @@ class PollApplicationTestCase(BasePollApplicationTestCase):
         [response] = self.get_dispatched_messages()
         self.assertResponse(response, self.app.survey_completed_response)
         self.assertEvent(response, 'close')
-        # any follow ups should return the survey completed response
-        # as this poll is not repeatable.
+        # any follow ups should return the first question again
+        # as this poll is repeatable.
         msg_after_close = self.mkmsg_in(content='hello?')
         msg_after_close['helper_metadata']['poll_id'] = poll_id
         yield self.dispatch(msg_after_close)

@@ -106,7 +106,6 @@ class PollApplication(ApplicationWorker):
                                     self.survey_completed_response)
             yield self.reply_to(message, response, continue_session=False)
             if poll.repeatable:
-                # Archive for demo purposes so we can redial in and start over.
                 yield self.pm.archive(poll.poll_id, participant)
             participant.interactions = 0
             participant.has_unanswered_question = False

@@ -19,15 +19,18 @@ class BasePollApplicationTestCase(ApplicationTestCase):
                 'equal': {
                     'favorite-color': 'None'
                 }
-            }
+            },
+            'label': 'red-green-blue',
         },
         {
             'copy': 'Orange, Yellow or Black?',
             'valid_responses': ['orange', 'yellow', 'black'],
+            'label': 'orange-yellow-black',
         },
         {
             'copy': 'What is your favorite fruit?',
             'valid_responses': ['apple', 'orange'],
+            'label': 'fruit',
         }
     ]
 
@@ -266,6 +269,29 @@ class PollApplicationTestCase(BasePollApplicationTestCase):
         # The first answer sent is a valid response to question 1
         # and so we should get a reply back with question 2
         self.assertResponse(response, self.default_questions[1]['copy'])
+
+    @inlineCallbacks
+    def test_archiving_on_end_session(self):
+        # create the inbound message
+        msg = self.mkmsg_in(content='apple')
+        # prime the participant
+        participant, poll = yield self.get_participant_and_poll(msg.user())
+        participant.has_unanswered_question = True
+        participant.set_last_question_index(2)
+        yield self.app.pm.save_participant(self.poll_id, participant)
+        # send to the app
+        yield self.dispatch(msg)
+        [response] = yield self.wait_for_dispatched_messages(1)
+        self.assertResponse(response, self.app.survey_completed_response)
+        self.assertEvent(response, 'close')
+
+        [archive] = yield self.app.pm.get_archive(poll.poll_id,
+            participant.user_id)
+
+        self.assertEqual(archive.interactions, 1)
+        self.assertEqual(archive.labels, {
+            'fruit': 'apple',
+            })
 
 
 class VxpollsRegressionsTestCase(ApplicationTestCase):

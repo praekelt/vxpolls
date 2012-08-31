@@ -93,23 +93,25 @@ class PollApplication(ApplicationWorker):
 
     @inlineCallbacks
     def end_session(self, participant, poll, message):
-        participant.interactions = 0
-        participant.has_unanswered_question = False
         next_question = poll.get_next_question(participant)
         config = yield self.pm.get_config(poll.poll_id)
         if next_question:
             response = config.get('batch_completed_response',
                                     self.batch_completed_response)
+            participant.interactions = 0
+            participant.has_unanswered_question = False
             yield self.reply_to(message, response, continue_session=False)
         else:
             response = config.get('survey_completed_response',
                                     self.survey_completed_response)
             yield self.reply_to(message, response, continue_session=False)
-            participant.poll_id = None
-            participant.set_poll_uid(None)
             if poll.repeatable:
                 # Archive for demo purposes so we can redial in and start over.
                 yield self.pm.archive(poll.poll_id, participant)
+            participant.interactions = 0
+            participant.has_unanswered_question = False
+            participant.poll_id = None
+            participant.set_poll_uid(None)
 
     @inlineCallbacks
     def init_session(self, participant, poll, message):

@@ -160,9 +160,24 @@ class PollManager(object):
         archive_key = self.r_key('session_archive', session_key)
         archived_sessions = yield self.r_server.zrange(archive_key, 0, -1,
                                                     desc=True)
-        archive = [PollParticipant(user_id, json.loads(data)) for
-                    data in archived_sessions]
-        returnValue(archive)
+
+        # NOTE:
+        #
+        # other places where we load session data we're loading session data
+        # it comes straight from redis as string values from a hash. In the
+        # case of archives it is slightly different since they're just stored
+        # as JSON blobs, before we hand it over to the PollParticipant we
+        # need to make sure all values are again passed in as strings as they
+        # would when loaded from Redis.
+        archives = []
+        for data in archived_sessions:
+            typed_json = json.loads(data)
+            unicode_json = dict([(key, unicode(value)) for key, value
+                                    in typed_json.items()])
+            participant = PollParticipant(user_id, unicode_json)
+            archives.append(participant)
+
+        returnValue(archives)
 
     def stop(self):
         self.session_manager.stop()

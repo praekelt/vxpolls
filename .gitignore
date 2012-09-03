@@ -10,3 +10,4 @@ pip-log.txt
 coverage.xml
 pep8.txt
 test_results.xml
+/htmlcov/

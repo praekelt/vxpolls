@@ -25,9 +25,10 @@ class PollManagerTestCase(TestCase):
 
     @inlineCallbacks
     def setUp(self):
-        self.r_server = yield TxRedisManager.from_config({
+        r_server = yield TxRedisManager.from_config({
             'FAKE_REDIS': 'yes'
             })
+        self.r_server = r_server.sub_manager('vxpolls_test')
         self.poll_manager = PollManager(self.r_server)
         self.poll_id = 'poll-id'
         self.poll = yield self.poll_manager.register(self.poll_id, {
@@ -40,9 +41,15 @@ class PollManagerTestCase(TestCase):
     def tearDown(self):
         yield self.poll_manager.stop()
 
-    def test_session_key_prefixes(self):
-        sm = self.poll_manager.session_manager
-        self.assertEqual(sm.redis.get_key_prefix(), 'poll_manager')
+    def test_key_prefixes(self):
+        pm_prefix = self.poll_manager.r_server.get_key_prefix()
+        self.assertEqual(pm_prefix, 'vxpolls_test:poll_manager')
+
+        sm_prefix = self.poll_manager.session_manager.redis.get_key_prefix()
+        self.assertEqual(sm_prefix, 'vxpolls_test:poll_manager')
+
+        poll_prefix = self.poll.r_server.get_key_prefix()
+        self.assertEqual(poll_prefix, 'vxpolls_test:poll_manager:poll')
 
     @inlineCallbacks
     def test_invalid_input_response(self):

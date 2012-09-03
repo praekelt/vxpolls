@@ -25,9 +25,10 @@ class PollManagerTestCase(TestCase):
 
     @inlineCallbacks
     def setUp(self):
-        self.r_server = yield TxRedisManager.from_config({
+        r_server = yield TxRedisManager.from_config({
             'FAKE_REDIS': 'yes'
             })
+        self.r_server = r_server.sub_manager('vxpolls_test')
         self.poll_manager = PollManager(self.r_server)
         self.poll_id = 'poll-id'
         self.poll = yield self.poll_manager.register(self.poll_id, {
@@ -40,14 +41,22 @@ class PollManagerTestCase(TestCase):
     def tearDown(self):
         yield self.poll_manager.stop()
 
+    def test_key_prefixes(self):
+        pm_prefix = self.poll_manager.r_server.get_key_prefix()
+        self.assertEqual(pm_prefix, 'vxpolls_test:poll_manager')
+
+        sm_prefix = self.poll_manager.session_manager.redis.get_key_prefix()
+        self.assertEqual(sm_prefix, 'vxpolls_test:poll_manager')
+
+        poll_prefix = self.poll.r_server.get_key_prefix()
+        self.assertEqual(poll_prefix, 'vxpolls_test:poll_manager:poll')
+
     @inlineCallbacks
     def test_session_key_prefixes(self):
-        sm = self.poll_manager.session_manager
-        self.assertEqual(sm.redis.get_key_prefix(), self.poll_manager.r_prefix)
         yield self.poll_manager.session_manager.create_session(
-                                                "dummy_test_session")
+            "dummy_test_session")
         keys = yield self.r_server._client.keys("*dummy_test_session")
-        self.assertEqual("%s:session:dummy_test_session" % (
+        self.assertEqual("vxpolls_test:%s:session:dummy_test_session" % (
                                         self.poll_manager.r_prefix), keys[0])
 
     @inlineCallbacks
@@ -55,20 +64,20 @@ class PollManagerTestCase(TestCase):
         version_keys = yield self.r_server._client.keys(
                                                 "*versions:%s*" % self.poll_id)
         self.assertEqual(1, len(version_keys))
-        self.assertEqual("%s:versions:%s" % (self.poll_manager.r_prefix,
+        self.assertEqual("vxpolls_test:%s:versions:%s" % (self.poll_manager.r_prefix,
                                             self.poll_id), version_keys[0])
 
         collection_keys = yield self.r_server._client.keys(
                             "*results:collections:%s:questions*" % self.poll_id)
         self.assertEqual(1, len(collection_keys))
-        self.assertEqual("%s:poll:results:collections:%s:questions" % (
+        self.assertEqual("vxpolls_test:%s:poll:results:collections:%s:questions" % (
                                             self.poll_manager.r_prefix,
                                             self.poll_id), collection_keys[0])
 
         timestamp_keys = yield self.r_server._client.keys(
                                         "*version_timestamps:%s*" % self.poll_id)
         self.assertEqual(1, len(timestamp_keys))
-        self.assertEqual("%s:version_timestamps:%s" % (self.poll_manager.r_prefix,
+        self.assertEqual("vxpolls_test:%s:version_timestamps:%s" % (self.poll_manager.r_prefix,
                                             self.poll_id), timestamp_keys[0])
 
     @inlineCallbacks

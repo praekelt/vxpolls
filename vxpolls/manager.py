@@ -16,7 +16,8 @@ from vxpolls.results import ResultManager
 class PollManager(object):
     def __init__(self, r_server, r_prefix='poll_manager'):
         # create a manager attribute so the @calls_manager works
-        self.r_server = self.manager = r_server.sub_manager(r_prefix)
+        self.r_prefix = r_prefix
+        self.r_server = self.manager = r_server.sub_manager(self.r_prefix)
         self.session_manager = SessionManager(self.r_server)
 
     def r_key(self, *args):

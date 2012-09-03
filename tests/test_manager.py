@@ -41,10 +41,8 @@ class PollManagerTestCase(TestCase):
         yield self.poll_manager.stop()
 
     def test_session_key_prefixes(self):
-        expected_redis_key_prefix = "%s:session" % (self.poll_manager.r_prefix)
-        actual_redis_key_prefix = \
-                    self.poll_manager.session_manager.redis.get_key_prefix()
-        self.assertEqual(actual_redis_key_prefix, expected_redis_key_prefix)
+        sm = self.poll_manager.session_manager
+        self.assertEqual(sm.redis.get_key_prefix(), 'poll_manager')
 
     @inlineCallbacks
     def test_invalid_input_response(self):

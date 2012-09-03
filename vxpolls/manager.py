@@ -16,15 +16,11 @@ from vxpolls.results import ResultManager
 class PollManager(object):
     def __init__(self, r_server, r_prefix='poll_manager'):
         # create a manager attribute so the @calls_manager works
-        self.r_server = self.manager = r_server
-        self.r_prefix = r_prefix
-        self.sr_server = self.r_server.sub_manager(self.r_key('session'))
-        self.session_manager = SessionManager(self.sr_server)
+        self.r_server = self.manager = r_server.sub_manager(r_prefix)
+        self.session_manager = SessionManager(self.r_server)
 
     def r_key(self, *args):
-        parts = [self.r_prefix]
-        parts.extend(args)
-        return ':'.join(map(unicode, parts))
+        return ':'.join(map(unicode, args))
 
     def generate_unique_id(self, version):
         return hashlib.md5(json.dumps(version)).hexdigest()
@@ -87,9 +83,9 @@ class PollManager(object):
         if version:
             repeatable = version.get('repeatable', True)
             case_sensitive = version.get('case_sensitive', True)
-            poll = Poll(self.r_server, poll_id, uid, version['questions'],
-                version.get('batch_size'), r_prefix=self.r_key('poll'),
-                repeatable=repeatable, case_sensitive=case_sensitive)
+            poll = Poll(self.r_server.sub_manager('poll'), poll_id, uid,
+                        version['questions'], version.get('batch_size'),
+                        repeatable=repeatable, case_sensitive=case_sensitive)
             returnValue(poll)
 
     @Manager.calls_manager
@@ -171,12 +167,11 @@ class PollManager(object):
 
 class Poll(object):
     def __init__(self, r_server, poll_id, uid, questions, batch_size=None,
-        r_prefix='poll', repeatable=True, case_sensitive=True):
+        repeatable=True, case_sensitive=True):
         self.r_server = self.manager = r_server
         self.poll_id = poll_id
         self.uid = uid
         self.questions = questions
-        self.r_prefix = r_prefix
         self.batch_size = batch_size
         self.repeatable = repeatable
         self.case_sensitive = case_sensitive
@@ -194,9 +189,7 @@ class Poll(object):
                 question.label_or_copy(), question.valid_responses)
 
     def r_key(self, *args):
-        parts = [self.r_prefix]
-        parts.extend(args)
-        return ':'.join(parts)
+        return ':'.join(args)
 
     def get_last_question(self, participant):
         index = participant.get_last_question_index()

@@ -42,7 +42,12 @@ class PollManagerTestCase(TestCase):
 
     def test_session_key_prefixes(self):
         sm = self.poll_manager.session_manager
-        self.assertEqual(sm.redis.get_key_prefix(), 'poll_manager')
+        self.assertEqual(sm.redis.get_key_prefix(), self.poll_manager.r_prefix)
+        yield self.poll_manager.session_manager.create_session(
+                                                "dummy_test_session")
+        keys = yield self.r_server._client.keys("*dummy_test_session")
+        self.assertEqual("%s:session:dummy_test_session" % (
+                                        self.poll_manager.r_prefix), keys[0])
 
     @inlineCallbacks
     def test_invalid_input_response(self):

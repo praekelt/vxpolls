@@ -50,7 +50,26 @@ class PollManagerTestCase(TestCase):
         self.assertEqual("%s:session:dummy_test_session" % (
                                         self.poll_manager.r_prefix), keys[0])
 
+    @inlineCallbacks
+    def test_some_keys_of_the_test_poll(self):
+        version_keys = yield self.r_server._client.keys(
+                                                "*versions:%s*" % self.poll_id)
+        self.assertEqual(1, len(version_keys))
+        self.assertEqual("%s:versions:%s" % (self.poll_manager.r_prefix,
+                                            self.poll_id), version_keys[0])
 
+        collection_keys = yield self.r_server._client.keys(
+                            "*results:collections:%s:questions*" % self.poll_id)
+        self.assertEqual(1, len(collection_keys))
+        self.assertEqual("%s:poll:results:collections:%s:questions" % (
+                                            self.poll_manager.r_prefix,
+                                            self.poll_id), collection_keys[0])
+
+        timestamp_keys = yield self.r_server._client.keys(
+                                        "*version_timestamps:%s*" % self.poll_id)
+        self.assertEqual(1, len(timestamp_keys))
+        self.assertEqual("%s:version_timestamps:%s" % (self.poll_manager.r_prefix,
+                                            self.poll_id), timestamp_keys[0])
 
     @inlineCallbacks
     def test_invalid_input_response(self):

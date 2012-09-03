@@ -52,6 +52,14 @@ class PollManagerTestCase(TestCase):
         self.assertEqual(poll_prefix, 'vxpolls_test:poll_manager:poll')
 
     @inlineCallbacks
+    def test_session_key_prefixes(self):
+        yield self.poll_manager.session_manager.create_session(
+            "dummy_test_session")
+        keys = yield self.r_server._client.keys("*dummy_test_session")
+        self.assertEqual(
+            "vxpolls_test:poll_manager:session:dummy_test_session", keys[0])
+
+    @inlineCallbacks
     def test_invalid_input_response(self):
         expected_question = 'What is your favorite colour?'
         invalid_input = 'I LOVE TURTLES!!'

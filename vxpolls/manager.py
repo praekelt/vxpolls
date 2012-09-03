@@ -187,8 +187,9 @@ class Poll(object):
                                                 self.r_key('results'))
         self.results_manager.register_collection(self.poll_id)
         for index, question_data in enumerate(self.questions):
+            kwargs = dict((str(k), v) for k, v in question_data.items())
             question = PollQuestion(index, case_sensitive=self.case_sensitive,
-                                        **question_data)
+                                    **kwargs)
             self.results_manager.register_question(self.poll_id,
                 question.label_or_copy(), question.valid_responses)
 
@@ -294,8 +295,9 @@ class Poll(object):
 
     def get_question(self, index):
         if self.has_question(index):
+            kw = dict((str(k), v) for k, v in self.questions[index].items())
             return PollQuestion(index, case_sensitive=self.case_sensitive,
-                **self.questions[index])
+                                **kw)
         return None
 
 

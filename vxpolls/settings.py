@@ -122,6 +122,7 @@ INSTALLED_APPS = (
     # 'django.contrib.admin',
     # Uncomment the next line to enable admin documentation:
     # 'django.contrib.admindocs',
+    'django_nose',
 )
 
 # A sample logging configuration. The only tangible logging
@@ -149,3 +150,5 @@ LOGGING = {
 
 VXPOLLS_REDIS_CONFIG = {}
 VXPOLLS_PREFIX = 'poll_manager'
+
+TEST_RUNNER = 'django_nose.NoseTestSuiteRunner'

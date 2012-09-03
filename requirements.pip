@@ -4,3 +4,4 @@ Django==1.3.1
 python-subunit
 junitxml
 pep8
+django-nose

@@ -18,7 +18,8 @@ class PollManager(object):
         # create a manager attribute so the @calls_manager works
         self.r_server = self.manager = r_server
         self.r_prefix = r_prefix
-        self.session_manager = SessionManager(self.r_server)
+        self.sr_server = self.r_server.sub_manager(self.r_key())
+        self.session_manager = SessionManager(self.sr_server)
 
     def r_key(self, *args):
         parts = [self.r_prefix]

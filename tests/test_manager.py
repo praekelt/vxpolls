@@ -55,9 +55,9 @@ class PollManagerTestCase(TestCase):
     def test_session_key_prefixes(self):
         yield self.poll_manager.session_manager.create_session(
             "dummy_test_session")
-        keys = yield self.r_server._client.keys("*dummy_test_session")
-        self.assertEqual("vxpolls_test:%s:session:dummy_test_session" % (
-                                        self.poll_manager.r_prefix), keys[0])
+        keys = yield self.r_server.keys("*dummy_test_session")
+        self.assertEqual(["%s:session:dummy_test_session" %
+                          self.poll_manager.r_prefix], keys)
 
     @inlineCallbacks
     def test_some_keys_of_the_test_poll(self):

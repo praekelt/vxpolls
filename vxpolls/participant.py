@@ -166,6 +166,15 @@ class PollParticipant(object):
     def remaining_interactions(self):
         return self.questions_per_session - self.interactions
 
+    def batch_completed(self):
+        self.interactions = 0
+        self.has_unanswered_question = False
+
+    def poll_completed(self):
+        self.batch_completed()
+        self.poll_id = None
+        self.set_poll_uid(None)
+
     def __repr__(self):
         return '<PollParticipant %s, %s, %s>' % (
             self.user_id, self.has_completed_batch(), self.interactions)

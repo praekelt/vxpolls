@@ -14,7 +14,7 @@ coverage run --include='vxpolls/*' --omit='vumi/*' --append --branch `which tria
 subunit2junitxml <results.txt >test_results.xml
 rm results.txt
 echo "=== Processing coverage data..."
-coverage xml
+coverage xml --omit='ve/src/vumi/*'
 echo "=== Checking for PEP-8 violations..."
 pep8 --repeat vxpolls | tee pep8.txt
 echo "=== Done."

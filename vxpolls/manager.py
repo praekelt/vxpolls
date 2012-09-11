@@ -4,7 +4,6 @@ import json
 import hashlib
 
 from twisted.internet.defer import returnValue
-from twisted.python import log
 
 from vumi.components.session import SessionManager
 from vumi.persist.redis_base import Manager
@@ -30,13 +29,16 @@ class PollManager(object):
         return hashlib.md5(json.dumps(version)).hexdigest()
 
     def exists(self, poll_id):
-        self.r_server.sismember(self.r_key('polls'), poll_id)
+        return self.r_server.sismember(self.r_key('polls'), poll_id)
 
     def polls(self):
         return self.r_server.smembers(self.r_key('polls'))
 
     @Manager.calls_manager
     def set(self, poll_id, version):
+        # NOTE: If two versions of a poll are created within an interval
+        # shorter than time.time()'s resolution, they'll both get the same
+        # score and we won't know which is newer.
         uid = self.generate_unique_id(version)
         yield self.r_server.sadd(self.r_key('polls'), poll_id)
         yield self.r_server.hset(self.r_key('versions', poll_id), uid,
@@ -49,7 +51,8 @@ class PollManager(object):
 
     @Manager.calls_manager
     def register(self, poll_id, version):
-        poll = yield self.get(poll_id, uid=self.set(poll_id, version))
+        uid = yield self.set(poll_id, version)
+        poll = yield self.get(poll_id, uid=uid)
         returnValue(poll)
 
     @Manager.calls_manager
@@ -87,7 +90,8 @@ class PollManager(object):
         if version:
             repeatable = version.get('repeatable', True)
             case_sensitive = version.get('case_sensitive', True)
-            poll = Poll(self.r_server, poll_id, uid, version['questions'],
+            poll = yield Poll.mkpoll(
+                self.r_server, poll_id, uid, version['questions'],
                 version.get('batch_size'), r_prefix=self.r_key('poll'),
                 repeatable=repeatable, case_sensitive=case_sensitive)
             returnValue(poll)
@@ -181,7 +185,7 @@ class PollManager(object):
         returnValue(archives)
 
     def stop(self):
-        self.session_manager.stop()
+        return self.session_manager.stop(stop_redis=False)
 
 
 class Poll(object):
@@ -200,12 +204,23 @@ class Poll(object):
         # before hand.
         self.results_manager = ResultManager(self.r_server,
                                                 self.r_key('results'))
-        self.results_manager.register_collection(self.poll_id)
+        self._setup_d = self._setup_results()
+
+    @Manager.calls_manager
+    def _setup_results(self):
+        yield self.results_manager.register_collection(self.poll_id)
         for index, question_data in enumerate(self.questions):
+            question_data = dict((k.encode('utf8'), v)
+                                 for k, v in question_data.items())
             question = PollQuestion(index, case_sensitive=self.case_sensitive,
-                                        **question_data)
-            self.results_manager.register_question(self.poll_id,
+                                    **question_data)
+            yield self.results_manager.register_question(self.poll_id,
                 question.label_or_copy(), question.valid_responses)
+        returnValue(self)
+
+    @classmethod
+    def mkpoll(cls, *args, **kw):
+        return cls(*args, **kw)._setup_d
 
     def r_key(self, *args):
         parts = [self.r_prefix]
@@ -309,8 +324,10 @@ class Poll(object):
 
     def get_question(self, index):
         if self.has_question(index):
+            questions = dict((k.encode('utf8'), v)
+                             for k, v in self.questions[index].items())
             return PollQuestion(index, case_sensitive=self.case_sensitive,
-                **self.questions[index])
+                **questions)
         return None
 
 

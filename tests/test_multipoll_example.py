@@ -1,10 +1,9 @@
 import json
 from datetime import date, timedelta
 
-from twisted.internet.defer import inlineCallbacks
+from twisted.internet.defer import inlineCallbacks, returnValue
 
 from vumi.application.tests.test_base import ApplicationTestCase
-from vumi.tests.utils import FakeRedis
 
 from vxpolls.multipoll_example import MultiPollApplication
 
@@ -12,8 +11,6 @@ from vxpolls.multipoll_example import MultiPollApplication
 class BaseMultiPollApplicationTestCase(ApplicationTestCase):
 
     application_class = MultiPollApplication
-
-    timeout = 2
 
     @inlineCallbacks
     def setUp(self):
@@ -26,6 +23,14 @@ class BaseMultiPollApplicationTestCase(ApplicationTestCase):
             'is_demo': True,
         }
         self.app = yield self.get_application(self.config)
+
+    @inlineCallbacks
+    def get_application(self, *args, **kw):
+        app = yield super(
+            BaseMultiPollApplicationTestCase, self).get_application(
+            *args, **kw)
+        self._persist_redis_managers.append(app.redis)
+        returnValue(app)
 
     def get_poll(self, poll_id, participant):
         return self.app.pm.get_poll_for_participant(poll_id, participant)

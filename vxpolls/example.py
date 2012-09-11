@@ -3,7 +3,7 @@
 import hashlib
 import json
 
-from twisted.internet.defer import inlineCallbacks, returnValue, maybeDeferred
+from twisted.internet.defer import inlineCallbacks, maybeDeferred
 
 from vumi.persist.txredis_manager import TxRedisManager
 from vumi.application.base import ApplicationWorker
@@ -32,8 +32,8 @@ class PollApplication(ApplicationWorker):
 
     @inlineCallbacks
     def setup_application(self):
-        self.r_server = yield TxRedisManager.from_config(self.r_config)
-        self.pm = PollManager(self.r_server, self.poll_prefix)
+        self.redis = yield TxRedisManager.from_config(self.r_config)
+        self.pm = PollManager(self.redis, self.poll_prefix)
         exists = yield self.pm.exists(self.poll_id)
         if not exists:
             yield self.pm.register(self.poll_id, {
@@ -42,7 +42,7 @@ class PollApplication(ApplicationWorker):
             })
 
     def teardown_application(self):
-        self.pm.stop()
+        return self.pm.stop()
 
     @inlineCallbacks
     def consume_user_message(self, message):
@@ -89,7 +89,6 @@ class PollApplication(ApplicationWorker):
                 yield self.reply_to(message, reply)
             else:
                 yield self.end_session(participant, poll, message)
-
 
     @inlineCallbacks
     def end_session(self, participant, poll, message):

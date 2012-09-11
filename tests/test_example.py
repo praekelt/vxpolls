@@ -42,11 +42,15 @@ class BasePollApplicationTestCase(ApplicationTestCase):
             'questions': self.default_questions,
             'transport_name': self.transport_name,
             'batch_size': 2,
-            'redis_manager': {
-                'FAKE_REDIS': 'yes',
-            }
         }
         self.app = yield self.get_application(self.config)
+
+    @inlineCallbacks
+    def get_application(self, *args, **kw):
+        app = yield super(BasePollApplicationTestCase, self).get_application(
+            *args, **kw)
+        self._persist_redis_managers.append(app.redis)
+        returnValue(app)
 
     def get_poll(self, poll_id, participant):
         return self.app.pm.get_poll_for_participant(poll_id, participant)
@@ -213,7 +217,7 @@ class PollApplicationTestCase(BasePollApplicationTestCase):
         self.assertFalse(poll.repeatable)
         participant.has_unanswered_question = True
         participant.set_last_question_index(2)
-        self.app.pm.save_participant(poll_id, participant)
+        yield self.app.pm.save_participant(poll_id, participant)
         # send to the app
         yield self.dispatch(msg)
         [response] = self.get_dispatched_messages()
@@ -246,7 +250,7 @@ class PollApplicationTestCase(BasePollApplicationTestCase):
         self.assertTrue(poll.repeatable)
         participant.has_unanswered_question = True
         participant.set_last_question_index(2)
-        self.app.pm.save_participant(poll_id, participant)
+        yield self.app.pm.save_participant(poll_id, participant)
         # send to the app
         yield self.dispatch(msg)
         [response] = self.get_dispatched_messages()
@@ -359,6 +363,13 @@ class VxpollsRegressionsTestCase(ApplicationTestCase):
         msg = super(VxpollsRegressionsTestCase, self).mkmsg_in(**kwargs)
         msg['helper_metadata']['poll_id'] = self.poll_id
         return msg
+
+    @inlineCallbacks
+    def get_application(self, *args, **kw):
+        app = yield super(VxpollsRegressionsTestCase, self).get_application(
+            *args, **kw)
+        self._persist_redis_managers.append(app.redis)
+        returnValue(app)
 
     @inlineCallbacks
     def get_participant_and_poll(self, user_id, poll_id=None):

@@ -3,12 +3,12 @@ import random
 from twisted.trial.unittest import TestCase
 from twisted.internet.defer import inlineCallbacks
 
-from vumi.persist.txredis_manager import TxRedisManager
+from vumi.tests.utils import PersistenceMixin
 
 from vxpolls.manager import PollManager
 
 
-class PollManagerTestCase(TestCase):
+class PollManagerTestCase(PersistenceMixin, TestCase):
 
     default_questions = [{
         'copy': 'What is your favorite colour?',
@@ -25,32 +25,32 @@ class PollManagerTestCase(TestCase):
 
     @inlineCallbacks
     def setUp(self):
-        self.r_server = yield TxRedisManager.from_config({
-            'FAKE_REDIS': 'yes'
-            })
-        self.poll_manager = PollManager(self.r_server)
+        yield self._persist_setUp()
+        self.redis = yield self.get_redis_manager()
+        self.poll_manager = PollManager(self.redis)
         self.poll_id = 'poll-id'
         self.poll = yield self.poll_manager.register(self.poll_id, {
             'questions': self.default_questions
         })
-        self.participant = yield self.poll_manager.get_participant(self.poll_id,
-            'user_id')
+        self.participant = yield self.poll_manager.get_participant(
+            self.poll_id, 'user_id')
+        self.key_prefix = "%s:poll_manager" % (
+            self._persist_config['redis_manager']['key_prefix'],)
 
     @inlineCallbacks
     def tearDown(self):
         yield self.poll_manager.stop()
+        yield self._persist_tearDown()
 
     @inlineCallbacks
     def test_session_key_prefixes(self):
-        expected_redis_key_prefix = "%s" % (self.poll_manager.r_prefix)
-        actual_redis_key_prefix = \
-                    self.poll_manager.session_manager.redis.get_key_prefix()
-        self.assertEqual(actual_redis_key_prefix, expected_redis_key_prefix)
-        yield self.poll_manager.session_manager.create_session(
-                                                "dummy_test_session")
-        keys = yield self.r_server._client.keys("*dummy_test_session")
+        session_manager = self.poll_manager.session_manager
+        actual_prefix = session_manager.redis.get_key_prefix()
+        self.assertEqual(actual_prefix, self.key_prefix)
+        yield session_manager.create_session("dummy_test_session")
+        keys = yield self.redis._client.keys("*dummy_test_session")
         self.assertEqual("%s:session:dummy_test_session" % (
-                                        self.poll_manager.r_prefix), keys[0])
+                self.key_prefix), keys[0])
 
     @inlineCallbacks
     def test_invalid_input_response(self):
@@ -104,7 +104,7 @@ class PollManagerTestCase(TestCase):
 
         expected_question = 'What is your favorite colour?'
         valid_input = 'RED'  # capitalized answer but should still pass
-        question = poll.get_next_question(participant)
+        question = yield poll.get_next_question(participant)
         poll.set_last_question(participant, question)
         self.assertEqual(question.copy, expected_question)
         response = yield poll.submit_answer(participant, valid_input)
@@ -129,7 +129,7 @@ class PollManagerTestCase(TestCase):
         self.assertEqual(expected_question, response)
 
 
-class MultiLevelPollManagerTestCase(TestCase):
+class MultiLevelPollManagerTestCase(PersistenceMixin, TestCase):
 
     default_questions = [{
         'copy': 'What is your favorite colour?',
@@ -155,20 +155,20 @@ class MultiLevelPollManagerTestCase(TestCase):
 
     @inlineCallbacks
     def setUp(self):
-        self.r_server = yield TxRedisManager.from_config({
-            'FAKE_REDIS': 'yes'
-            })
-        self.poll_manager = PollManager(self.r_server)
+        yield self._persist_setUp()
+        self.redis = yield self.get_redis_manager()
+        self.poll_manager = PollManager(self.redis)
         self.poll_id = 'poll-id'
         self.poll = yield self.poll_manager.register(self.poll_id, {
             'questions': self.default_questions,
         })
-        self.participant = yield self.poll_manager.get_participant(self.poll_id,
-            'user_id')
+        self.participant = yield self.poll_manager.get_participant(
+            self.poll_id, 'user_id')
 
     @inlineCallbacks
     def tearDown(self):
         yield self.poll_manager.stop()
+        yield self._persist_tearDown()
 
     @inlineCallbacks
     def test_checks_skip(self):

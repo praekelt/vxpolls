@@ -1,13 +1,9 @@
-from pprint import pprint
-import csv
-
 from twisted.internet.defer import inlineCallbacks
-from twisted.trial.unittest import SkipTest
 
 from vumi.application.tests.test_base import ApplicationTestCase
-from vumi.persist.txredis_manager import TxRedisManager
 
-from vxpolls.results import ResultManager, CollectionException
+from vxpolls.results import (
+    ResultManager, ResultManagerException, CollectionException)
 
 
 class PollResultsTestCase(ApplicationTestCase):
@@ -15,34 +11,51 @@ class PollResultsTestCase(ApplicationTestCase):
     @inlineCallbacks
     def setUp(self):
         yield super(PollResultsTestCase, self).setUp()
-        self.r_server = yield TxRedisManager.from_config({
-            'FAKE_REDIS': 'yes'
-            })
+        self.redis = yield self.get_redis_manager()
         self.r_prefix = 'test_results'
-        self.manager = ResultManager(self.r_server, self.r_prefix)
+        self.manager = ResultManager(self.redis, self.r_prefix)
 
     def mk_collection(self, collection_id):
         return self.manager.register_collection(collection_id)
 
+    def assert_collections(self, *expected):
+        d = self.manager.get_collections()
+        return d.addCallback(self.assertEqual, set(expected))
+
+    def assert_questions(self, collection_id, *expected):
+        d = self.manager.get_questions(collection_id)
+        return d.addCallback(self.assertEqual, set(expected))
+
+    @inlineCallbacks
     def test_register_collection(self):
-        self.assertTrue(self.mk_collection('unique-id'))
-        self.assertTrue(self.manager.register_question('unique-id',
-            'question-id', ['answer']))
-        self.assertTrue(self.manager.add_result('unique-id', 'user-id',
-            'question-id', 'answer'))
+        yield self.assert_collections()
+        yield self.mk_collection('unique-id')
+        yield self.assert_collections('unique-id')
+
+    @inlineCallbacks
+    def test_register_question(self):
+        yield self.mk_collection('cid')
+        yield self.assert_questions('cid')
+        answers = yield self.manager.register_question(
+            'cid', 'what is your favorite colour?', ['red', 'green', 'blue'])
+        yield self.assert_questions('cid', 'what is your favorite colour?')
+        self.assertEqual(answers, set(['red', 'green', 'blue']))
 
     def test_unregistered_collection(self):
-        self.assertFailure(self.manager.add_result('unknown-collection-id',
-            'user-id', 'question', 'answer'), CollectionException)
+        return self.assertFailure(
+            self.manager.register_question('cid', 'some question',
+                                           ['red', 'green', 'blue']),
+            CollectionException)
 
-    def test_register_question(self):
-        self.mk_collection('unique-id')
-        self.manager.register_question('unique-id',
-            'what is your favorite colour?', ['red', 'green', 'blue'])
-
+    @inlineCallbacks
     def test_unregistered_question(self):
-        self.assertFailure(self.manager.register_question('unknown-id',
-            'some question', ['red', 'green', 'blue']), CollectionException)
+        yield self.assertFailure(
+            self.manager.add_result('cid', 'uid', 'question', 'answer'),
+            CollectionException)
+        yield self.mk_collection('cid')
+        yield self.assertFailure(
+            self.manager.add_result('cid', 'uid', 'question', 'answer'),
+            ResultManagerException)
 
     @inlineCallbacks
     def test_add_result(self):

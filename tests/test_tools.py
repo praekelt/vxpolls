@@ -2,32 +2,37 @@ import yaml
 from StringIO import StringIO
 
 from twisted.trial.unittest import TestCase
+from twisted.internet.defer import inlineCallbacks
+
+from vumi.tests.utils import PersistenceMixin
+
 from vxpolls.tools.exporter import PollExporter
 from vxpolls.tools.importer import PollImporter
 from vxpolls.manager import PollManager
 
 
-class ExportTestCase(TestCase):
+class ExportTestCase(PersistenceMixin, TestCase):
 
+    @inlineCallbacks
     def setUp(self):
+        yield self._persist_setUp()
         self.poll_prefix = 'poll_prefix'
-        self.exporter = PollExporter({
+        self.exporter = PollExporter(self.mk_config({
             'vxpolls': {
                 'prefix': self.poll_prefix,
             },
-            'redis_manager': {
-                'FAKE_REDIS': 'yes',
-            }
-        })
+        }))
         self.exporter.stdout = StringIO()
         self.manager = PollManager(self.exporter.r_server, self.poll_prefix)
 
     def create_poll(self, poll_id, config):
         self.manager.set(poll_id, config)
 
+    @inlineCallbacks
     def tearDown(self):
-        self.exporter.pm.stop()
-        self.manager.stop()
+        yield self.exporter.pm.stop()
+        yield self.manager.stop()
+        yield self._persist_tearDown()
 
     def test_export(self):
         config = {
@@ -45,18 +50,17 @@ class ExportTestCase(TestCase):
         self.assertEqual(exported_string, yaml.safe_dump(config))
 
 
-class ImportTestCase(TestCase):
+class ImportTestCase(PersistenceMixin, TestCase):
 
+    @inlineCallbacks
     def setUp(self):
+        yield self._persist_setUp()
         self.poll_prefix = 'poll_prefix'
-        self.importer = PollImporter({
+        self.importer = PollImporter(self.mk_config({
             'vxpolls': {
                 'prefix': self.poll_prefix,
             },
-            'redis_manager': {
-                'FAKE_REDIS': 'yes'
-            }
-        })
+        }))
         self.manager = PollManager(self.importer.r_server, self.poll_prefix)
         self.config = {
             'batch_size': None,
@@ -68,9 +72,11 @@ class ImportTestCase(TestCase):
             'transport_name': 'vxpolls_transport'
         }
 
+    @inlineCallbacks
     def tearDown(self):
-        self.importer.pm.stop()
-        self.manager.stop()
+        yield self.importer.pm.stop()
+        yield self.manager.stop()
+        yield self._persist_tearDown()
 
     def test_import(self):
         self.assertEqual(self.manager.polls(), set([]))

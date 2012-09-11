@@ -41,8 +41,8 @@ class MultiPollApplication(PollApplication):
 
     @inlineCallbacks
     def setup_application(self):
-        self.r_server = yield TxRedisManager.from_config(self.r_config)
-        self.pm = PollManager(self.r_server, self.poll_prefix)
+        self.redis = yield TxRedisManager.from_config(self.r_config)
+        self.pm = PollManager(self.redis, self.poll_prefix)
         for poll_id in self.poll_id_list:
             exists = yield self.pm.exists(poll_id)
             if not exists:
@@ -59,10 +59,6 @@ class MultiPollApplication(PollApplication):
         while True:
             yield "%s%s" % (poll_id_prefix, num)
             num = num + 1
-
-    @classmethod
-    def get_first_poll_id(cls, poll_id_prefix):
-        return "%s%s" % (poll_id_prefix, 0)
 
     @classmethod
     def get_first_poll_id(cls, poll_id_prefix):
@@ -111,7 +107,7 @@ class MultiPollApplication(PollApplication):
         if participant.has_unanswered_question:
             yield self.on_message(participant, poll, message)
         else:
-            self.init_session(participant, poll, message)
+            yield self.init_session(participant, poll, message)
 
     @inlineCallbacks
     def on_message(self, participant, poll, message):

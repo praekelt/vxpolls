@@ -1,3 +1,4 @@
+import time
 import yaml
 
 from twisted.internet.defer import inlineCallbacks, returnValue
@@ -434,6 +435,9 @@ class PollManagerVersioningTestCase(BasePollApplicationTestCase):
 
     @inlineCallbacks
     def test_first_question(self):
+        # Sleep 10 ms so the new poll can't accidentally get the same timestamp
+        # as the one it's replacing.
+        time.sleep(0.01)
         # update the poll with new content
         yield self.app.pm.register(self.poll_id, {
             'questions': self.updated_questions

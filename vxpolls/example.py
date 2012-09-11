@@ -42,7 +42,7 @@ class PollApplication(ApplicationWorker):
             })
 
     def teardown_application(self):
-        self.pm.stop()
+        return self.pm.stop()
 
     @inlineCallbacks
     def consume_user_message(self, message):
@@ -89,7 +89,6 @@ class PollApplication(ApplicationWorker):
                 yield self.reply_to(message, reply)
             else:
                 yield self.end_session(participant, poll, message)
-
 
     @inlineCallbacks
     def end_session(self, participant, poll, message):

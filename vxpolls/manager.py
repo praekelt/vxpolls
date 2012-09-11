@@ -4,7 +4,6 @@ import json
 import hashlib
 
 from twisted.internet.defer import returnValue
-from twisted.python import log
 
 from vumi.components.session import SessionManager
 from vumi.persist.redis_base import Manager
@@ -30,13 +29,15 @@ class PollManager(object):
         return hashlib.md5(json.dumps(version)).hexdigest()
 
     def exists(self, poll_id):
-        self.r_server.sismember(self.r_key('polls'), poll_id)
+        return self.r_server.sismember(self.r_key('polls'), poll_id)
 
     def polls(self):
         return self.r_server.smembers(self.r_key('polls'))
 
     @Manager.calls_manager
     def set(self, poll_id, version):
+        # NOTE: This behaves badly if two versions of a poll are created within
+        # an interval shorter than time.time()'s resolution.
         uid = self.generate_unique_id(version)
         yield self.r_server.sadd(self.r_key('polls'), poll_id)
         yield self.r_server.hset(self.r_key('versions', poll_id), uid,

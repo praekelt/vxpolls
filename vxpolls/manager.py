@@ -38,14 +38,16 @@ class PollManager(object):
     def set(self, poll_id, version):
         # NOTE: If two versions of a poll are created within an interval
         # shorter than time.time()'s resolution, they'll both get the same
-        # score and we won't know which is newer.
+        # score and we won't know which is newer. This is much less likely now
+        # that we take the repr() of the timestamp instead of using implicit
+        # string conversion (which rounds/truncates to 10ms precision).
         uid = self.generate_unique_id(version)
         yield self.r_server.sadd(self.r_key('polls'), poll_id)
         yield self.r_server.hset(self.r_key('versions', poll_id), uid,
                                     json.dumps(version))
         key = self.r_key('version_timestamps', poll_id)
         yield self.r_server.zadd(key, **{
-            uid: time.time(),
+            uid: repr(time.time()),
         })
         returnValue(uid)
 

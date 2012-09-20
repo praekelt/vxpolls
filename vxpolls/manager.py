@@ -257,6 +257,8 @@ class Poll(object):
     def is_suitable_question(self, participant, question):
 
         state = participant.labels
+        if not self.case_sensitive:
+            state = dict((k.lower(), v.lower()) for k, v in state.items())
 
         def equals(key, value):
             return unicode(state.get(key)) == unicode(value)
@@ -296,6 +298,8 @@ class Poll(object):
         for operation, key, value in question.checks:
             handler = operations_dispatcher.get(operation, lambda *a: True)
             if key:
+                if not self.case_sensitive:
+                    value = value.lower()
                 if not handler(key, value):
                     return False
 

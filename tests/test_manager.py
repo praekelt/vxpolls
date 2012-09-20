@@ -212,6 +212,22 @@ class MultiLevelPollManagerTestCase(PersistenceMixin, TestCase):
         self.assertEqual(next_question.copy, next_question_copy)
 
     @inlineCallbacks
+    def test_case_insensitivity_on_checks(self):
+        poll = yield self.poll_manager.register(self.poll_id, {
+            'questions': self.default_questions,
+            'case_sensitive': False,
+        })
+        participant = yield self.poll_manager.get_participant(self.poll_id,
+            'user_id')
+        # the check is for 'green' (lower case), however since the poll
+        # is case-insensitive this should still pass
+        participant.set_label('favorite colour', 'GREEN')
+        participant.set_last_question_index(0)
+        next_question_copy = 'What sort of green? Dark or Light?'
+        next_question = poll.get_next_question(participant)
+        self.assertEqual(next_question.copy, next_question_copy)
+
+    @inlineCallbacks
     def test_clone_participant(self):
         self.participant.age = 23
         clone = yield self.poll_manager.clone_participant(self.participant,

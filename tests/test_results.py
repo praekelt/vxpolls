@@ -250,3 +250,27 @@ class PollResultsTestCase(ApplicationTestCase):
             "%s,%s,%s,%s" % (question, 0, 0, 1),
             ""
         ]))
+
+    @inlineCallbacks
+    def test_handling_of_weird_characters(self):
+        # This is data received in an actual campaign that tripped stuff up.
+        collection_id = 'unique-id'
+        user_id = '27761234567'
+
+        data = {'dob': 'Chelsea  will  win  2\xc3\x82\xc2\xa71  '
+                        'against  Athletico  Madrid.By  Annor 1.',
+                }
+        with self.manager.defaults(collection_id, user_id) as m:
+            for question, answer in data.items():
+                yield m.register_question(question)
+                yield m.add_result(question, answer)
+
+        unicode_str = unicode(data['dob'], 'utf-8')
+        utf8_str = unicode_str.encode('utf-8')
+
+        sio = yield self.manager.get_users_as_csv(collection_id)
+        self.assertEqual(sio.getvalue(), '\r\n'.join([
+            "user_id,dob",
+            "27761234567,%s" % (utf8_str,),
+            ""
+            ]))

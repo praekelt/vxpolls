@@ -1,5 +1,6 @@
 # -*- test-case-name: tests.test_results -*-
 import csv
+
 from functools import partial
 from StringIO import StringIO
 
@@ -8,8 +9,11 @@ from twisted.internet.defer import returnValue
 from vumi.persist.redis_base import Manager
 
 
-class ResultManagerException(Exception): pass
-class CollectionException(ResultManagerException): pass
+class ResultManagerException(Exception):
+    pass
+
+class CollectionException(ResultManagerException):
+    pass
 
 
 class ResultManager(object):
@@ -152,8 +156,11 @@ class ResultManager(object):
         if answers:
             results = []
             for answer in answers:
-                result = yield self.r_server.hget(results_key, answer)
-                results.append((answer, int(result or 0)))
+                if (yield self.r_server.hexists(results_key, answer)):
+                    result = yield self.r_server.hget(results_key, answer)
+                else:
+                    result = 0
+                results.append((answer, int(result)))
             returnValue(dict(results))
         else:
             results = yield self.r_server.hgetall(results_key)
@@ -182,10 +189,6 @@ class ResultManager(object):
             user_results.append((question, answer))
         returnValue(dict(user_results))
 
-    def encode_as_utf8(self, dictionary):
-        return dict((k.encode('utf8'), (v or '').encode('utf8'))
-                        for k, v in dictionary.items())
-
     @Manager.calls_manager
     def get_users_as_csv(self, collection_id):
         sio = StringIO()
@@ -193,7 +196,7 @@ class ResultManager(object):
         questions = yield self.get_questions(collection_id)
         fieldnames.extend(questions)
         fieldnames = [fn.encode('utf8') for fn in fieldnames]
-        headers = self.encode_as_utf8(dict((n, n) for n in fieldnames))
+        headers = dict((n, n) for n in fieldnames)
         writer = csv.DictWriter(sio, fieldnames=fieldnames)
         writer.writerow(headers)
         users = yield self.get_users(collection_id)
@@ -202,7 +205,7 @@ class ResultManager(object):
                 'user_id': user_id,
             }
             data.update(user_data)
-            writer.writerow(self.encode_as_utf8(data))
+            writer.writerow(data)
         returnValue(sio)
 
     @Manager.calls_manager

@@ -6,13 +6,13 @@ from twisted.trial.unittest import TestCase
 from twisted.internet.defer import inlineCallbacks, returnValue
 from twisted.web.client import getPage
 
+from vumi.tests.utils import PersistenceMixin
+
 from vxpolls.manager import PollManager
 from vxpolls.dashboard import PollDashboardServer
 
-from vumi.persist.txredis_manager import TxRedisManager
 
-
-class PollDashboardTestCase(TestCase):
+class PollDashboardTestCase(PersistenceMixin, TestCase):
 
     poll_id = 'poll-id'
     questions = [{
@@ -30,10 +30,9 @@ class PollDashboardTestCase(TestCase):
 
     @inlineCallbacks
     def setUp(self):
-        self.r_server = yield TxRedisManager.from_config({
-            'FAKE_REDIS': 'yes',
-        })
-        self.poll_manager = PollManager(self.r_server)
+        yield self._persist_setUp()
+        self.redis = yield self.get_redis_manager()
+        self.poll_manager = PollManager(self.redis)
         self.poll = yield self.poll_manager.register(self.poll_id, {
             'questions': self.questions,
         })
@@ -44,7 +43,8 @@ class PollDashboardTestCase(TestCase):
         # let the results manager know of the questions available and
         # what it is tracking results for.
         for entry in self.questions:
-            yield self.results_manager.register_question(self.poll_id, entry['copy'],
+            yield self.results_manager.register_question(
+                self.poll_id, entry['copy'],
                 [resp.lower() for resp in entry['valid_responses']])
 
         self.service = PollDashboardServer(self.poll_manager,
@@ -62,6 +62,7 @@ class PollDashboardTestCase(TestCase):
     def tearDown(self):
         yield self.poll_manager.stop()
         yield self.service.stopService()
+        yield self._persist_tearDown()
 
     @inlineCallbacks
     def get_route_json(self, route, **kwargs):
@@ -83,7 +84,7 @@ class PollDashboardTestCase(TestCase):
             participant.set_poll_id(self.poll_id)
             question = self.poll.get_next_question(participant)
             self.poll.set_last_question(participant, question)
-            error_message = self.poll.submit_answer(participant, answer)
+            error_message = yield self.poll.submit_answer(participant, answer)
             if error_message:
                 raise ValueError(error_message)
             yield self.poll_manager.save_participant(self.poll_id, participant)
@@ -131,12 +132,12 @@ class PollDashboardTestCase(TestCase):
 
     @inlineCallbacks
     def test_results_csv(self):
-        data = yield self.get_route_csv('results.csv?%s' % (urllib.urlencode({
+        yield self.get_route_csv('results.csv?%s' % (urllib.urlencode({
             'collection_id': self.poll_id,
         }),))
 
     @inlineCallbacks
     def test_users_csv(self):
-        data = yield self.get_route_csv('users.csv?%s' % (urllib.urlencode({
+        yield self.get_route_csv('users.csv?%s' % (urllib.urlencode({
             'collection_id': self.poll_id,
         }),))

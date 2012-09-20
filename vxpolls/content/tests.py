@@ -5,14 +5,15 @@ from django.test.client import Client
 from django.test import TestCase
 from django.core.urlresolvers import reverse
 
-from vumi.persist.redis_manager import RedisManager
+from vumi.tests.utils import PersistenceMixin
 
 from vxpolls.manager import PollManager
 from vxpolls.content import forms
 from vxpolls.content import views as content_views
 
 
-class VxpollFormTestCase(TestCase):
+class VxpollFormTestCase(PersistenceMixin, TestCase):
+    sync_persistence = True
 
     maxDiff = None
     config_data = """
@@ -49,16 +50,19 @@ class VxpollFormTestCase(TestCase):
     """
 
     def setUp(self):
+        self._persist_setUp()
         self.config = yaml.load(self.config_data)
-        self.r_server = RedisManager.from_config({
-            'FAKE_REDIS': 'yes'
-            })
-        self.poll_manager = PollManager(self.r_server, settings.VXPOLLS_PREFIX)
+        self.redis = self.get_redis_manager()
+        self.poll_manager = PollManager(self.redis, settings.VXPOLLS_PREFIX)
         self.poll_id = self.config['poll_id']
         self.poll = self.poll_manager.register(self.poll_id, self.config)
         self.client = Client()
         # Monkey patch the views redis attribute to point to our Fake redis
-        content_views.redis = self.r_server
+        content_views.redis = self.redis
+
+    def tearDown(self):
+        super(TestCase, self).tearDown()
+        self._persist_tearDown()
 
     def test_form_creation(self):
         form = forms.make_form(data=self.config.copy(),

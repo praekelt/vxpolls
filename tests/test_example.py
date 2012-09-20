@@ -1,3 +1,5 @@
+import yaml
+
 from twisted.internet.defer import inlineCallbacks, returnValue
 
 from vumi.application.tests.test_base import ApplicationTestCase
@@ -7,8 +9,8 @@ from vxpolls.example import PollApplication
 
 class BasePollApplicationTestCase(ApplicationTestCase):
 
-    application_class = PollApplication
     timeout = 1
+    application_class = PollApplication
     poll_id = 'poll-id'
     default_questions = [{
             'copy': 'What is your favorite colour?',
@@ -17,15 +19,18 @@ class BasePollApplicationTestCase(ApplicationTestCase):
                 'equal': {
                     'favorite-color': 'None'
                 }
-            }
+            },
+            'label': 'red-green-blue',
         },
         {
             'copy': 'Orange, Yellow or Black?',
             'valid_responses': ['orange', 'yellow', 'black'],
+            'label': 'orange-yellow-black',
         },
         {
             'copy': 'What is your favorite fruit?',
             'valid_responses': ['apple', 'orange'],
+            'label': 'fruit',
         }
     ]
 
@@ -37,11 +42,15 @@ class BasePollApplicationTestCase(ApplicationTestCase):
             'questions': self.default_questions,
             'transport_name': self.transport_name,
             'batch_size': 2,
-            'redis_manager': {
-                'FAKE_REDIS': 'yes',
-            }
         }
         self.app = yield self.get_application(self.config)
+
+    @inlineCallbacks
+    def get_application(self, *args, **kw):
+        app = yield super(BasePollApplicationTestCase, self).get_application(
+            *args, **kw)
+        self._persist_redis_managers.append(app.redis)
+        returnValue(app)
 
     def get_poll(self, poll_id, participant):
         return self.app.pm.get_poll_for_participant(poll_id, participant)
@@ -208,7 +217,7 @@ class PollApplicationTestCase(BasePollApplicationTestCase):
         self.assertFalse(poll.repeatable)
         participant.has_unanswered_question = True
         participant.set_last_question_index(2)
-        self.app.pm.save_participant(poll_id, participant)
+        yield self.app.pm.save_participant(poll_id, participant)
         # send to the app
         yield self.dispatch(msg)
         [response] = self.get_dispatched_messages()
@@ -222,6 +231,195 @@ class PollApplicationTestCase(BasePollApplicationTestCase):
         [_, last_response] = self.get_dispatched_messages()
         self.assertResponse(last_response, self.app.survey_completed_response)
         self.assertEvent(last_response, 'close')
+
+    @inlineCallbacks
+    def test_repeatable_true(self):
+        # create the inbound message
+        poll_id = 'non-repeatable-poll'
+        msg = self.mkmsg_in(content='apple')
+        msg['helper_metadata']['poll_id'] = poll_id
+        yield self.app.pm.set(poll_id, {
+            'poll_id': poll_id,
+            'repeatable': True,
+            'questions': self.default_questions,
+        })
+
+        # prime the participant
+        participant, poll = yield self.get_participant_and_poll(
+            msg.user(), poll_id)
+        self.assertTrue(poll.repeatable)
+        participant.has_unanswered_question = True
+        participant.set_last_question_index(2)
+        yield self.app.pm.save_participant(poll_id, participant)
+        # send to the app
+        yield self.dispatch(msg)
+        [response] = self.get_dispatched_messages()
+        self.assertResponse(response, self.app.survey_completed_response)
+        self.assertEvent(response, 'close')
+        # any follow ups should return the first question again
+        # as this poll is repeatable.
+        msg_after_close = self.mkmsg_in(content='hello?')
+        msg_after_close['helper_metadata']['poll_id'] = poll_id
+        yield self.dispatch(msg_after_close)
+        [_, last_response] = self.get_dispatched_messages()
+        self.assertResponse(last_response, self.default_questions[0]['copy'])
+        self.assertEvent(last_response, None)
+
+    @inlineCallbacks
+    def test_proceed_if_first_submission_valid(self):
+        msg = self.mkmsg_in(content='red')
+        yield self.dispatch(msg)
+        [response] = self.get_dispatched_messages()
+        # The first answer sent is a valid response to question 1
+        # and so we should get a reply back with question 2
+        self.assertResponse(response, self.default_questions[1]['copy'])
+
+    @inlineCallbacks
+    def test_archiving_on_end_session(self):
+        # create the inbound message
+        msg = self.mkmsg_in(content='apple')
+        # prime the participant
+        participant, poll = yield self.get_participant_and_poll(msg.user())
+        participant.has_unanswered_question = True
+        participant.set_last_question_index(2)
+        yield self.app.pm.save_participant(self.poll_id, participant)
+        # send to the app
+        yield self.dispatch(msg)
+        [response] = yield self.wait_for_dispatched_messages(1)
+        self.assertResponse(response, self.app.survey_completed_response)
+        self.assertEvent(response, 'close')
+
+        [archive] = yield self.app.pm.get_archive(poll.poll_id,
+            participant.user_id)
+
+        self.assertEqual(archive.interactions, 1)
+        self.assertEqual(archive.labels, {
+            'fruit': 'apple',
+            })
+
+
+class VxpollsRegressionsTestCase(ApplicationTestCase):
+
+    application_class = PollApplication
+    poll_id = 'poll-id'
+    timeout = 1
+
+    opt_in_poll = yaml.safe_load("""
+        case_sensitive: false
+        include_labels: [opted-in]
+        poll_id: poll-id
+        questions:
+        - checks:
+          - [not exists, opted-in, '']
+          - ['', '', '']
+          - ['', '', '']
+          copy: Hi and welcome to Afropinions! In order to confirm registration please reply
+            with JOIN to 8007
+          label: opted-in
+          valid_responses: [join, JOIN, Join]
+        - checks:
+          - ['', '', '']
+          - ['', '', '']
+          - ['', '', '']
+          copy: Thank you! You will need to complete this survey to qualify for the prize
+            draw. First tell us, what is your gender? Reply with M for male and F for female.
+          label: Gender
+          valid_responses: [m, f, male, female, M, F]
+        - checks:
+          - ['', '', '']
+          - ['', '', '']
+          - ['', '', '']
+          copy: Thank you. Now please tell us, what is your age?
+          label: Age
+          valid_responses: []
+        - checks:
+          - ['', '', '']
+          - ['', '', '']
+          - ['', '', '']
+          copy: 'Thank you. One final questions to become a member and qualify for prize draw.
+            Please tell us where you live in Kampala? for example: Nakasero'
+          label: Locations
+          valid_responses: []
+        repeatable: true
+        survey_completed_response: Welcome! You are now a member of Afropinions. Participation
+          is free and confidential. You will be added to the weekly prize draw. Afropinions
+          BE HEARD!
+    """)
+
+    poll_with_no_input_checks = yaml.safe_load("""
+    poll_id: poll-id
+    repeatable: true
+    survey_completed_response: completed!
+    questions:
+        - copy: first question
+          label: first question
+          valid_responses: []
+        - copy: second question
+          label: second question
+          valid_responses: ['yes', 'no']
+    """)
+
+    def mkmsg_in(self, **kwargs):
+        msg = super(VxpollsRegressionsTestCase, self).mkmsg_in(**kwargs)
+        msg['helper_metadata']['poll_id'] = self.poll_id
+        return msg
+
+    @inlineCallbacks
+    def get_application(self, *args, **kw):
+        app = yield super(VxpollsRegressionsTestCase, self).get_application(
+            *args, **kw)
+        self._persist_redis_managers.append(app.redis)
+        returnValue(app)
+
+    @inlineCallbacks
+    def get_participant_and_poll(self, user_id, poll_id=None):
+        poll_id = poll_id or self.poll_id
+        participant = yield self.app.pm.get_participant(poll_id, user_id)
+        poll = yield self.get_poll(poll_id, participant)
+        returnValue((participant, poll))
+
+    @inlineCallbacks
+    def test_sna_opt_in_scenario(self):
+        yield self.get_application(self.opt_in_poll)
+        yield self.dispatch(self.mkmsg_in(content='join'))
+        [response] = yield self.wait_for_dispatched_messages(1)
+        self.assertTrue('what is your gender' in response['content'])
+
+    @inlineCallbacks
+    def test_sna_revisit_after_optin_scenario(self):
+        self.app = yield self.get_application(self.opt_in_poll)
+        manager = self.app.pm
+
+        msg = self.mkmsg_in(content='hello')
+        participant = yield manager.get_participant(self.poll_id, msg.user())
+        participant.labels.update({
+            'opted-in': 'join'
+        })
+        yield manager.save_participant(self.poll_id, participant)
+        yield self.dispatch(msg)
+        [response] = yield self.wait_for_dispatched_messages(1)
+        self.assertTrue('what is your gender' in response['content'])
+
+    @inlineCallbacks
+    def test_asking_first_question_if_not_valid_input_checks(self):
+        app = yield self.get_application(self.poll_with_no_input_checks)
+        manager = app.pm
+
+        # check that we're not expecting an answer for this participant
+        # which would mean the conversation was server initiated.
+        msg = self.mkmsg_in(content=None)
+        participant = yield manager.get_participant(self.poll_id, msg.user())
+        self.assertFalse(participant.has_unanswered_question)
+
+        yield self.dispatch(msg)
+        [response] = yield self.wait_for_dispatched_messages(1)
+        self.assertEqual('first question', response['content'])
+        yield self.dispatch(self.mkmsg_in(content='foo'))
+        [_, response] = yield self.wait_for_dispatched_messages(2)
+        self.assertEqual('second question', response['content'])
+        yield self.dispatch(self.mkmsg_in(content='yes'))
+        [_, _, response] = yield self.wait_for_dispatched_messages(3)
+        self.assertEqual(app.survey_completed_response, response['content'])
 
 
 class PollManagerVersioningTestCase(BasePollApplicationTestCase):

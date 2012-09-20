@@ -4,7 +4,6 @@ import json
 import hashlib
 
 from twisted.internet.defer import returnValue
-from twisted.python import log
 
 from vumi.components.session import SessionManager
 from vumi.persist.redis_base import Manager
@@ -18,7 +17,8 @@ class PollManager(object):
         # create a manager attribute so the @calls_manager works
         self.r_server = self.manager = r_server
         self.r_prefix = r_prefix
-        self.session_manager = SessionManager(self.r_server)
+        self.sr_server = self.r_server.sub_manager(self.r_key())
+        self.session_manager = SessionManager(self.sr_server)
 
     def r_key(self, *args):
         parts = [self.r_prefix]
@@ -29,26 +29,32 @@ class PollManager(object):
         return hashlib.md5(json.dumps(version)).hexdigest()
 
     def exists(self, poll_id):
-        self.r_server.sismember(self.r_key('polls'), poll_id)
+        return self.r_server.sismember(self.r_key('polls'), poll_id)
 
     def polls(self):
         return self.r_server.smembers(self.r_key('polls'))
 
     @Manager.calls_manager
     def set(self, poll_id, version):
+        # NOTE: If two versions of a poll are created within an interval
+        # shorter than time.time()'s resolution, they'll both get the same
+        # score and we won't know which is newer. This is much less likely now
+        # that we take the repr() of the timestamp instead of using implicit
+        # string conversion (which rounds/truncates to 10ms precision).
         uid = self.generate_unique_id(version)
         yield self.r_server.sadd(self.r_key('polls'), poll_id)
         yield self.r_server.hset(self.r_key('versions', poll_id), uid,
                                     json.dumps(version))
         key = self.r_key('version_timestamps', poll_id)
         yield self.r_server.zadd(key, **{
-            uid: time.time(),
+            uid: repr(time.time()),
         })
         returnValue(uid)
 
     @Manager.calls_manager
     def register(self, poll_id, version):
-        poll = yield self.get(poll_id, uid=self.set(poll_id, version))
+        uid = yield self.set(poll_id, version)
+        poll = yield self.get(poll_id, uid=uid)
         returnValue(poll)
 
     @Manager.calls_manager
@@ -86,7 +92,8 @@ class PollManager(object):
         if version:
             repeatable = version.get('repeatable', True)
             case_sensitive = version.get('case_sensitive', True)
-            poll = Poll(self.r_server, poll_id, uid, version['questions'],
+            poll = yield Poll.mkpoll(
+                self.r_server, poll_id, uid, version['questions'],
                 version.get('batch_size'), r_prefix=self.r_key('poll'),
                 repeatable=repeatable, case_sensitive=case_sensitive)
             returnValue(poll)
@@ -160,18 +167,33 @@ class PollManager(object):
         archive_key = self.r_key('session_archive', session_key)
         archived_sessions = yield self.r_server.zrange(archive_key, 0, -1,
                                                     desc=True)
-        archive = [PollParticipant(user_id, json.loads(data)) for
-                    data in archived_sessions]
-        returnValue(archive)
+
+        # NOTE:
+        #
+        # other places where we load session data we're loading session data
+        # it comes straight from redis as string values from a hash. In the
+        # case of archives it is slightly different since they're just stored
+        # as JSON blobs, before we hand it over to the PollParticipant we
+        # need to make sure all values are again passed in as strings as they
+        # would when loaded from Redis.
+        archives = []
+        for data in archived_sessions:
+            typed_json = json.loads(data)
+            unicode_json = dict([(key, unicode(value)) for key, value
+                                    in typed_json.items()])
+            participant = PollParticipant(user_id, unicode_json)
+            archives.append(participant)
+
+        returnValue(archives)
 
     def stop(self):
-        self.session_manager.stop()
+        return self.session_manager.stop(stop_redis=False)
 
 
 class Poll(object):
     def __init__(self, r_server, poll_id, uid, questions, batch_size=None,
         r_prefix='poll', repeatable=True, case_sensitive=True):
-        self.r_server = r_server
+        self.r_server = self.manager = r_server
         self.poll_id = poll_id
         self.uid = uid
         self.questions = questions
@@ -184,12 +206,23 @@ class Poll(object):
         # before hand.
         self.results_manager = ResultManager(self.r_server,
                                                 self.r_key('results'))
-        self.results_manager.register_collection(self.poll_id)
+        self._setup_d = self._setup_results()
+
+    @Manager.calls_manager
+    def _setup_results(self):
+        yield self.results_manager.register_collection(self.poll_id)
         for index, question_data in enumerate(self.questions):
+            question_data = dict((k.encode('utf8'), v)
+                                 for k, v in question_data.items())
             question = PollQuestion(index, case_sensitive=self.case_sensitive,
-                                        **question_data)
-            self.results_manager.register_question(self.poll_id,
+                                    **question_data)
+            yield self.results_manager.register_question(self.poll_id,
                 question.label_or_copy(), question.valid_responses)
+        returnValue(self)
+
+    @classmethod
+    def mkpoll(cls, *args, **kw):
+        return cls(*args, **kw)._setup_d
 
     def r_key(self, *args):
         parts = [self.r_prefix]
@@ -268,20 +301,21 @@ class Poll(object):
 
         return True
 
+    @Manager.calls_manager
     def submit_answer(self, participant, answer, custom_answer_logic=None):
         poll_question = self.get_last_question(participant)
         assert poll_question, 'Need a question to submit an answer for'
-        if poll_question.answer(answer):
-            self.results_manager.add_result(self.poll_id, participant.user_id,
-                poll_question.label_or_copy(), answer)
+        if answer and poll_question.answer(answer):
+            yield self.results_manager.add_result(self.poll_id,
+                participant.user_id, poll_question.label_or_copy(), answer)
             if poll_question.label is not None:
                 participant.set_label(poll_question.label, answer)
                 if custom_answer_logic:
-                    custom_answer_logic(participant, answer, poll_question)
-            participant.has_unanswered_question = False
+                    yield custom_answer_logic(participant, answer,
+                        poll_question)
             participant.interactions += 1
         else:
-            return poll_question.copy
+            returnValue(poll_question.copy)
 
     def has_more_questions_for(self, participant):
         next_question = self.get_next_question(participant)
@@ -292,8 +326,10 @@ class Poll(object):
 
     def get_question(self, index):
         if self.has_question(index):
+            questions = dict((k.encode('utf8'), v)
+                             for k, v in self.questions[index].items())
             return PollQuestion(index, case_sensitive=self.case_sensitive,
-                **self.questions[index])
+                **questions)
         return None
 
 

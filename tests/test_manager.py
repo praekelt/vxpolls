@@ -3,12 +3,12 @@ import random
 from twisted.trial.unittest import TestCase
 from twisted.internet.defer import inlineCallbacks
 
-from vumi.persist.txredis_manager import TxRedisManager
+from vumi.tests.utils import PersistenceMixin
 
 from vxpolls.manager import PollManager
 
 
-class PollManagerTestCase(TestCase):
+class PollManagerTestCase(PersistenceMixin, TestCase):
 
     default_questions = [{
         'copy': 'What is your favorite colour?',
@@ -25,41 +25,56 @@ class PollManagerTestCase(TestCase):
 
     @inlineCallbacks
     def setUp(self):
-        self.r_server = yield TxRedisManager.from_config({
-            'FAKE_REDIS': 'yes'
-            })
-        self.poll_manager = PollManager(self.r_server)
+        yield self._persist_setUp()
+        self.redis = yield self.get_redis_manager()
+        self.poll_manager = PollManager(self.redis)
         self.poll_id = 'poll-id'
         self.poll = yield self.poll_manager.register(self.poll_id, {
             'questions': self.default_questions
         })
-        self.participant = yield self.poll_manager.get_participant(self.poll_id,
-            'user_id')
+        self.participant = yield self.poll_manager.get_participant(
+            self.poll_id, 'user_id')
+        self.key_prefix = "%s:poll_manager" % (
+            self._persist_config['redis_manager']['key_prefix'],)
 
     @inlineCallbacks
     def tearDown(self):
         yield self.poll_manager.stop()
+        yield self._persist_tearDown()
 
+    @inlineCallbacks
+    def test_session_key_prefixes(self):
+        session_manager = self.poll_manager.session_manager
+        actual_prefix = session_manager.redis.get_key_prefix()
+        self.assertEqual(actual_prefix, self.key_prefix)
+        yield session_manager.create_session("dummy_test_session")
+        keys = yield self.redis._client.keys("*dummy_test_session")
+        self.assertEqual("%s:session:dummy_test_session" % (
+                self.key_prefix), keys[0])
+
+    @inlineCallbacks
     def test_invalid_input_response(self):
         expected_question = 'What is your favorite colour?'
         invalid_input = 'I LOVE TURTLES!!'
         question = self.poll.get_next_question(self.participant)
         self.poll.set_last_question(self.participant, question)
         self.assertEqual(question.copy, expected_question)
-        response = self.poll.submit_answer(self.participant,
+        response = yield self.poll.submit_answer(self.participant,
                                                     invalid_input)
         self.assertEqual(response, expected_question)
 
+    @inlineCallbacks
     def test_valid_input_response(self):
         expected_question = 'What is your favorite colour?'
         valid_input = 'red'
         question = self.poll.get_next_question(self.participant)
         self.poll.set_last_question(self.participant, question)
         self.assertEqual(question.copy, expected_question)
-        response = self.poll.submit_answer(self.participant,
+        response = yield self.poll.submit_answer(self.participant,
                                                     valid_input)
         self.assertEqual(None, response)
 
+    @inlineCallbacks
     def test_iterating(self):
         for index, question in enumerate(self.default_questions):
             valid_input = random.choice(question['valid_responses'])
@@ -71,7 +86,7 @@ class PollManagerTestCase(TestCase):
                                                 self.participant)
             self.poll.set_last_question(self.participant,
                                                 next_question)
-            self.poll.submit_answer(self.participant,
+            yield self.poll.submit_answer(self.participant,
                                                 valid_input)
             if not index:
                 self.assertEqual(None, last_question)
@@ -89,10 +104,10 @@ class PollManagerTestCase(TestCase):
 
         expected_question = 'What is your favorite colour?'
         valid_input = 'RED'  # capitalized answer but should still pass
-        question = poll.get_next_question(participant)
+        question = yield poll.get_next_question(participant)
         poll.set_last_question(participant, question)
         self.assertEqual(question.copy, expected_question)
-        response = poll.submit_answer(participant, valid_input)
+        response = yield poll.submit_answer(participant, valid_input)
         self.assertEqual(None, response)
 
     @inlineCallbacks
@@ -109,12 +124,12 @@ class PollManagerTestCase(TestCase):
         question = poll.get_next_question(participant)
         poll.set_last_question(participant, question)
         self.assertEqual(question.copy, expected_question)
-        response = poll.submit_answer(participant, valid_input)
+        response = yield poll.submit_answer(participant, valid_input)
         # original question should be repeated
         self.assertEqual(expected_question, response)
 
 
-class MultiLevelPollManagerTestCase(TestCase):
+class MultiLevelPollManagerTestCase(PersistenceMixin, TestCase):
 
     default_questions = [{
         'copy': 'What is your favorite colour?',
@@ -140,21 +155,22 @@ class MultiLevelPollManagerTestCase(TestCase):
 
     @inlineCallbacks
     def setUp(self):
-        self.r_server = yield TxRedisManager.from_config({
-            'FAKE_REDIS': 'yes'
-            })
-        self.poll_manager = PollManager(self.r_server)
+        yield self._persist_setUp()
+        self.redis = yield self.get_redis_manager()
+        self.poll_manager = PollManager(self.redis)
         self.poll_id = 'poll-id'
         self.poll = yield self.poll_manager.register(self.poll_id, {
             'questions': self.default_questions,
         })
-        self.participant = yield self.poll_manager.get_participant(self.poll_id,
-            'user_id')
+        self.participant = yield self.poll_manager.get_participant(
+            self.poll_id, 'user_id')
 
     @inlineCallbacks
     def tearDown(self):
         yield self.poll_manager.stop()
+        yield self._persist_tearDown()
 
+    @inlineCallbacks
     def test_checks_skip(self):
         expected_question = 'What is your favorite colour?'
         valid_input = 'red'
@@ -163,7 +179,7 @@ class MultiLevelPollManagerTestCase(TestCase):
         self.assertEqual(question.valid_responses, ['red', 'green', 'blue'])
         self.poll.set_last_question(self.participant, question)
         self.assertEqual(question.copy, expected_question)
-        response = self.poll.submit_answer(self.participant,
+        response = yield self.poll.submit_answer(self.participant,
                                                     valid_input)
         self.assertEqual(None, response)
 
@@ -171,6 +187,7 @@ class MultiLevelPollManagerTestCase(TestCase):
         next_question = self.poll.get_next_question(self.participant)
         self.assertEqual(next_question.copy, next_question_copy)
 
+    @inlineCallbacks
     def test_checks_follow_up(self):
         expected_question = 'What is your favorite colour?'
         valid_input = 'green'
@@ -179,7 +196,7 @@ class MultiLevelPollManagerTestCase(TestCase):
         self.assertEqual(question.valid_responses, ['red', 'green', 'blue'])
         self.poll.set_last_question(self.participant, question)
         self.assertEqual(question.copy, expected_question)
-        response = self.poll.submit_answer(self.participant,
+        response = yield self.poll.submit_answer(self.participant,
                                                     valid_input)
         self.assertEqual(None, response)
 
@@ -187,7 +204,7 @@ class MultiLevelPollManagerTestCase(TestCase):
         next_question = self.poll.get_next_question(self.participant)
         self.poll.set_last_question(self.participant, next_question)
         self.assertEqual(next_question.copy, next_question_copy)
-        response = self.poll.submit_answer(self.participant, 'dark')
+        response = yield self.poll.submit_answer(self.participant, 'dark')
         self.assertEqual(None, response)
 
         next_question_copy = 'Orange, Yellow or Black?'

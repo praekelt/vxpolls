@@ -11,7 +11,7 @@ class CSVWidget(forms.Textarea):
 
 class CSVField(forms.Field):
 
-    widget = CSVWidget(attrs={'class': 'span1'})
+    widget = CSVWidget
 
     def to_python(self, value):
         "Normalize data to a list of strings."

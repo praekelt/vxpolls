@@ -258,7 +258,7 @@ class Poll(object):
 
         state = participant.labels
         if not self.case_sensitive:
-            state = dict((k.lower(), v.lower()) for k, v in state.items())
+            state = dict((k, v.lower()) for k, v in state.items())
 
         def equals(key, value):
             return unicode(state.get(key)) == unicode(value)

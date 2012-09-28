@@ -94,18 +94,6 @@ class PollApplication(ApplicationWorker):
                 yield self.end_session(participant, poll, message)
 
     @inlineCallbacks
-    def get_completed_response(self, participant, poll):
-        config = yield self.pm.get_config(poll.poll_id)
-        survey_completed_responses = enumerate(
-            config.get('survey_completed_responses', []))
-
-        for index, response in survey_completed_responses:
-            pq = PollQuestion(index, **response)
-            if poll.is_suitable_question(participant, pq):
-                returnValue(pq.copy)
-        returnValue(self.survey_completed_response)
-
-    @inlineCallbacks
     def end_session(self, participant, poll, message):
         next_question = poll.get_next_question(participant)
         config = yield self.pm.get_config(poll.poll_id)
@@ -115,7 +103,10 @@ class PollApplication(ApplicationWorker):
             participant.batch_completed()
             yield self.reply_to(message, response, continue_session=False)
         else:
-            response = yield self.get_completed_response(participant, poll)
+            default_response = config.get('survey_completed_response',
+                self.survey_completed_response)
+            response = yield self.pm.get_completed_response(participant, poll,
+                default_response)
             yield self.reply_to(message, response,
                 continue_session=False)
 

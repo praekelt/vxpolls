@@ -45,6 +45,7 @@ def formset(request, poll_id):
     pm = PollManager(redis, settings.VXPOLLS_PREFIX)
     poll_data = pm.get_config(poll_id)
     questions_data = poll_data.get('questions', [])
+    completed_response_data = poll_data.get('survey_completed_responses', [])
     if request.method == 'POST':
         # Set the poll_id
         post_data = request.POST.copy()
@@ -55,11 +56,16 @@ def formset(request, poll_id):
         # validate both, then merge the results into a single JSON hash
         # that is stored in Redis
         questions_form = forms.make_form_set(data=post_data)
+        completed_response_form = forms.make_completed_response_form_set(
+            data=post_data)
         poll_form = forms.PollForm(data=post_data)
-        if questions_form.is_valid() and poll_form.is_valid():
+        if (questions_form.is_valid() and poll_form.is_valid() and
+            completed_response_form.is_valid()):
             data = poll_form.cleaned_data.copy()
             data.update({
-                'questions': clear_empties(questions_form.cleaned_data)
+                'questions': clear_empties(questions_form.cleaned_data),
+                'survey_completed_responses': clear_empties(
+                    completed_response_form.cleaned_data),
             })
             pm.set(poll_id, data)
             return redirect(reverse('content:formset', kwargs={
@@ -68,7 +74,10 @@ def formset(request, poll_id):
     else:
         poll_form = forms.PollForm(initial=poll_data)
         questions_form = forms.make_form_set(initial=questions_data)
+        completed_response_form = forms.make_completed_response_form_set(
+            initial=completed_response_data)
     return render(request, 'formset.html', {
         'poll_form': poll_form,
         'questions_form': questions_form,
+        'completed_response_form': completed_response_form,
         })

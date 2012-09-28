@@ -20,9 +20,8 @@ class PollApplication(ApplicationWorker):
 
     def validate_config(self):
         self.questions = self.config.get('questions', [])
-        self.survey_completed_responses = (
-            self.config.get('survey_completed_responses', []) +
-            [{'copy': self.survey_completed_response}])
+        self.survey_completed_responses = self.config.get(
+            'survey_completed_responses', [])
         self.r_config = self.config.get('redis_manager', {})
         self.batch_size = self.config.get('batch_size', 5)
         self.dashboard_port = int(self.config.get('dashboard_port', 8000))
@@ -105,7 +104,6 @@ class PollApplication(ApplicationWorker):
             if poll.is_suitable_question(participant, pq):
                 returnValue(pq.copy)
         returnValue(self.survey_completed_response)
-
 
     @inlineCallbacks
     def end_session(self, participant, poll, message):

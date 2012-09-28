@@ -3,7 +3,7 @@
 import hashlib
 import json
 
-from twisted.internet.defer import inlineCallbacks, maybeDeferred
+from twisted.internet.defer import inlineCallbacks, maybeDeferred, returnValue
 
 from vumi.persist.txredis_manager import TxRedisManager
 from vumi.application.base import ApplicationWorker
@@ -95,6 +95,19 @@ class PollApplication(ApplicationWorker):
                 yield self.end_session(participant, poll, message)
 
     @inlineCallbacks
+    def get_completed_response(self, participant, poll):
+        config = yield self.pm.get_config(poll.poll_id)
+        survey_completed_responses = enumerate(
+            config.get('survey_completed_responses', []))
+
+        for index, response in survey_completed_responses:
+            pq = PollQuestion(index, **response)
+            if poll.is_suitable_question(participant, pq):
+                returnValue(pq.copy)
+        returnValue(self.survey_completed_response)
+
+
+    @inlineCallbacks
     def end_session(self, participant, poll, message):
         next_question = poll.get_next_question(participant)
         config = yield self.pm.get_config(poll.poll_id)
@@ -104,17 +117,9 @@ class PollApplication(ApplicationWorker):
             participant.batch_completed()
             yield self.reply_to(message, response, continue_session=False)
         else:
-            survey_completed_responses = enumerate(
-                config.get('survey_completed_responses',
-                    [{'copy': self.survey_completed_response}]))
-
-            for index, response in survey_completed_responses:
-                pq = PollQuestion(index, **response)
-                if poll.is_suitable_question(participant, pq):
-                    response = pq.copy
-                    yield self.reply_to(message, response,
-                        continue_session=False)
-                    break
+            response = yield self.get_completed_response(participant, poll)
+            yield self.reply_to(message, response,
+                continue_session=False)
 
             if poll.repeatable:
                 yield self.pm.archive(poll.poll_id, participant)

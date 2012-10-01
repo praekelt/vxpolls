@@ -127,14 +127,14 @@ class PollForm(forms.Form):
     include_labels = fields.CSVField(required=False,
         label='Responses to include from previous sessions')
     survey_completed_response = forms.CharField(
-            label='Closing copy at survey completion',
-            help_text='The copy that is sent at the end of the session.',
+            label='Default closing copy at survey completion',
+            help_text='The default copy that is sent at the end of the '
+                        'session if closing responses have been configured.',
             initial='Thanks! You have completed the survey',
             required=False, widget=forms.Textarea)
 
 
 class QuestionForm(forms.Form):
-
     copy = forms.CharField(required=False, widget=forms.Textarea)
     checks = fields.MultipleCheckFields(amount=3, choices=[
         ('', 'Please select:'),
@@ -150,6 +150,17 @@ class QuestionForm(forms.Form):
     valid_responses = fields.CSVField(required=False,
         label="Valid responses (comma separated)")
 
+class CompletedResponseForm(forms.Form):
+    copy = forms.CharField(required=False, widget=forms.Textarea)
+    checks = fields.MultipleCheckFields(amount=3, choices=[
+        ('', 'Please select:'),
+        ('equal', 'equals'),
+        ('not equal', 'does not equal'),
+        ('exists', 'exists'),
+        ('not exists', 'does not exist'),
+        ('greater', 'greater than'),
+        ('less', 'less than'),
+        ], label="Response should only be given if the stored value of:")
 
 class VxpollForm(forms.BaseForm):
 
@@ -247,7 +258,11 @@ def make_form(**kwargs):
     form_data.update(questions)
     return form_class(data=form_data, initial=config_data, **kwargs)
 
-
 def make_form_set(extra=1, **kwargs):
     QuestionFormset = formset_factory(QuestionForm, extra=extra)
-    return QuestionFormset(**kwargs)
+    return QuestionFormset(prefix='question', **kwargs)
+
+def make_completed_response_form_set(extra=1, **kwargs):
+    CompletedResponseFormset = formset_factory(CompletedResponseForm,
+        extra=extra)
+    return CompletedResponseFormset(prefix='completed_response', **kwargs)

@@ -186,6 +186,19 @@ class PollManager(object):
 
         returnValue(archives)
 
+    @Manager.calls_manager
+    def get_completed_response(self, participant, poll, default_response):
+        config = yield self.get_config(poll.poll_id)
+        possible_responses = (config.get('survey_completed_responses') or
+            [{'copy': default_response}])
+        survey_completed_responses = enumerate(possible_responses)
+
+        for index, response in survey_completed_responses:
+            pq = PollQuestion(index, **response)
+            if poll.is_suitable_question(participant, pq):
+                returnValue(pq.copy)
+        returnValue(self.survey_completed_response)
+
     def stop(self):
         return self.session_manager.stop(stop_redis=False)
 

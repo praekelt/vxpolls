@@ -3,12 +3,12 @@
 import hashlib
 import json
 
-from twisted.internet.defer import inlineCallbacks, maybeDeferred
+from twisted.internet.defer import inlineCallbacks, maybeDeferred, returnValue
 
 from vumi.persist.txredis_manager import TxRedisManager
 from vumi.application.base import ApplicationWorker
 
-from vxpolls.manager import PollManager
+from vxpolls.manager import PollManager, PollQuestion
 
 
 class PollApplication(ApplicationWorker):
@@ -20,6 +20,8 @@ class PollApplication(ApplicationWorker):
 
     def validate_config(self):
         self.questions = self.config.get('questions', [])
+        self.survey_completed_responses = self.config.get(
+            'survey_completed_responses', [])
         self.r_config = self.config.get('redis_manager', {})
         self.batch_size = self.config.get('batch_size', 5)
         self.dashboard_port = int(self.config.get('dashboard_port', 8000))
@@ -38,6 +40,7 @@ class PollApplication(ApplicationWorker):
         if not exists:
             yield self.pm.register(self.poll_id, {
                 'questions': self.questions,
+                'survey_completed_responses': self.survey_completed_responses,
                 'batch_size': self.batch_size,
             })
 
@@ -100,9 +103,13 @@ class PollApplication(ApplicationWorker):
             participant.batch_completed()
             yield self.reply_to(message, response, continue_session=False)
         else:
-            response = config.get('survey_completed_response',
-                                    self.survey_completed_response)
-            yield self.reply_to(message, response, continue_session=False)
+            default_response = config.get('survey_completed_response',
+                self.survey_completed_response)
+            response = yield self.pm.get_completed_response(participant, poll,
+                default_response)
+            yield self.reply_to(message, response,
+                continue_session=False)
+
             if poll.repeatable:
                 yield self.pm.archive(poll.poll_id, participant)
             participant.poll_completed()

@@ -123,6 +123,34 @@ class PollApplicationTestCase(BasePollApplicationTestCase):
         self.assertEvent(response, 'close')
 
     @inlineCallbacks
+    def test_end_of_session_with_checks(self):
+        # create the inbound message
+        yield self.app.stopWorker()
+
+        config = self.config.copy()
+        config['survey_completed_responses'] = [{
+            'copy': 'fruit is apple',
+            'checks': [['fruit', 'equal', 'apple']]
+        }, {
+            'copy': 'fruit is not apple',
+            'checks': [['fruit', 'not equal', 'apple']]
+        }]
+
+        self.app = yield self.get_application(config)
+
+        msg = self.mkmsg_in(content='apple')
+        # prime the participant
+        participant, poll = yield self.get_participant_and_poll(msg.user())
+        participant.has_unanswered_question = True
+        participant.set_last_question_index(2)
+        yield self.app.pm.save_participant(self.poll_id, participant)
+        # send to the app
+        yield self.dispatch(msg)
+        [response] = yield self.wait_for_dispatched_messages(1)
+        self.assertResponse(response, 'fruit is apple')
+        self.assertEvent(response, 'close')
+
+    @inlineCallbacks
     def test_resume_aborted_session(self):
         # create the inbound init message
         msg = self.mkmsg_in(content=None)

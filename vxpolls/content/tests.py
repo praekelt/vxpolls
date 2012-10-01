@@ -94,12 +94,15 @@ class VxpollFormTestCase(PersistenceMixin, TestCase):
         response = self.client.post(reverse('content:formset', kwargs={
             'poll_id': self.poll_id,
             }), {
-            'form-TOTAL_FORMS': 1,
-            'form-INITIAL_FORMS': 0,
-            'form-MAX_NUM_FORMS': '',
-            'form-0-copy': 'What is your favorite music?',
-            'form-0-label': 'favorite music',
-            'form-0-valid_responses': 'rock, jazz, techno',
+            'question-TOTAL_FORMS': 1,
+            'question-INITIAL_FORMS': 0,
+            'question-MAX_NUM_FORMS': '',
+            'question-0-copy': 'What is your favorite music?',
+            'question-0-label': 'favorite music',
+            'question-0-valid_responses': 'rock, jazz, techno',
+            'completed_response-TOTAL_FORMS': 0,
+            'completed_response-INITIAL_FORMS': 0,
+            'completed_response-MAX_NUM_FORMS': '',
         })
         uid = self.poll_manager.get_latest_uid(self.poll_id)
         poll = self.poll_manager.get(self.poll_id, uid)
@@ -117,23 +120,30 @@ class VxpollFormTestCase(PersistenceMixin, TestCase):
         response = self.client.post(reverse('content:formset', kwargs={
             'poll_id': self.poll_id,
             }), {
-            'form-TOTAL_FORMS': 3,
-            'form-INITIAL_FORMS': 0,
-            'form-MAX_NUM_FORMS': '',
-            'form-0-copy': 'What is your favorite music?',
-            'form-0-label': 'favorite music',
-            'form-0-valid_responses': 'rock, jazz, techno',
-            'form-1-copy': 'What is your favorite food?',
-            'form-1-label': 'favorite food',
-            'form-1-valid_responses': 'mexican, french, italian',
-            'form-2-copy': 'Which rock musician?',
-            'form-2-label': 'rock musician',
-            'form-2-checks_0_0': 'equal',
-            'form-2-checks_0_1': 'favorite music',
-            'form-2-checks_0_2': 'rock',
-            'form-2-checks_1_0': 'not equal',
-            'form-2-checks_1_1': 'favorite food',
-            'form-2-checks_1_2': 'mexican',
+            'question-TOTAL_FORMS': 3,
+            'question-INITIAL_FORMS': 0,
+            'question-MAX_NUM_FORMS': '',
+            'question-0-copy': 'What is your favorite music?',
+            'question-0-label': 'favorite music',
+            'question-0-valid_responses': 'rock, jazz, techno',
+            'question-1-copy': 'What is your favorite food?',
+            'question-1-label': 'favorite food',
+            'question-1-valid_responses': 'mexican, french, italian',
+            'question-2-copy': 'Which rock musician?',
+            'question-2-label': 'rock musician',
+            'question-2-checks_0_0': 'equal',
+            'question-2-checks_0_1': 'favorite music',
+            'question-2-checks_0_2': 'rock',
+            'question-2-checks_1_0': 'not equal',
+            'question-2-checks_1_1': 'favorite food',
+            'question-2-checks_1_2': 'mexican',
+            'completed_response-TOTAL_FORMS': 1,
+            'completed_response-INITIAL_FORMS': 0,
+            'completed_response-MAX_NUM_FORMS': '',
+            'completed_response-0-copy': 'ROCK!!',
+            'completed_response-0-checks_0_0': 'equal',
+            'completed_response-0-checks_0_1': 'favorite music',
+            'completed_response-0-checks_0_2': 'rock',
         })
         uid = self.poll_manager.get_latest_uid(self.poll_id)
         poll = self.poll_manager.get(self.poll_id, uid)
@@ -160,3 +170,9 @@ class VxpollFormTestCase(PersistenceMixin, TestCase):
         self.poll_manager.save_participant(self.poll_id, participant)
         question = poll.get_next_question(participant)
         self.assertEqual(question, None)
+
+        c_resp = self.poll_manager.get_completed_response(participant, poll,
+            'default response')
+        self.assertEqual(c_resp, 'ROCK!!')
+
+

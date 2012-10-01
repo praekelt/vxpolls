@@ -128,7 +128,8 @@ class PollForm(forms.Form):
         label='Responses to include from previous sessions')
     survey_completed_response = forms.CharField(
             label='Default closing copy at survey completion',
-            help_text='The default copy that is sent at the end of the session.',
+            help_text='The default copy that is sent at the end of the '
+                        'session if closing responses have been configured.',
             initial='Thanks! You have completed the survey',
             required=False, widget=forms.Textarea)
 

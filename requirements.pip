@@ -5,3 +5,4 @@ python-subunit
 junitxml
 pep8
 django-nose
+coverage

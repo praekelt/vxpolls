@@ -195,7 +195,7 @@ class PollManager(object):
         # to have a response if even whoever wrote the survey description
         # manages to create a situation where all other checks fail.
         possible_responses = config.get('survey_completed_responses', [])
-        possible_responses.extend([{'copy': default_response}])
+        possible_responses.append({'copy': default_response})
         survey_completed_responses = enumerate(possible_responses)
 
         for index, response in survey_completed_responses:

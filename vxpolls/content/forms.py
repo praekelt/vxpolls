@@ -43,6 +43,8 @@ def _roll_up_questions(questions):
     for idx, question in enumerate(questions):
         for key, value in _normalize_question(question).items():
             if key == 'checks':
+                if isinstance(value, list):
+                    value = {value[0][0]: {value[0][1]: value[0][2]}}
                 equal = value.get('equal', {})
                 if equal:
                     key, value = equal.items()[0]
@@ -207,10 +209,10 @@ def make_form_class(config_data, base_class):
     """
     keys = set([])
     for key in config_data.keys():
-        # check for CheckWidget, ends with 0 or 1 and should
+        # check for CheckWidget, ends with 0 or 1 or 2 and should
         # be collapsed into a single widget with multiple
         # values
-        if key.endswith('0') or key.endswith('1'):
+        if key.endswith('0') or key.endswith('1') or key.endswith('2'):
             keys.add(key.split('_', 1)[0])
         else:
             keys.add(key)

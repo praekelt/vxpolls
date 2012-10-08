@@ -9,7 +9,6 @@ from vxpolls.example import PollApplication
 
 class BasePollApplicationTestCase(ApplicationTestCase):
 
-    timeout = 1
     application_class = PollApplication
     poll_id = 'poll-id'
     default_questions = [{
@@ -130,10 +129,10 @@ class PollApplicationTestCase(BasePollApplicationTestCase):
         config = self.config.copy()
         config['survey_completed_responses'] = [{
             'copy': 'fruit is apple',
-            'checks': [['fruit', 'equal', 'apple']]
+            'checks': [['equal', 'fruit', 'apple']]
         }, {
             'copy': 'fruit is not apple',
-            'checks': [['fruit', 'not equal', 'apple']]
+            'checks': [['not equal', 'fruit', 'apple']]
         }]
 
         self.app = yield self.get_application(config)
@@ -148,6 +147,37 @@ class PollApplicationTestCase(BasePollApplicationTestCase):
         yield self.dispatch(msg)
         [response] = yield self.wait_for_dispatched_messages(1)
         self.assertResponse(response, 'fruit is apple')
+        self.assertEvent(response, 'close')
+
+    @inlineCallbacks
+    def test_end_of_session_with_checks_and_fallback(self):
+        # create the inbound message
+        yield self.app.stopWorker()
+
+        config = self.config.copy()
+        # These checks will never pass and so we should fallback to the
+        # default survey closing text.
+        config['survey_completed_responses'] = [{
+            'copy': 'fruit is always false',
+            'checks': [['equal', 'fruit', 'not a fruit']]
+        }, {
+            'copy': 'fruit is never true',
+            'checks': [['equal', 'fruit', 'also not a fruit']]
+        }]
+
+        yield self.app.pm.register(self.poll_id, config)
+        self.app = yield self.get_application(config)
+
+        msg = self.mkmsg_in(content='apple')
+        # prime the participant
+        participant, poll = yield self.get_participant_and_poll(msg.user())
+        participant.has_unanswered_question = True
+        participant.set_last_question_index(2)
+        yield self.app.pm.save_participant(self.poll_id, participant)
+        # send to the app
+        yield self.dispatch(msg)
+        [response] = yield self.wait_for_dispatched_messages(1)
+        self.assertResponse(response, 'You have completed the survey')
         self.assertEvent(response, 'close')
 
     @inlineCallbacks
@@ -330,7 +360,6 @@ class VxpollsRegressionsTestCase(ApplicationTestCase):
 
     application_class = PollApplication
     poll_id = 'poll-id'
-    timeout = 1
 
     opt_in_poll = yaml.safe_load("""
         case_sensitive: false

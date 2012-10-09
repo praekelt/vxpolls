@@ -189,8 +189,13 @@ class PollManager(object):
     @Manager.calls_manager
     def get_completed_response(self, participant, poll, default_response):
         config = yield self.get_config(poll.poll_id)
-        possible_responses = (config.get('survey_completed_responses') or
-            [{'copy': default_response}])
+        # Get the known survey completed responses (which might not exist)
+        # but always tag the default response on the end, since it doesn't
+        # have any checks it will always pass and so we're guaranteed
+        # to have a response if even whoever wrote the survey description
+        # manages to create a situation where all other checks fail.
+        possible_responses = config.get('survey_completed_responses', [])
+        possible_responses.append({'copy': default_response})
         survey_completed_responses = enumerate(possible_responses)
 
         for index, response in survey_completed_responses:

@@ -186,8 +186,7 @@ class PollManagerTestCase(PersistenceMixin, TestCase):
                 'valid_responses': ['response'],
             },
         ])
-        user_data = (yield self.poll_manager.export_user_data(poll,
-            include_timestamp=False))
+        user_data = (yield self.poll_manager.export_user_data(poll))
         for user_id, data in user_data:
             self.assertTrue('timestamp' in data)
             self.assertEqual(data['timestamp'], 'response')

@@ -234,6 +234,45 @@ class PollResultsTestCase(ApplicationTestCase):
         ]))
 
     @inlineCallbacks
+    def test_get_users_limit_question_results(self):
+        collection_id = 'unique-id'
+        user_ids = ['27761234567', '27761234568']
+        questions = ['one', 'two', 'three']
+
+        for user_id in user_ids:
+            with self.manager.defaults(collection_id, user_id) as m:
+                for question in questions:
+                    yield m.register_question(question)
+                    yield m.add_result(question, 'answer %s' % (question,))
+
+        users = yield self.manager.get_users(collection_id)
+        self.assertEqual(sorted(users, key=lambda t: t[0]), [
+            ('27761234567', {
+                'one': 'answer one',
+                'two': 'answer two',
+                'three': 'answer three',
+            }),
+            ('27761234568', {
+                'one': 'answer one',
+                'two': 'answer two',
+                'three': 'answer three',
+            }),
+        ])
+
+        limited_users = yield self.manager.get_users(collection_id,
+                                            questions=['one', 'two'])
+        self.assertEqual(sorted(limited_users, key=lambda t: t[0]), [
+            ('27761234567', {
+                'one': 'answer one',
+                'two': 'answer two',
+            }),
+            ('27761234568', {
+                'one': 'answer one',
+                'two': 'answer two',
+            }),
+        ])
+
+    @inlineCallbacks
     def test_get_results_as_csv(self):
         collection_id = 'unique-id'
         user_id = '27761234567'

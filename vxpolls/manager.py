@@ -217,10 +217,10 @@ class PollManager(object):
             [(user_id, user_data_dict), ...]
 
         :param bool include_timestamp:
-            If true it inserts a `timestamp` value for each bit of
-            user data. The timestamp reflects the participants `updated_at`
-            value. If `timestamp` already exists as a key in the user data
-            then it is left as is.
+            If true it inserts a `user_timestamp` key & timestamp value for
+            each dict with user data. The timestamp reflects the participants
+            `updated_at` value. If `user_timestamp` already exists as a key
+            in the user data then it is left as is.
         """
         questions = [q['label'] for q in poll.questions]
         users = yield poll.results_manager.get_users(poll.poll_id, questions)
@@ -229,7 +229,7 @@ class PollManager(object):
         for user_id, user_data in users:
             timestamp = yield self.get_participant_timestamp(poll.poll_id,
                                                                 user_id)
-            user_data.setdefault('timestamp', timestamp)
+            user_data.setdefault('user_timestamp', timestamp)
         returnValue(users)
 
     @Manager.calls_manager
@@ -243,7 +243,7 @@ class PollManager(object):
         sio = StringIO()
         field_names = ['user_id']
         if include_timestamp:
-            field_names.append('timestamp')
+            field_names.append('user_timestamp')
         field_names.extend([q['label'].encode('utf-8')
                                 for q in poll.questions])
         writer = csv.DictWriter(sio, fieldnames=field_names)

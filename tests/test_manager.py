@@ -161,7 +161,8 @@ class PollManagerTestCase(PersistenceMixin, TestCase):
         self.assertTrue(len(user_data), 3)
         for user_id, data in user_data:
             self.assertEqual(
-                set(['question-0', 'question-1', 'question-2', 'timestamp']),
+                set(['question-0', 'question-1',
+                        'question-2', 'user_timestamp']),
                 set(data.keys()))
 
     @inlineCallbacks
@@ -170,14 +171,14 @@ class PollManagerTestCase(PersistenceMixin, TestCase):
         user_data = (yield self.poll_manager.export_user_data(poll,
             include_timestamp=False))
         for user_id, data in user_data:
-            self.assertTrue('timestamp' not in data)
+            self.assertTrue('user_timestamp' not in data)
 
     @inlineCallbacks
     def test_export_user_data_respecting_existing_timestamp(self):
         poll = yield self.mkpoll_for_export(questions=[
             {
                 'copy': 'question 1',
-                'label': 'timestamp',
+                'label': 'user_timestamp',
                 'valid_responses': ['response'],
             },
             {
@@ -188,15 +189,15 @@ class PollManagerTestCase(PersistenceMixin, TestCase):
         ])
         user_data = (yield self.poll_manager.export_user_data(poll))
         for user_id, data in user_data:
-            self.assertTrue('timestamp' in data)
-            self.assertEqual(data['timestamp'], 'response')
+            self.assertTrue('user_timestamp' in data)
+            self.assertEqual(data['user_timestamp'], 'response')
 
     @inlineCallbacks
     def test_export_user_data_as_csv(self):
         poll = yield self.mkpoll_for_export()
         csv_data = (yield self.poll_manager.export_user_data_as_csv(poll))
         self.assertEqual(csv_data.split('\r\n')[0],
-            'user_id,timestamp,question-0,question-1,question-2')
+            'user_id,user_timestamp,question-0,question-1,question-2')
         self.assertTrue(csv_data.split('\r\n')[1].startswith(
             'user-1,%s' % (datetime.now().date(),)))
 

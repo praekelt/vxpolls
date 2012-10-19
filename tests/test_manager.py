@@ -1,7 +1,8 @@
 import random
+from datetime import datetime
 
 from twisted.trial.unittest import TestCase
-from twisted.internet.defer import inlineCallbacks
+from twisted.internet.defer import inlineCallbacks, returnValue
 
 from vumi.tests.utils import PersistenceMixin
 
@@ -29,13 +30,16 @@ class PollManagerTestCase(PersistenceMixin, TestCase):
         self.redis = yield self.get_redis_manager()
         self.poll_manager = PollManager(self.redis)
         self.poll_id = 'poll-id'
-        self.poll = yield self.poll_manager.register(self.poll_id, {
+        self.poll = yield self.mkpoll(self.poll_id, {
             'questions': self.default_questions
         })
         self.participant = yield self.poll_manager.get_participant(
             self.poll_id, 'user_id')
         self.key_prefix = "%s:poll_manager" % (
             self._persist_config['redis_manager']['key_prefix'],)
+
+    def mkpoll(self, poll_id, config):
+        return self.poll_manager.register(poll_id, config)
 
     @inlineCallbacks
     def tearDown(self):
@@ -75,23 +79,22 @@ class PollManagerTestCase(PersistenceMixin, TestCase):
         self.assertEqual(None, response)
 
     @inlineCallbacks
-    def test_iterating(self):
-        for index, question in enumerate(self.default_questions):
+    def complete_poll(self, poll, participant):
+        for index, question in enumerate(poll.questions):
             valid_input = random.choice(question['valid_responses'])
             next_question_copy = question['copy']
-            next_question = self.poll.get_next_question(
-                                                self.participant)
+            next_question = poll.get_next_question(participant)
             self.assertEqual(next_question.copy, next_question_copy)
-            last_question = self.poll.get_last_question(
-                                                self.participant)
-            self.poll.set_last_question(self.participant,
-                                                next_question)
-            yield self.poll.submit_answer(self.participant,
-                                                valid_input)
+            last_question = poll.get_last_question(participant)
+            poll.set_last_question(participant, next_question)
+            yield poll.submit_answer(participant, valid_input)
             if not index:
                 self.assertEqual(None, last_question)
-            elif index == len(self.default_questions):
+            elif index == len(poll.questions):
                 self.assertEqual(None, next_question)
+
+    def test_iterating(self):
+        return self.complete_poll(self.poll, self.participant)
 
     @inlineCallbacks
     def test_case_insensitivity(self):
@@ -127,6 +130,76 @@ class PollManagerTestCase(PersistenceMixin, TestCase):
         response = yield poll.submit_answer(participant, valid_input)
         # original question should be repeated
         self.assertEqual(expected_question, response)
+
+    @inlineCallbacks
+    def mkpoll_for_export(self, questions=None):
+        if questions is None:
+            questions = self.default_questions[:]
+            for index, question in enumerate(questions):
+                question['label'] = 'question-%s' % (index,)
+
+        poll = yield self.mkpoll('export-data-poll', {
+            'questions': questions,
+            })
+
+        def mkparticipant(user_id):
+            return self.poll_manager.get_participant(poll.poll_id, user_id)
+
+        participant1 = yield mkparticipant('user-1')
+        participant2 = yield mkparticipant('user-2')
+        participant3 = yield mkparticipant('user-3')
+
+        yield self.complete_poll(poll, participant1)
+        yield self.complete_poll(poll, participant2)
+        yield self.complete_poll(poll, participant3)
+        returnValue(poll)
+
+    @inlineCallbacks
+    def test_export_user_data(self):
+        poll = yield self.mkpoll_for_export()
+        user_data = (yield self.poll_manager.export_user_data(poll))
+        self.assertTrue(len(user_data), 3)
+        for user_id, data in user_data:
+            self.assertEqual(
+                set(['question-0', 'question-1', 'question-2', 'timestamp']),
+                set(data.keys()))
+
+    @inlineCallbacks
+    def test_export_user_data_without_timestamp(self):
+        poll = yield self.mkpoll_for_export()
+        user_data = (yield self.poll_manager.export_user_data(poll,
+            include_timestamp=False))
+        for user_id, data in user_data:
+            self.assertTrue('timestamp' not in data)
+
+    @inlineCallbacks
+    def test_export_user_data_respecting_existing_timestamp(self):
+        poll = yield self.mkpoll_for_export(questions=[
+            {
+                'copy': 'question 1',
+                'label': 'timestamp',
+                'valid_responses': ['response'],
+            },
+            {
+                'copy': 'question 2',
+                'label': 'some other field',
+                'valid_responses': ['response'],
+            },
+        ])
+        user_data = (yield self.poll_manager.export_user_data(poll,
+            include_timestamp=False))
+        for user_id, data in user_data:
+            self.assertTrue('timestamp' in data)
+            self.assertEqual(data['timestamp'], 'response')
+
+    @inlineCallbacks
+    def test_export_user_data_as_csv(self):
+        poll = yield self.mkpoll_for_export()
+        csv_data = (yield self.poll_manager.export_user_data_as_csv(poll))
+        self.assertEqual(csv_data.split('\r\n')[0],
+            'user_id,timestamp,question-0,question-1,question-2')
+        self.assertTrue(csv_data.split('\r\n')[1].startswith(
+            'user-1,%s' % (datetime.now().date(),)))
 
 
 class MultiLevelPollManagerTestCase(PersistenceMixin, TestCase):

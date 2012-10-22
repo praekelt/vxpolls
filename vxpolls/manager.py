@@ -2,6 +2,9 @@
 import time
 import json
 import hashlib
+import csv
+from datetime import datetime
+from StringIO import StringIO
 
 from twisted.internet.defer import returnValue
 
@@ -206,6 +209,56 @@ class PollManager(object):
 
     def stop(self):
         return self.session_manager.stop(stop_redis=False)
+
+    @Manager.calls_manager
+    def export_user_data(self, poll, include_timestamp=True):
+        """
+        Export the user data for a poll, returns
+            [(user_id, user_data_dict), ...]
+
+        :param bool include_timestamp:
+            If true it inserts a `user_timestamp` key & timestamp value for
+            each dict with user data. The timestamp reflects the participants
+            `updated_at` value. If `user_timestamp` already exists as a key
+            in the user data then it is left as is.
+        """
+        questions = [q['label'] for q in poll.questions]
+        users = yield poll.results_manager.get_users(poll.poll_id, questions)
+        if not include_timestamp:
+            returnValue(users)
+        for user_id, user_data in users:
+            timestamp = yield self.get_participant_timestamp(poll.poll_id,
+                                                                user_id)
+            user_data.setdefault('user_timestamp', timestamp)
+        returnValue(users)
+
+    @Manager.calls_manager
+    def export_user_data_as_csv(self, poll, include_timestamp=True):
+        """
+        See `export_user_data`
+
+        Returns the user data in UTF-8 encoded CSV format.
+        """
+        users = yield self.export_user_data(poll, include_timestamp)
+        sio = StringIO()
+        field_names = ['user_id']
+        if include_timestamp:
+            field_names.append('user_timestamp')
+        field_names.extend([q['label'].encode('utf-8')
+                                for q in poll.questions])
+        writer = csv.DictWriter(sio, fieldnames=field_names)
+        # write header row
+        writer.writerow(dict(zip(field_names, field_names)))
+        for user_id, user_data in users:
+            row = {'user_id': user_id}
+            row.update(user_data)
+            writer.writerow(row)
+        returnValue(sio.getvalue())
+
+    @Manager.calls_manager
+    def get_participant_timestamp(self, poll_id, user_id):
+        participant = yield self.get_participant(poll_id, user_id)
+        returnValue(datetime.fromtimestamp(participant.updated_at))
 
 
 class Poll(object):

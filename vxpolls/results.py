@@ -12,6 +12,7 @@ from vumi.persist.redis_base import Manager
 class ResultManagerException(Exception):
     pass
 
+
 class CollectionException(ResultManagerException):
     pass
 
@@ -170,19 +171,19 @@ class ResultManager(object):
             returnValue(dict(answers))
 
     @Manager.calls_manager
-    def get_users(self, collection_id):
+    def get_users(self, collection_id, questions=None):
         users_key = self.get_users_key(collection_id)
         user_ids = yield self.r_server.smembers(users_key)
         users = []
         for user_id in user_ids:
-            user = yield self.get_user(collection_id, user_id)
+            user = yield self.get_user(collection_id, user_id, questions)
             users.append((user_id, user))
         returnValue(users)
 
     @Manager.calls_manager
-    def get_user(self, collection_id, user_id):
+    def get_user(self, collection_id, user_id, questions=None):
         answers_key = self.get_user_answers_key(collection_id, user_id)
-        questions = yield self.get_questions(collection_id)
+        questions = questions or (yield self.get_questions(collection_id))
         user_results = []
         for question in questions:
             answer = yield self.r_server.hget(answers_key, question)

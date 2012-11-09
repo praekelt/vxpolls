@@ -3,6 +3,7 @@ import time
 import json
 import hashlib
 import csv
+import re
 from datetime import datetime
 from StringIO import StringIO
 
@@ -355,6 +356,10 @@ class Poll(object):
         def greater_equal(key, value):
             return state.get(key) >= unicode(value)
 
+        def regex_search(key, value):
+            return bool(re.search(unicode(value),
+                                  state.get(key) or u''))
+
         operations_dispatcher = {
             'equal': equals,
             'not equal': not_equals,
@@ -364,6 +369,7 @@ class Poll(object):
             'less or equal': less_equal,
             'greater': greater,
             'greater or equal': greater_equal,
+            'regular expression search': regex_search,
         }
 
         for operation, key, value in question.checks:

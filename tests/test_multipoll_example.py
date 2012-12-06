@@ -1523,3 +1523,53 @@ class ArchivingMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
         self.assertEqual(archived[-1].labels.get('TEST'), '1')
         # And confirm re-run is possible
         yield self.run_inputs(inputs_and_expected)
+
+
+class LiveMetricsMultiPollApplicationTestCase(
+                                RegisterMultiPollApplicationTestCase):
+    @inlineCallbacks
+    def setUp(self):
+        pig = self.application_class.poll_id_generator(self.poll_id_prefix)
+        self.default_questions_dict = {pig.next(): self.register_questions}
+
+        yield super(BaseMultiPollApplicationTestCase, self).setUp()
+        self.config = {
+            'poll_id_list': self.poll_id_list,
+            'poll_id_prefix': self.poll_id_prefix,
+            'questions_dict': self.default_questions_dict,
+            'transport_name': self.transport_name,
+            'batch_size': 9,
+        }
+        self.app = yield self.get_application(self.config)
+        self.app.current_date = date(2012, 5, 21)
+
+    @inlineCallbacks
+    def test_register_1_and_get_registered(self):
+        pig = self.app.poll_id_generator(self.poll_id_prefix)
+        poll_id = pig.next()
+        inputs_and_expected = [
+            ('Any input', self.default_questions_dict[poll_id][0]['copy']),
+            ('1', self.default_questions_dict[poll_id][1]['copy']),
+            ('7', self.default_questions_dict[poll_id][3]['copy']),
+            ('1', self.default_questions_dict[poll_id][4]['copy']),
+            ('Any input', self.app.registration_completed_response),
+            ]
+        yield self.run_inputs(inputs_and_expected)
+        # Check participant
+        participant = yield self.app.pm.get_participant(
+            self.poll_id_prefix[:-1], self.mkmsg_in(content='').user())
+        self.assertEqual(participant.labels.get('USER_STATUS'), '1')
+        self.assertEqual(participant.labels.get('REGISTRATION_DATE'),
+                '2012-05-21')
+        self.assertTrue(participant.opted_in)
+        follow_up_attempts = [
+            ('Any input', self.app.registration_completed_response),
+            ('Any input', self.app.registration_completed_response),
+            ('Any input', self.app.registration_completed_response),
+            ]
+        yield self.run_inputs(follow_up_attempts)
+
+        print yield self.app.pm.active_participants(
+                                    self.app.get_first_poll_id(
+                                        self.app.config['poll_id_prefix']))
+

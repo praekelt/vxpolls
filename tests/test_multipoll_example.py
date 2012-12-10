@@ -1572,11 +1572,7 @@ class LiveMetricsMultiPollApplicationTestCase(
             ]
         yield self.run_inputs(follow_up_attempts)
 
-        participants = yield self.app.pm.active_participants(
-                                    self.app.get_first_poll_id(
-                                        self.app.config['poll_id_prefix']))
-        print participants
-        for p in participants:
-            print p.__dict__
-            print p.labels.get('HIV_MESSAGES')
-
+        participants = yield self.app.get_all_participants(
+                                    self.app.config['poll_id_prefix'])
+        registered = yield self.app.get_all_registered_participants(
+                                    self.app.config['poll_id_prefix'])

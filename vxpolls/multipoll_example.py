@@ -83,7 +83,20 @@ class MultiPollApplication(PollApplication):
                                 poll_id_prefix, current_poll))
         return next_poll
 
-    #def get_registered_participants(self, poll_id_prefix):
+    @inlineCallbacks
+    def get_all_participants(self, poll_id_prefix):
+        participants = yield self.pm.active_participants(
+                                    self.get_first_poll_id(poll_id_prefix))
+        returnValue(participants)
+
+    @inlineCallbacks
+    def get_all_registered_participants(self, poll_id_prefix):
+        participants = yield self.get_all_participants(poll_id_prefix)
+        registered = []
+        for p in participants:
+            if p.labels.get('HIV_MESSAGES') is not None:
+                registered.append(p)
+        returnValue(registered)
 
     @classmethod
     def make_poll_prefix(cls, other_id):

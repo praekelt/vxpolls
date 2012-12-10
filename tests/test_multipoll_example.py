@@ -1576,3 +1576,23 @@ class LiveMetricsMultiPollApplicationTestCase(
                                     self.app.config['poll_id_prefix'])
         registered = yield self.app.get_all_registered_participants(
                                     self.app.config['poll_id_prefix'])
+        self.assertEqual(len(participants), 1)
+        self.assertEqual(len(registered), 1)
+
+    @inlineCallbacks
+    def test_register_0_and_get_registered(self):
+        pig = self.app.poll_id_generator(self.poll_id_prefix)
+        poll_id = pig.next()
+        inputs_and_expected = [
+            ('Any input', self.default_questions_dict[poll_id][0]['copy']),
+            ('1', self.default_questions_dict[poll_id][1]['copy']),
+            ('7', self.default_questions_dict[poll_id][3]['copy']),
+            ]
+        yield self.run_inputs(inputs_and_expected)
+
+        participants = yield self.app.get_all_participants(
+                                    self.app.config['poll_id_prefix'])
+        registered = yield self.app.get_all_registered_participants(
+                                    self.app.config['poll_id_prefix'])
+        self.assertEqual(len(participants), 1)
+        self.assertEqual(len(registered), 0)

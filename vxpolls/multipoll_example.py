@@ -83,6 +83,8 @@ class MultiPollApplication(PollApplication):
                                 poll_id_prefix, current_poll))
         return next_poll
 
+    #def get_registered_participants(self, poll_id_prefix):
+
     @classmethod
     def make_poll_prefix(cls, other_id):
         return "%s_" % other_id

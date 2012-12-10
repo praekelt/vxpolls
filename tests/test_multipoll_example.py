@@ -1543,6 +1543,9 @@ class LiveMetricsMultiPollApplicationTestCase(
         self.app = yield self.get_application(self.config)
         self.app.current_date = date(2012, 5, 21)
 
+    def test_register_1_archive_and_repeat(self):
+        pass
+
     @inlineCallbacks
     def test_register_1_and_get_registered(self):
         pig = self.app.poll_id_generator(self.poll_id_prefix)
@@ -1569,7 +1572,11 @@ class LiveMetricsMultiPollApplicationTestCase(
             ]
         yield self.run_inputs(follow_up_attempts)
 
-        print yield self.app.pm.active_participants(
+        participants = yield self.app.pm.active_participants(
                                     self.app.get_first_poll_id(
                                         self.app.config['poll_id_prefix']))
+        print participants
+        for p in participants:
+            print p.__dict__
+            print p.labels.get('HIV_MESSAGES')
 

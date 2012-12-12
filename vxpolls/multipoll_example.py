@@ -98,6 +98,16 @@ class MultiPollApplication(PollApplication):
                 registered.append(p)
         returnValue(registered)
 
+    @inlineCallbacks
+    def get_registered_count(self, poll_id_prefix):
+        registered = yield self.get_all_registered_participants(poll_id_prefix)
+        returnValue(len(registered))
+
+    @inlineCallbacks
+    def get_participant_count(self, poll_id_prefix):
+        participants = yield self.get_all_participants(poll_id_prefix)
+        returnValue(len(participants))
+
     @classmethod
     def make_poll_prefix(cls, other_id):
         return "%s_" % other_id

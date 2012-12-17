@@ -92,7 +92,8 @@ class ResultManager(object):
         answers_key = self.get_answers_key(collection_id, question)
         if possible_answers:
             for answer in possible_answers:
-                yield self.r_server.sadd(answers_key, answer)
+                if not (yield self.r_server.sismember(answers_key, answer)):
+                    yield self.r_server.sadd(answers_key, answer)
         answers = yield self.get_answers(collection_id, question)
         returnValue(answers)
 

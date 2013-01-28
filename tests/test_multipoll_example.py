@@ -10,6 +10,7 @@ from vxpolls.multipoll_example import MultiPollApplication
 
 class BaseMultiPollApplicationTestCase(ApplicationTestCase):
 
+    use_riak = True
     application_class = MultiPollApplication
 
     @inlineCallbacks
@@ -1343,7 +1344,7 @@ class RegisterMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
             'batch_size': 9,
             'is_demo': True,
         }
-        self.app = yield self.get_application(self.config)
+        self.app = yield self.get_application(self.mk_config(self.config))
         self.app.current_date = date(2012, 5, 21)
 
     @inlineCallbacks

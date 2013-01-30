@@ -163,11 +163,11 @@ class MultiPollApplication(PollApplication):
             yield self.init_session(participant, poll, message)
 
         # Now we re-examine the 'HIV_MESSAGES' label to see if it has changed,
-        # and if it has we fire a 'new_user' event with the HIV status
+        # and if it has we fire a 'new_registrant' event with the HIV status
         # We can use this both for user count and HIV/std ratio
         hiv_messages_after = participant.get_label('HIV_MESSAGES')
         if hiv_messages_before is None and hiv_messages_after is not None:
-            self.eventPublisher.send(Event('new_user',
+            self.eventPublisher.send(Event('new_registrant',
                                             user_id=participant.user_id,
                                             HIV_MESSAGES=hiv_messages_after))
 

@@ -17,7 +17,7 @@ class EventPublisher(object):
 
     @inlineCallbacks
     def send(self, event):
-        for subscriber in self.subscribers[event.event_type]:
+        for subscriber in self.subscribers.get(event.event_type, []):
             yield subscriber(event)
 
     def subcribe(self, event_type, handler):
@@ -28,10 +28,6 @@ class Event(object):
     def __init__(self, event_type, **data):
         self.event_type = event_type
         self.data = data
-
-
-def printEventHandler(event):
-    print "E>", event.__dict__
 
 
 class MultiPollApplication(PollApplication):
@@ -66,7 +62,6 @@ class MultiPollApplication(PollApplication):
     @inlineCallbacks
     def setup_application(self):
         self.eventPublisher = EventPublisher()
-        self.eventPublisher.subcribe("new_user", printEventHandler)
 
         self.redis = yield TxRedisManager.from_config(self.r_config)
         self.pm = PollManager(self.redis, self.poll_prefix)

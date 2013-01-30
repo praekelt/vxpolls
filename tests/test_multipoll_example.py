@@ -1144,6 +1144,12 @@ class LiveCustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
 
     @inlineCallbacks
     def test_partial_1_hiv_advancing_date(self):
+
+        test_events = []
+        def testEventHandler(event):
+            test_events.append(event)
+        self.app.eventPublisher.subcribe('new_poll', testEventHandler)
+
         self.app.current_date = date(2012, 5, 24)
         pig = self.app.poll_id_generator(self.poll_id_prefix)
         poll_id = pig.next()
@@ -1225,6 +1231,15 @@ class LiveCustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
         self.assertEqual(participant.labels.get('BIRTH_DATE'),
                 '2013-01-15')
         self.assertTrue(participant.opted_in)
+
+        # Check neW_poll events
+        self.assertEqual(4, len(test_events))
+        self.assertEqual(test_events[0].event_type, "new_poll")
+        self.assertEqual(test_events[0].data['user_id'], "+41791234567")
+        self.assertEqual(test_events[0].data['new_poll_id'], "CUSTOM_POLL_ID_2")
+        self.assertEqual(test_events[1].data['new_poll_id'], "CUSTOM_POLL_ID_3")
+        self.assertEqual(test_events[2].data['new_poll_id'], "CUSTOM_POLL_ID_5")
+        self.assertEqual(test_events[3].data['new_poll_id'], "CUSTOM_POLL_ID_7")
 
 
 class RegisterMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):

@@ -277,6 +277,10 @@ class MultiPollApplication(PollApplication):
             if new_poll_id != current_poll_id \
                 and new_poll_number > current_poll_number:
                 yield self.try_go_to_specific_poll(participant, new_poll_id)
+                # Fire an event to indicate the user is starting a new poll
+                self.eventPublisher.send(Event('new_poll',
+                                                user_id=participant.user_id,
+                                                new_poll_id=new_poll_id))
                 participant.has_unanswered_question = False
 
     def get_current_date(self):

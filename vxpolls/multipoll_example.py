@@ -10,6 +10,30 @@ from vxpolls.example import PollApplication
 from vxpolls import PollManager
 
 
+class EventPublisher(object):
+
+    def __init__(self):
+        self.subscribers = {}
+
+    @inlineCallbacks
+    def send(self, event):
+        for subscriber in self.subscribers[event.event_type]:
+            yield subscriber(event)
+
+    def subcribe(self, event_type, handler):
+        s = self.subscribers.setdefault(event_type, [])
+        s.append(handler)
+
+class Event(object):
+    def __init__(self, event_type, **data):
+        self.event_type = event_type
+        self.data = data
+
+
+def printEventHandler(event):
+    print "E>", event.__dict__
+
+
 class MultiPollApplication(PollApplication):
 
     registration_partial_response = 'You have done part of the registration '\
@@ -41,6 +65,9 @@ class MultiPollApplication(PollApplication):
 
     @inlineCallbacks
     def setup_application(self):
+        self.eventPublisher = EventPublisher()
+        self.eventPublisher.subcribe("new_user", printEventHandler)
+
         self.redis = yield TxRedisManager.from_config(self.r_config)
         self.pm = PollManager(self.redis, self.poll_prefix)
         for poll_id in self.poll_id_list:
@@ -116,6 +143,12 @@ class MultiPollApplication(PollApplication):
     def consume_user_message(self, message):
         scope_id = message['helper_metadata'].get('poll_id', '')
         participant = yield self.pm.get_participant(scope_id, message.user())
+
+        # We treat the decision to recieve HIV or Standard messages as
+        # the critical step in completing registration, so we want to
+        # capture the transition
+        hiv_messages_before = participant.get_label('HIV_MESSAGES')
+
         if participant:
             participant.scope_id = scope_id
         yield self.custom_poll_logic_function(participant)
@@ -133,6 +166,16 @@ class MultiPollApplication(PollApplication):
             yield self.on_message(participant, poll, message)
         else:
             yield self.init_session(participant, poll, message)
+
+        # Now we re-examine the 'HIV_MESSAGES' label to see if it has changed,
+        # and if it has we fire a 'new_user' event with the HIV status
+        # We can use this both for user count and HIV/std ratio
+        hiv_messages_after = participant.get_label('HIV_MESSAGES')
+        if hiv_messages_before is None and hiv_messages_after is not None:
+            self.eventPublisher.send(Event('new_user',
+                                            user_id=participant.user_id,
+                                            HIV_MESSAGES=hiv_messages_after))
+
 
     @inlineCallbacks
     def on_message(self, participant, poll, message):

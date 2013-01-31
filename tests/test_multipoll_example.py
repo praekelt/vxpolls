@@ -5,7 +5,7 @@ from twisted.internet.defer import inlineCallbacks, returnValue
 
 from vumi.application.tests.test_base import ApplicationTestCase
 
-from vxpolls.multipoll_example import MultiPollApplication
+from vxpolls.multipoll_example import MultiPollApplication, Event
 
 
 class BaseMultiPollApplicationTestCase(ApplicationTestCase):
@@ -332,7 +332,7 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
     def test_register_3(self):
 
         test_events = []
-        
+
         def test_event_handler(event):
             test_events.append(event)
         self.app.event_publisher.subcribe('new_user', test_event_handler)
@@ -351,20 +351,20 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
         # The events should have a new_user but not a new_registrant
         self.assertEqual(1, len(test_events))
         new_user_event = test_events[0]
-        self.assertEqual(new_user_event.event_type, "new_user")
-        self.assertEqual(new_user_event.data['user_id'], "+41791234567")
+        self.assertEqual(new_user_event, Event("new_user",
+                                                user_id="+41791234567"))
 
     @inlineCallbacks
     def test_register_1(self):
 
         test_events = []
-        
+
         def test_event_handler(event):
             test_events.append(event)
         self.app.event_publisher.subcribe('new_registrant', test_event_handler)
 
         inbound_events = []
-        
+
         def in_event_handler(event):
             inbound_events.append(event)
         self.app.event_publisher.subcribe('inbound_message', in_event_handler)
@@ -386,11 +386,10 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
             ]
         yield self.run_inputs(inputs_and_expected)
 
-        new_registrant_event = test_events[0]
-        self.assertEqual(new_registrant_event.event_type, "new_registrant")
-        self.assertEqual(new_registrant_event.data['user_id'], "+41791234567")
-        self.assertEqual(new_registrant_event.data['HIV_MESSAGES'], "1")
-
+        the_event = test_events[0]
+        self.assertEqual(the_event, Event("new_registrant",
+                                            user_id="+41791234567",
+                                            HIV_MESSAGES="1"))
         self.assertEqual(5, len(inbound_events))
         self.assertEqual(5, len(outbound_events))
 
@@ -1265,12 +1264,18 @@ class LiveCustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
 
         # Check neW_poll events
         self.assertEqual(4, len(test_events))
-        self.assertEqual(test_events[0].event_type, "new_poll")
-        self.assertEqual(test_events[0].data['user_id'], "+41791234567")
-        self.assertEqual(test_events[0].data['new_poll_id'], "CUSTOM_POLL_ID_2")
-        self.assertEqual(test_events[1].data['new_poll_id'], "CUSTOM_POLL_ID_3")
-        self.assertEqual(test_events[2].data['new_poll_id'], "CUSTOM_POLL_ID_5")
-        self.assertEqual(test_events[3].data['new_poll_id'], "CUSTOM_POLL_ID_7")
+        self.assertEqual(test_events[0], Event("new_poll",
+                                               user_id="+41791234567",
+                                               new_poll_id="CUSTOM_POLL_ID_2"))
+        self.assertEqual(test_events[1], Event("new_poll",
+                                               user_id="+41791234567",
+                                               new_poll_id="CUSTOM_POLL_ID_3"))
+        self.assertEqual(test_events[2], Event("new_poll",
+                                               user_id="+41791234567",
+                                               new_poll_id="CUSTOM_POLL_ID_5"))
+        self.assertEqual(test_events[3], Event("new_poll",
+                                               user_id="+41791234567",
+                                               new_poll_id="CUSTOM_POLL_ID_7"))
 
 
 class RegisterMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):

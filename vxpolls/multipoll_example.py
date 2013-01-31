@@ -30,6 +30,15 @@ class Event(object):
         self.event_type = event_type
         self.data = data
 
+    def __eq__(self, other):
+        is_eq = self.event_type == other.event_type
+        all_keys = set(self.data.keys()).union(set(other.data.keys()))
+        for k in all_keys:
+            is_eq = is_eq and self.data.get(k) == other.data.get(k)
+            if is_eq == False:
+                break
+        return is_eq
+
 
 class MultiPollApplication(PollApplication):
 

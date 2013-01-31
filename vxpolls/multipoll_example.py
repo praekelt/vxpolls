@@ -138,6 +138,10 @@ class MultiPollApplication(PollApplication):
     def consume_user_message(self, message):
         scope_id = message['helper_metadata'].get('poll_id', '')
         participant = yield self.pm.get_participant(scope_id, message.user())
+
+        # Even if this is a new user, the Participant record will be initialised
+        # on get, so the best check for a new_user is whether the 1st poll has an
+        # uid set yet
         current_uid = participant.polls[0].get('uid')
         if current_uid is None:
             # We have a new user

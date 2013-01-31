@@ -135,9 +135,22 @@ class MultiPollApplication(PollApplication):
         return "%s_" % other_id
 
     @inlineCallbacks
+    def reply_to(self, message, response, **kwargs):
+        self.eventPublisher.send(Event('outbound_message',
+                                        user_id=message.payload['from_addr']
+                                        ))
+        yield super(MultiPollApplication, self).reply_to(message,
+                                                        response,
+                                                        **kwargs)
+
+    @inlineCallbacks
     def consume_user_message(self, message):
         scope_id = message['helper_metadata'].get('poll_id', '')
         participant = yield self.pm.get_participant(scope_id, message.user())
+
+        self.eventPublisher.send(Event('inbound_message',
+                                        user_id=message.payload['from_addr']
+                                        ))
 
         # Even if this is a new user, the Participant record will be initialised
         # on get, so the best check for a new_user is whether the 1st poll has an

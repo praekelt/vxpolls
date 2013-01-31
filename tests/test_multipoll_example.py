@@ -330,6 +330,13 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
 
     @inlineCallbacks
     def test_register_3(self):
+
+        test_events = []
+        def testEventHandler(event):
+            test_events.append(event)
+        self.app.eventPublisher.subcribe('new_user', testEventHandler)
+        self.app.eventPublisher.subcribe('new_registrant', testEventHandler)
+
         pig = self.app.poll_id_generator(self.poll_id_prefix)
         poll_id = pig.next()
         inputs_and_expected = [
@@ -339,6 +346,12 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
             ('Any input', self.app.registration_completed_response),
             ]
         yield self.run_inputs(inputs_and_expected)
+
+        # The events should have a new_user but not a new_registrant
+        self.assertEqual(1, len(test_events))
+        new_user_event = test_events[0]
+        self.assertEqual(new_user_event.event_type, "new_user")
+        self.assertEqual(new_user_event.data['user_id'], "+41791234567")
 
     @inlineCallbacks
     def test_register_1(self):
@@ -359,10 +372,10 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
             ]
         yield self.run_inputs(inputs_and_expected)
 
-        new_user_event = test_events[0]
-        self.assertEqual(new_user_event.event_type, "new_registrant")
-        self.assertEqual(new_user_event.data['user_id'], "+41791234567")
-        self.assertEqual(new_user_event.data['HIV_MESSAGES'], "1")
+        new_registrant_event = test_events[0]
+        self.assertEqual(new_registrant_event.event_type, "new_registrant")
+        self.assertEqual(new_registrant_event.data['user_id'], "+41791234567")
+        self.assertEqual(new_registrant_event.data['HIV_MESSAGES'], "1")
 
     @inlineCallbacks
     def test_register_1_dont_know(self):

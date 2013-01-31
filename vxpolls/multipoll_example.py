@@ -138,6 +138,12 @@ class MultiPollApplication(PollApplication):
     def consume_user_message(self, message):
         scope_id = message['helper_metadata'].get('poll_id', '')
         participant = yield self.pm.get_participant(scope_id, message.user())
+        current_uid = participant.polls[0].get('uid')
+        if current_uid is None:
+            # We have a new user
+            self.eventPublisher.send(Event('new_user',
+                                            user_id=participant.user_id
+                                            ))
 
         # We treat the decision to recieve HIV or Standard messages as
         # the critical step in completing registration, so we want to

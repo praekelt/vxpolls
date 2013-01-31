@@ -332,6 +332,7 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
     def test_register_3(self):
 
         test_events = []
+        
         def testEventHandler(event):
             test_events.append(event)
         self.app.eventPublisher.subcribe('new_user', testEventHandler)
@@ -357,16 +358,19 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
     def test_register_1(self):
 
         test_events = []
+        
         def testEventHandler(event):
             test_events.append(event)
         self.app.eventPublisher.subcribe('new_registrant', testEventHandler)
 
         inbound_events = []
+        
         def inEventHandler(event):
             inbound_events.append(event)
         self.app.eventPublisher.subcribe('inbound_message', inEventHandler)
 
         outbound_events = []
+
         def outEventHandler(event):
             outbound_events.append(event)
         self.app.eventPublisher.subcribe('outbound_message', outEventHandler)
@@ -1172,6 +1176,7 @@ class LiveCustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
     def test_partial_1_hiv_advancing_date(self):
 
         test_events = []
+
         def testEventHandler(event):
             test_events.append(event)
         self.app.eventPublisher.subcribe('new_poll', testEventHandler)

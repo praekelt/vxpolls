@@ -24,6 +24,7 @@ class EventPublisher(object):
         s = self.subscribers.setdefault(event_type, [])
         s.append(handler)
 
+
 class Event(object):
     def __init__(self, event_type, **data):
         self.event_type = event_type
@@ -38,8 +39,8 @@ class MultiPollApplication(PollApplication):
     registration_completed_response = 'You have completed registration, '\
                                       'dial in again to start the surveys.'
     batch_completed_response = 'You have completed the first batch of '\
-                                'this weeks questions, dial in again to '\
-                                'complete the rest.'
+                               'this weeks questions, dial in again to '\
+                               'complete the rest.'
     survey_completed_response = 'You have completed this weeks questions '\
                                 'please dial in again next week for more.'
 
@@ -71,7 +72,7 @@ class MultiPollApplication(PollApplication):
                 yield self.pm.register(poll_id, {
                     'questions': self.questions_dict.get(poll_id, []),
                     'batch_size': self.batch_size,
-                    })
+                })
 
     @classmethod
     def poll_id_generator(cls, poll_id_prefix, last_id=None):
@@ -152,9 +153,9 @@ class MultiPollApplication(PollApplication):
                                         user_id=message.payload['from_addr']
                                         ))
 
-        # Even if this is a new user, the Participant record will be initialised
-        # on get, so the best check for a new_user is whether the 1st poll has an
-        # uid set yet
+        # Even if this is a new user, the Participant record will be
+        # initialised on get, so the best check for a new_user is whether
+        # the 1st poll has an uid set yet
         current_uid = participant.polls[0].get('uid')
         if current_uid is None:
             # We have a new user
@@ -193,7 +194,6 @@ class MultiPollApplication(PollApplication):
             self.eventPublisher.send(Event('new_registrant',
                                             user_id=participant.user_id,
                                             HIV_MESSAGES=hiv_messages_after))
-
 
     @inlineCallbacks
     def on_message(self, participant, poll, message):

@@ -62,7 +62,7 @@ class MultiPollApplication(PollApplication):
 
     @inlineCallbacks
     def setup_application(self):
-        self.eventPublisher = EventPublisher()
+        self.event_publisher = EventPublisher()
 
         self.redis = yield TxRedisManager.from_config(self.r_config)
         self.pm = PollManager(self.redis, self.poll_prefix)
@@ -137,7 +137,7 @@ class MultiPollApplication(PollApplication):
 
     @inlineCallbacks
     def reply_to(self, message, response, **kwargs):
-        self.eventPublisher.send(Event('outbound_message',
+        self.event_publisher.send(Event('outbound_message',
                                         user_id=message.payload['from_addr']
                                         ))
         yield super(MultiPollApplication, self).reply_to(message,
@@ -149,7 +149,7 @@ class MultiPollApplication(PollApplication):
         scope_id = message['helper_metadata'].get('poll_id', '')
         participant = yield self.pm.get_participant(scope_id, message.user())
 
-        self.eventPublisher.send(Event('inbound_message',
+        self.event_publisher.send(Event('inbound_message',
                                         user_id=message.payload['from_addr']
                                         ))
 
@@ -159,7 +159,7 @@ class MultiPollApplication(PollApplication):
         current_uid = participant.polls[0].get('uid')
         if current_uid is None:
             # We have a new user
-            self.eventPublisher.send(Event('new_user',
+            self.event_publisher.send(Event('new_user',
                                             user_id=participant.user_id
                                             ))
 
@@ -191,7 +191,7 @@ class MultiPollApplication(PollApplication):
         # We can use this both for user count and HIV/std ratio
         hiv_messages_after = participant.get_label('HIV_MESSAGES')
         if hiv_messages_before is None and hiv_messages_after is not None:
-            self.eventPublisher.send(Event('new_registrant',
+            self.event_publisher.send(Event('new_registrant',
                                             user_id=participant.user_id,
                                             HIV_MESSAGES=hiv_messages_after))
 
@@ -301,7 +301,7 @@ class MultiPollApplication(PollApplication):
                 and new_poll_number > current_poll_number:
                 yield self.try_go_to_specific_poll(participant, new_poll_id)
                 # Fire an event to indicate the user is starting a new poll
-                self.eventPublisher.send(Event('new_poll',
+                self.event_publisher.send(Event('new_poll',
                                                 user_id=participant.user_id,
                                                 new_poll_id=new_poll_id))
                 participant.has_unanswered_question = False

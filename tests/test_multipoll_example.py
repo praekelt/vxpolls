@@ -333,10 +333,10 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
 
         test_events = []
         
-        def testEventHandler(event):
+        def test_event_handler(event):
             test_events.append(event)
-        self.app.eventPublisher.subcribe('new_user', testEventHandler)
-        self.app.eventPublisher.subcribe('new_registrant', testEventHandler)
+        self.app.event_publisher.subcribe('new_user', test_event_handler)
+        self.app.event_publisher.subcribe('new_registrant', test_event_handler)
 
         pig = self.app.poll_id_generator(self.poll_id_prefix)
         poll_id = pig.next()
@@ -359,21 +359,21 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
 
         test_events = []
         
-        def testEventHandler(event):
+        def test_event_handler(event):
             test_events.append(event)
-        self.app.eventPublisher.subcribe('new_registrant', testEventHandler)
+        self.app.event_publisher.subcribe('new_registrant', test_event_handler)
 
         inbound_events = []
         
-        def inEventHandler(event):
+        def in_event_handler(event):
             inbound_events.append(event)
-        self.app.eventPublisher.subcribe('inbound_message', inEventHandler)
+        self.app.event_publisher.subcribe('inbound_message', in_event_handler)
 
         outbound_events = []
 
-        def outEventHandler(event):
+        def out_event_handler(event):
             outbound_events.append(event)
-        self.app.eventPublisher.subcribe('outbound_message', outEventHandler)
+        self.app.event_publisher.subcribe('outbound_message', out_event_handler)
 
         pig = self.app.poll_id_generator(self.poll_id_prefix)
         poll_id = pig.next()
@@ -1177,9 +1177,9 @@ class LiveCustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
 
         test_events = []
 
-        def testEventHandler(event):
+        def test_event_handler(event):
             test_events.append(event)
-        self.app.eventPublisher.subcribe('new_poll', testEventHandler)
+        self.app.event_publisher.subcribe('new_poll', test_event_handler)
 
         self.app.current_date = date(2012, 5, 24)
         pig = self.app.poll_id_generator(self.poll_id_prefix)

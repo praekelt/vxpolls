@@ -26,7 +26,8 @@ class EventPublisher(object):
 
 
 class Event(object):
-    def __init__(self, event_type, **data):
+    def __init__(self, message, event_type, **data):
+        self.message = message
         self.event_type = event_type
         self.data = data
 
@@ -146,7 +147,8 @@ class MultiPollApplication(PollApplication):
 
     @inlineCallbacks
     def reply_to(self, message, response, **kwargs):
-        self.event_publisher.send(Event('outbound_message',
+        self.event_publisher.send(Event(message,
+                                        'outbound_message',
                                         user_id=message.payload['from_addr']
                                         ))
         yield super(MultiPollApplication, self).reply_to(message,
@@ -158,7 +160,8 @@ class MultiPollApplication(PollApplication):
         scope_id = message['helper_metadata'].get('poll_id', '')
         participant = yield self.pm.get_participant(scope_id, message.user())
 
-        self.event_publisher.send(Event('inbound_message',
+        self.event_publisher.send(Event(message,
+                                        'inbound_message',
                                         user_id=message.payload['from_addr']
                                         ))
 
@@ -168,7 +171,8 @@ class MultiPollApplication(PollApplication):
         current_uid = participant.polls[0].get('uid')
         if current_uid is None:
             # We have a new user
-            self.event_publisher.send(Event('new_user',
+            self.event_publisher.send(Event(message,
+                                            'new_user',
                                             user_id=participant.user_id
                                             ))
 
@@ -179,7 +183,7 @@ class MultiPollApplication(PollApplication):
 
         if participant:
             participant.scope_id = scope_id
-        yield self.custom_poll_logic_function(participant)
+        yield self.custom_poll_logic_function(participant, message)
         poll_id = participant.get_poll_id()
         if poll_id is None:
             poll_id = self.get_first_poll_id(self.make_poll_prefix(
@@ -200,7 +204,8 @@ class MultiPollApplication(PollApplication):
         # We can use this both for user count and HIV/std ratio
         hiv_messages_after = participant.get_label('HIV_MESSAGES')
         if hiv_messages_before is None and hiv_messages_after is not None:
-            self.event_publisher.send(Event('new_registrant',
+            self.event_publisher.send(Event(message,
+                                            'new_registrant',
                                             user_id=participant.user_id,
                                             HIV_MESSAGES=hiv_messages_after))
 
@@ -285,7 +290,7 @@ class MultiPollApplication(PollApplication):
         returnValue(question.copy)
 
     @inlineCallbacks
-    def custom_poll_logic_function(self, participant):
+    def custom_poll_logic_function(self, participant, message):
         # Override custom logic to be called during consume_user_message here
 
         if participant.get_label('HIV_MESSAGES'):
@@ -310,7 +315,8 @@ class MultiPollApplication(PollApplication):
                 and new_poll_number > current_poll_number:
                 yield self.try_go_to_specific_poll(participant, new_poll_id)
                 # Fire an event to indicate the user is starting a new poll
-                self.event_publisher.send(Event('new_poll',
+                self.event_publisher.send(Event(message,
+                                                'new_poll',
                                                 user_id=participant.user_id,
                                                 new_poll_id=new_poll_id))
                 participant.has_unanswered_question = False

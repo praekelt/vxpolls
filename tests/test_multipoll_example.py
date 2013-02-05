@@ -351,7 +351,8 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
         # The events should have a new_user but not a new_registrant
         self.assertEqual(1, len(test_events))
         new_user_event = test_events[0]
-        self.assertEqual(new_user_event, Event("new_user",
+        self.assertEqual(new_user_event, Event(None,
+                                                "new_user",
                                                 user_id="+41791234567"))
 
     @inlineCallbacks
@@ -387,7 +388,8 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
         yield self.run_inputs(inputs_and_expected)
 
         the_event = test_events[0]
-        self.assertEqual(the_event, Event("new_registrant",
+        self.assertEqual(the_event, Event(None,
+                                            "new_registrant",
                                             user_id="+41791234567",
                                             HIV_MESSAGES="1"))
         self.assertEqual(5, len(inbound_events))
@@ -1264,16 +1266,20 @@ class LiveCustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
 
         # Check neW_poll events
         self.assertEqual(4, len(test_events))
-        self.assertEqual(test_events[0], Event("new_poll",
+        self.assertEqual(test_events[0], Event(None,
+                                               "new_poll",
                                                user_id="+41791234567",
                                                new_poll_id="CUSTOM_POLL_ID_2"))
-        self.assertEqual(test_events[1], Event("new_poll",
+        self.assertEqual(test_events[1], Event(None,
+                                               "new_poll",
                                                user_id="+41791234567",
                                                new_poll_id="CUSTOM_POLL_ID_3"))
-        self.assertEqual(test_events[2], Event("new_poll",
+        self.assertEqual(test_events[2], Event(None,
+                                               "new_poll",
                                                user_id="+41791234567",
                                                new_poll_id="CUSTOM_POLL_ID_5"))
-        self.assertEqual(test_events[3], Event("new_poll",
+        self.assertEqual(test_events[3], Event(None,
+                                               "new_poll",
                                                user_id="+41791234567",
                                                new_poll_id="CUSTOM_POLL_ID_7"))
 

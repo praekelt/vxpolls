@@ -20,7 +20,7 @@ class EventPublisher(object):
         for subscriber in self.subscribers.get(event.event_type, []):
             yield subscriber(event)
 
-    def subcribe(self, event_type, handler):
+    def subscribe(self, event_type, handler):
         s = self.subscribers.setdefault(event_type, [])
         s.append(handler)
 

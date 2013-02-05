@@ -335,8 +335,8 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
 
         def test_event_handler(event):
             test_events.append(event)
-        self.app.event_publisher.subcribe('new_user', test_event_handler)
-        self.app.event_publisher.subcribe('new_registrant', test_event_handler)
+        self.app.event_publisher.subscribe('new_user', test_event_handler)
+        self.app.event_publisher.subscribe('new_registrant', test_event_handler)
 
         pig = self.app.poll_id_generator(self.poll_id_prefix)
         poll_id = pig.next()
@@ -361,19 +361,19 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
 
         def test_event_handler(event):
             test_events.append(event)
-        self.app.event_publisher.subcribe('new_registrant', test_event_handler)
+        self.app.event_publisher.subscribe('new_registrant', test_event_handler)
 
         inbound_events = []
 
         def in_event_handler(event):
             inbound_events.append(event)
-        self.app.event_publisher.subcribe('inbound_message', in_event_handler)
+        self.app.event_publisher.subscribe('inbound_message', in_event_handler)
 
         outbound_events = []
 
         def out_event_handler(event):
             outbound_events.append(event)
-        self.app.event_publisher.subcribe('outbound_message', out_event_handler)
+        self.app.event_publisher.subscribe('outbound_message', out_event_handler)
 
         pig = self.app.poll_id_generator(self.poll_id_prefix)
         poll_id = pig.next()
@@ -1178,7 +1178,7 @@ class LiveCustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
 
         def test_event_handler(event):
             test_events.append(event)
-        self.app.event_publisher.subcribe('new_poll', test_event_handler)
+        self.app.event_publisher.subscribe('new_poll', test_event_handler)
 
         self.app.current_date = date(2012, 5, 24)
         pig = self.app.poll_id_generator(self.poll_id_prefix)

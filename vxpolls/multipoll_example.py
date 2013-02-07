@@ -125,16 +125,21 @@ class MultiPollApplication(PollApplication):
     @inlineCallbacks
     def get_all_registered_participants(self, poll_id_prefix):
         participants = yield self.get_all_participants(poll_id_prefix)
-        registered = []
-        for p in participants:
-            if p.labels.get('HIV_MESSAGES') is not None:
-                registered.append(p)
+        registered = [p for p in participants if self.is_registered(p)]
         returnValue(registered)
 
     @inlineCallbacks
     def get_registered_count(self, poll_id_prefix):
         registered = yield self.get_all_registered_participants(poll_id_prefix)
         returnValue(len(registered))
+
+    def is_registered(self, participant):
+        """Return True if a participant is registered. False otherwise.
+
+        Sub-classes should override this method. By default participants
+        are always considered unregistered.
+        """
+        return False
 
     @inlineCallbacks
     def get_participant_count(self, poll_id_prefix):
@@ -176,10 +181,8 @@ class MultiPollApplication(PollApplication):
                                             user_id=participant.user_id
                                             ))
 
-        # We treat the decision to recieve HIV or Standard messages as
-        # the critical step in completing registration, so we want to
-        # capture the transition
-        hiv_messages_before = participant.get_label('HIV_MESSAGES')
+        # Check whether participant is registered at the start
+        is_registered_before = self.is_registered(participant)
 
         if participant:
             participant.scope_id = scope_id
@@ -199,15 +202,13 @@ class MultiPollApplication(PollApplication):
         else:
             yield self.init_session(participant, poll, message)
 
-        # Now we re-examine the 'HIV_MESSAGES' label to see if it has changed,
-        # and if it has we fire a 'new_registrant' event with the HIV status
-        # We can use this both for user count and HIV/std ratio
-        hiv_messages_after = participant.get_label('HIV_MESSAGES')
-        if hiv_messages_before is None and hiv_messages_after is not None:
+        # Now we re-examine is_registered() to see if it has changed,
+        # and if it has we fire a 'new_registrant' event if needed.
+        is_registered_after = self.is_registered(participant)
+        if not is_registered_before and is_registered_after:
             self.event_publisher.send(Event(message,
                                             'new_registrant',
-                                            user_id=participant.user_id,
-                                            HIV_MESSAGES=hiv_messages_after))
+                                            user_id=participant.user_id))
 
     @inlineCallbacks
     def on_message(self, participant, poll, message):
@@ -293,9 +294,8 @@ class MultiPollApplication(PollApplication):
     def custom_poll_logic_function(self, participant, message):
         # Override custom logic to be called during consume_user_message here
 
-        if participant.get_label('HIV_MESSAGES'):
-            # we assume participants who get as far as selecting whether
-            # they want HIV messages or not, are opting in
+        if self.is_registered(participant):
+            # we assume participants who are registered are opted_in
             participant.opted_in = 'True'
 
         current_poll_id = participant.get_poll_id()

@@ -8,10 +8,16 @@ from vumi.application.tests.test_base import ApplicationTestCase
 from vxpolls.multipoll_example import MultiPollApplication, Event
 
 
+class MultiPollTestApplication(MultiPollApplication):
+
+    def is_registered(self, participant):
+        return participant.get_label('HIV_MESSAGES') is not None
+
+
 class BaseMultiPollApplicationTestCase(ApplicationTestCase):
 
     use_riak = True
-    application_class = MultiPollApplication
+    application_class = MultiPollTestApplication
 
     @inlineCallbacks
     def setUp(self):
@@ -48,7 +54,7 @@ class BaseMultiPollApplicationTestCase(ApplicationTestCase):
         self.assertEqual(response['session_event'], event)
 
 
-class CustomMultiPollApplication(MultiPollApplication):
+class CustomMultiPollApplication(MultiPollTestApplication):
 
     registration_partial_response = 'You have done part of the registration '\
                                     'process, dail in again to complete '\
@@ -390,8 +396,7 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
         the_event = test_events[0]
         self.assertEqual(the_event, Event(None,
                                             "new_registrant",
-                                            user_id="+41791234567",
-                                            HIV_MESSAGES="1"))
+                                            user_id="+41791234567"))
         self.assertEqual(5, len(inbound_events))
         self.assertEqual(5, len(outbound_events))
 

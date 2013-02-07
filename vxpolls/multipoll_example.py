@@ -26,10 +26,14 @@ class EventPublisher(object):
 
 
 class Event(object):
-    def __init__(self, message, event_type, **data):
-        self.message = message
+    def __init__(self, event_type, **data):
         self.event_type = event_type
         self.data = data
+
+    def __getattr__(self, name):
+        if name not in self.data:
+            raise AttributeError("Event has no attribute %r" % (name,))
+        return self.data[name]
 
     def __eq__(self, other):
         if not isinstance(other, Event):
@@ -149,10 +153,8 @@ class MultiPollApplication(PollApplication):
 
     @inlineCallbacks
     def reply_to(self, message, response, **kwargs):
-        self.event_publisher.send(Event(message,
-                                        'outbound_message',
-                                        user_id=message.payload['from_addr']
-                                        ))
+        self.event_publisher.send(Event('outbound_message',
+                                        message=message))
         yield super(MultiPollApplication, self).reply_to(message,
                                                         response,
                                                         **kwargs)
@@ -162,10 +164,8 @@ class MultiPollApplication(PollApplication):
         scope_id = message['helper_metadata'].get('poll_id', '')
         participant = yield self.pm.get_participant(scope_id, message.user())
 
-        self.event_publisher.send(Event(message,
-                                        'inbound_message',
-                                        user_id=message.payload['from_addr']
-                                        ))
+        self.event_publisher.send(Event('inbound_message',
+                                        message=message))
 
         # Even if this is a new user, the Participant record will be
         # initialised on get, so the best check for a new_user is whether
@@ -173,10 +173,9 @@ class MultiPollApplication(PollApplication):
         current_uid = participant.polls[0].get('uid')
         if current_uid is None:
             # We have a new user
-            self.event_publisher.send(Event(message,
-                                            'new_user',
-                                            user_id=participant.user_id
-                                            ))
+            self.event_publisher.send(Event('new_user',
+                                            message=message,
+                                            participant=participant))
 
         # Check whether participant is registered at the start
         is_registered_before = self.is_registered(participant)
@@ -203,9 +202,9 @@ class MultiPollApplication(PollApplication):
         # and if it has we fire a 'new_registrant' event if needed.
         is_registered_after = self.is_registered(participant)
         if not is_registered_before and is_registered_after:
-            self.event_publisher.send(Event(message,
-                                            'new_registrant',
-                                            user_id=participant.user_id))
+            self.event_publisher.send(Event('new_registrant',
+                                            message=message,
+                                            participant=participant))
 
     @inlineCallbacks
     def on_message(self, participant, poll, message):
@@ -312,9 +311,9 @@ class MultiPollApplication(PollApplication):
                 and new_poll_number > current_poll_number:
                 yield self.try_go_to_specific_poll(participant, new_poll_id)
                 # Fire an event to indicate the user is starting a new poll
-                self.event_publisher.send(Event(message,
-                                                'new_poll',
-                                                user_id=participant.user_id,
+                self.event_publisher.send(Event('new_poll',
+                                                message=message,
+                                                participant=participant,
                                                 new_poll_id=new_poll_id))
                 participant.has_unanswered_question = False
 

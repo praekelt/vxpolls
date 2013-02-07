@@ -356,10 +356,10 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
 
         # The events should have a new_user but not a new_registrant
         self.assertEqual(1, len(test_events))
-        new_user_event = test_events[0]
-        self.assertEqual(new_user_event, Event(None,
-                                                "new_user",
-                                                user_id="+41791234567"))
+        for ev in test_events:
+            self.assertEqual(ev.event_type, "new_user")
+            self.assertEqual(ev.message['from_addr'], "+41791234567")
+            self.assertEqual(ev.participant.user_id,  "+41791234567")
 
     @inlineCallbacks
     def test_register_1(self):
@@ -393,10 +393,11 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
             ]
         yield self.run_inputs(inputs_and_expected)
 
-        the_event = test_events[0]
-        self.assertEqual(the_event, Event(None,
-                                            "new_registrant",
-                                            user_id="+41791234567"))
+        ev = test_events[0]
+        self.assertEqual(ev.event_type, "new_registrant")
+        self.assertEqual(ev.message['from_addr'], "+41791234567")
+        self.assertEqual(ev.participant.user_id,  "+41791234567")
+
         self.assertEqual(5, len(inbound_events))
         self.assertEqual(5, len(outbound_events))
 
@@ -1271,22 +1272,10 @@ class LiveCustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
 
         # Check neW_poll events
         self.assertEqual(4, len(test_events))
-        self.assertEqual(test_events[0], Event(None,
-                                               "new_poll",
-                                               user_id="+41791234567",
-                                               new_poll_id="CUSTOM_POLL_ID_2"))
-        self.assertEqual(test_events[1], Event(None,
-                                               "new_poll",
-                                               user_id="+41791234567",
-                                               new_poll_id="CUSTOM_POLL_ID_3"))
-        self.assertEqual(test_events[2], Event(None,
-                                               "new_poll",
-                                               user_id="+41791234567",
-                                               new_poll_id="CUSTOM_POLL_ID_5"))
-        self.assertEqual(test_events[3], Event(None,
-                                               "new_poll",
-                                               user_id="+41791234567",
-                                               new_poll_id="CUSTOM_POLL_ID_7"))
+        for ev, poll_id in zip(test_events, [2, 3, 5, 7]):
+            self.assertEqual(ev.event_type, "new_poll")
+            self.assertEqual(ev.new_poll_id, "CUSTOM_POLL_ID_%d" % poll_id)
+            self.assertTrue(ev.message['from_addr'], "+41791234567")
 
 
 class RegisterMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):

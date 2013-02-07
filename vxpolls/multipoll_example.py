@@ -10,6 +10,38 @@ from vxpolls.example import PollApplication
 from vxpolls import PollManager
 
 
+class EventPublisher(object):
+
+    def __init__(self):
+        self.subscribers = {}
+
+    @inlineCallbacks
+    def send(self, event):
+        for subscriber in self.subscribers.get(event.event_type, []):
+            yield subscriber(event)
+
+    def subscribe(self, event_type, handler):
+        s = self.subscribers.setdefault(event_type, [])
+        s.append(handler)
+
+
+class Event(object):
+    def __init__(self, event_type, **data):
+        self.event_type = event_type
+        self.data = data
+
+    def __getattr__(self, name):
+        if name not in self.data:
+            raise AttributeError("Event has no attribute %r" % (name,))
+        return self.data[name]
+
+    def __eq__(self, other):
+        if not isinstance(other, Event):
+            return False
+        return (self.event_type == other.event_type and
+                self.data == other.data)
+
+
 class MultiPollApplication(PollApplication):
 
     registration_partial_response = 'You have done part of the registration '\
@@ -18,8 +50,8 @@ class MultiPollApplication(PollApplication):
     registration_completed_response = 'You have completed registration, '\
                                       'dial in again to start the surveys.'
     batch_completed_response = 'You have completed the first batch of '\
-                                'this weeks questions, dial in again to '\
-                                'complete the rest.'
+                               'this weeks questions, dial in again to '\
+                               'complete the rest.'
     survey_completed_response = 'You have completed this weeks questions '\
                                 'please dial in again next week for more.'
 
@@ -41,6 +73,8 @@ class MultiPollApplication(PollApplication):
 
     @inlineCallbacks
     def setup_application(self):
+        self.event_publisher = EventPublisher()
+
         self.redis = yield TxRedisManager.from_config(self.r_config)
         self.pm = PollManager(self.redis, self.poll_prefix)
         for poll_id in self.poll_id_list:
@@ -49,7 +83,7 @@ class MultiPollApplication(PollApplication):
                 yield self.pm.register(poll_id, {
                     'questions': self.questions_dict.get(poll_id, []),
                     'batch_size': self.batch_size,
-                    })
+                })
 
     @classmethod
     def poll_id_generator(cls, poll_id_prefix, last_id=None):
@@ -83,17 +117,72 @@ class MultiPollApplication(PollApplication):
                                 poll_id_prefix, current_poll))
         return next_poll
 
+    @inlineCallbacks
+    def get_all_participants(self, poll_id_prefix):
+        participants = yield self.pm.active_participants(
+                                    self.get_first_poll_id(poll_id_prefix))
+        returnValue(participants)
+
+    @inlineCallbacks
+    def get_all_registered_participants(self, poll_id_prefix):
+        participants = yield self.get_all_participants(poll_id_prefix)
+        registered = [p for p in participants if self.is_registered(p)]
+        returnValue(registered)
+
+    @inlineCallbacks
+    def get_registered_count(self, poll_id_prefix):
+        registered = yield self.get_all_registered_participants(poll_id_prefix)
+        returnValue(len(registered))
+
+    def is_registered(self, participant):
+        """Return True if a participant is registered. False otherwise.
+
+        Sub-classes should override this method. By default participants
+        are always considered unregistered.
+        """
+        return False
+
+    @inlineCallbacks
+    def get_participant_count(self, poll_id_prefix):
+        participants = yield self.get_all_participants(poll_id_prefix)
+        returnValue(len(participants))
+
     @classmethod
     def make_poll_prefix(cls, other_id):
         return "%s_" % other_id
 
     @inlineCallbacks
+    def reply_to(self, message, response, **kwargs):
+        self.event_publisher.send(Event('outbound_message',
+                                        message=message))
+        yield super(MultiPollApplication, self).reply_to(message,
+                                                        response,
+                                                        **kwargs)
+
+    @inlineCallbacks
     def consume_user_message(self, message):
         scope_id = message['helper_metadata'].get('poll_id', '')
         participant = yield self.pm.get_participant(scope_id, message.user())
+
+        self.event_publisher.send(Event('inbound_message',
+                                        message=message))
+
+        # Even if this is a new user, the Participant record will be
+        # initialised on get, so the best check for a new_user is whether
+        # the 1st poll has an uid set yet
+        current_uid = participant.polls[0].get('uid')
+        if current_uid is None:
+            # We have a new user
+            self.event_publisher.send(Event('new_user',
+                                            message=message,
+                                            participant=participant))
+
+        # Check whether participant is registered at the start
+        is_registered_before = self.is_registered(participant)
+
         if participant:
             participant.scope_id = scope_id
-        yield self.custom_poll_logic_function(participant)
+        yield self.custom_poll_logic_function(participant, message)
         poll_id = participant.get_poll_id()
         if poll_id is None:
             poll_id = self.get_first_poll_id(self.make_poll_prefix(
@@ -108,6 +197,14 @@ class MultiPollApplication(PollApplication):
             yield self.on_message(participant, poll, message)
         else:
             yield self.init_session(participant, poll, message)
+
+        # Now we re-examine is_registered() to see if it has changed,
+        # and if it has we fire a 'new_registrant' event if needed.
+        is_registered_after = self.is_registered(participant)
+        if not is_registered_before and is_registered_after:
+            self.event_publisher.send(Event('new_registrant',
+                                            message=message,
+                                            participant=participant))
 
     @inlineCallbacks
     def on_message(self, participant, poll, message):
@@ -190,12 +287,11 @@ class MultiPollApplication(PollApplication):
         returnValue(question.copy)
 
     @inlineCallbacks
-    def custom_poll_logic_function(self, participant):
+    def custom_poll_logic_function(self, participant, message):
         # Override custom logic to be called during consume_user_message here
 
-        if participant.get_label('HIV_MESSAGES'):
-            # we assume participants who get as far as selecting whether
-            # they want HIV messages or not, are opting in
+        if self.is_registered(participant):
+            # we assume participants who are registered are opted_in
             participant.opted_in = 'True'
 
         current_poll_id = participant.get_poll_id()
@@ -214,6 +310,11 @@ class MultiPollApplication(PollApplication):
             if new_poll_id != current_poll_id \
                 and new_poll_number > current_poll_number:
                 yield self.try_go_to_specific_poll(participant, new_poll_id)
+                # Fire an event to indicate the user is starting a new poll
+                self.event_publisher.send(Event('new_poll',
+                                                message=message,
+                                                participant=participant,
+                                                new_poll_id=new_poll_id))
                 participant.has_unanswered_question = False
 
     def get_current_date(self):

@@ -5,13 +5,19 @@ from twisted.internet.defer import inlineCallbacks, returnValue
 
 from vumi.application.tests.test_base import ApplicationTestCase
 
-from vxpolls.multipoll_example import MultiPollApplication
+from vxpolls.multipoll_example import MultiPollApplication, Event
+
+
+class MultiPollTestApplication(MultiPollApplication):
+
+    def is_registered(self, participant):
+        return participant.get_label('HIV_MESSAGES') is not None
 
 
 class BaseMultiPollApplicationTestCase(ApplicationTestCase):
 
     use_riak = True
-    application_class = MultiPollApplication
+    application_class = MultiPollTestApplication
 
     @inlineCallbacks
     def setUp(self):
@@ -48,7 +54,7 @@ class BaseMultiPollApplicationTestCase(ApplicationTestCase):
         self.assertEqual(response['session_event'], event)
 
 
-class CustomMultiPollApplication(MultiPollApplication):
+class CustomMultiPollApplication(MultiPollTestApplication):
 
     registration_partial_response = 'You have done part of the registration '\
                                     'process, dail in again to complete '\
@@ -330,6 +336,14 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
 
     @inlineCallbacks
     def test_register_3(self):
+
+        test_events = []
+
+        def test_event_handler(event):
+            test_events.append(event)
+        self.app.event_publisher.subscribe('new_user', test_event_handler)
+        self.app.event_publisher.subscribe('new_registrant', test_event_handler)
+
         pig = self.app.poll_id_generator(self.poll_id_prefix)
         poll_id = pig.next()
         inputs_and_expected = [
@@ -340,8 +354,34 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
             ]
         yield self.run_inputs(inputs_and_expected)
 
+        # The events should have a new_user but not a new_registrant
+        self.assertEqual(1, len(test_events))
+        for ev in test_events:
+            self.assertEqual(ev.event_type, "new_user")
+            self.assertEqual(ev.message['from_addr'], "+41791234567")
+            self.assertEqual(ev.participant.user_id,  "+41791234567")
+
     @inlineCallbacks
     def test_register_1(self):
+
+        test_events = []
+
+        def test_event_handler(event):
+            test_events.append(event)
+        self.app.event_publisher.subscribe('new_registrant', test_event_handler)
+
+        inbound_events = []
+
+        def in_event_handler(event):
+            inbound_events.append(event)
+        self.app.event_publisher.subscribe('inbound_message', in_event_handler)
+
+        outbound_events = []
+
+        def out_event_handler(event):
+            outbound_events.append(event)
+        self.app.event_publisher.subscribe('outbound_message', out_event_handler)
+
         pig = self.app.poll_id_generator(self.poll_id_prefix)
         poll_id = pig.next()
         inputs_and_expected = [
@@ -352,6 +392,14 @@ class CustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
             ('Any input', self.app.registration_completed_response),
             ]
         yield self.run_inputs(inputs_and_expected)
+
+        ev = test_events[0]
+        self.assertEqual(ev.event_type, "new_registrant")
+        self.assertEqual(ev.message['from_addr'], "+41791234567")
+        self.assertEqual(ev.participant.user_id,  "+41791234567")
+
+        self.assertEqual(5, len(inbound_events))
+        self.assertEqual(5, len(outbound_events))
 
     @inlineCallbacks
     def test_register_1_dont_know(self):
@@ -1133,6 +1181,13 @@ class LiveCustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
 
     @inlineCallbacks
     def test_partial_1_hiv_advancing_date(self):
+
+        test_events = []
+
+        def test_event_handler(event):
+            test_events.append(event)
+        self.app.event_publisher.subscribe('new_poll', test_event_handler)
+
         self.app.current_date = date(2012, 5, 24)
         pig = self.app.poll_id_generator(self.poll_id_prefix)
         poll_id = pig.next()
@@ -1214,6 +1269,13 @@ class LiveCustomMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
         self.assertEqual(participant.labels.get('BIRTH_DATE'),
                 '2013-01-15')
         self.assertTrue(participant.opted_in)
+
+        # Check neW_poll events
+        self.assertEqual(4, len(test_events))
+        for ev, poll_id in zip(test_events, [2, 3, 5, 7]):
+            self.assertEqual(ev.event_type, "new_poll")
+            self.assertEqual(ev.new_poll_id, "CUSTOM_POLL_ID_%d" % poll_id)
+            self.assertTrue(ev.message['from_addr'], "+41791234567")
 
 
 class RegisterMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
@@ -1524,3 +1586,90 @@ class ArchivingMultiPollApplicationTestCase(BaseMultiPollApplicationTestCase):
         self.assertEqual(archived[-1].labels.get('TEST'), '1')
         # And confirm re-run is possible
         yield self.run_inputs(inputs_and_expected)
+
+
+class LiveMetricsMultiPollApplicationTestCase(
+                                RegisterMultiPollApplicationTestCase):
+    @inlineCallbacks
+    def setUp(self):
+        pig = self.application_class.poll_id_generator(self.poll_id_prefix)
+        self.default_questions_dict = {pig.next(): self.register_questions}
+
+        yield super(BaseMultiPollApplicationTestCase, self).setUp()
+        self.config = {
+            'poll_id_list': self.poll_id_list,
+            'poll_id_prefix': self.poll_id_prefix,
+            'questions_dict': self.default_questions_dict,
+            'transport_name': self.transport_name,
+            'batch_size': 9,
+        }
+        self.app = yield self.get_application(self.config)
+        self.app.current_date = date(2012, 5, 21)
+
+    def test_register_1_archive_and_repeat(self):
+        pass
+
+    @inlineCallbacks
+    def test_register_1_and_get_registered(self):
+        pig = self.app.poll_id_generator(self.poll_id_prefix)
+        poll_id = pig.next()
+        inputs_and_expected = [
+            ('Any input', self.default_questions_dict[poll_id][0]['copy']),
+            ('1', self.default_questions_dict[poll_id][1]['copy']),
+            ('7', self.default_questions_dict[poll_id][3]['copy']),
+            ('1', self.default_questions_dict[poll_id][4]['copy']),
+            ('Any input', self.app.registration_completed_response),
+            ]
+        yield self.run_inputs(inputs_and_expected)
+        # Check participant
+        participant = yield self.app.pm.get_participant(
+            self.poll_id_prefix[:-1], self.mkmsg_in(content='').user())
+        self.assertEqual(participant.labels.get('USER_STATUS'), '1')
+        self.assertEqual(participant.labels.get('REGISTRATION_DATE'),
+                '2012-05-21')
+        self.assertTrue(participant.opted_in)
+        follow_up_attempts = [
+            ('Any input', self.app.registration_completed_response),
+            ('Any input', self.app.registration_completed_response),
+            ('Any input', self.app.registration_completed_response),
+            ]
+        yield self.run_inputs(follow_up_attempts)
+
+        participants = yield self.app.get_all_participants(
+                                    self.app.config['poll_id_prefix'])
+        registered = yield self.app.get_all_registered_participants(
+                                    self.app.config['poll_id_prefix'])
+        self.assertEqual(len(participants), 1)
+        self.assertEqual(len(registered), 1)
+
+        p_count = yield self.app.get_participant_count(
+                                    self.app.config['poll_id_prefix'])
+        self.assertEqual(p_count, 1)
+        r_count = yield self.app.get_registered_count(
+                                    self.app.config['poll_id_prefix'])
+        self.assertEqual(r_count, 1)
+
+    @inlineCallbacks
+    def test_register_0_and_get_registered(self):
+        pig = self.app.poll_id_generator(self.poll_id_prefix)
+        poll_id = pig.next()
+        inputs_and_expected = [
+            ('Any input', self.default_questions_dict[poll_id][0]['copy']),
+            ('1', self.default_questions_dict[poll_id][1]['copy']),
+            ('7', self.default_questions_dict[poll_id][3]['copy']),
+            ]
+        yield self.run_inputs(inputs_and_expected)
+
+        participants = yield self.app.get_all_participants(
+                                    self.app.config['poll_id_prefix'])
+        registered = yield self.app.get_all_registered_participants(
+                                    self.app.config['poll_id_prefix'])
+        self.assertEqual(len(participants), 1)
+        self.assertEqual(len(registered), 0)
+
+        p_count = yield self.app.get_participant_count(
+                                    self.app.config['poll_id_prefix'])
+        self.assertEqual(p_count, 1)
+        r_count = yield self.app.get_registered_count(
+                                    self.app.config['poll_id_prefix'])
+        self.assertEqual(r_count, 0)

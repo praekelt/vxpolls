@@ -130,7 +130,7 @@ class PollParticipant(object):
         self.polls = typed(session_data,
             'polls', deserialize, default=[])
         self.labels = typed(session_data,
-            'labels', deserialize, default=[])
+            'labels', deserialize, default={})
         self.force_archive = typed(session_data,
             'force_archive', lambda v: v == 'True')
 

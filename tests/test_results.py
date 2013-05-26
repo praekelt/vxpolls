@@ -322,8 +322,7 @@ class PollResultsTestCase(ApplicationTestCase):
         user_id = '27761234567'
         question = u'Hi, welcome to the Star Menu test system. We’d ' \
                    u'like you to answer a few questions for us. Please ' \
-                   u'tell us your first name. Enter it now. is an ' \
-                   u'unknown question.'
+                   u'tell us your first name.'
 
         with self.manager.defaults(collection_id, user_id) as m:
             yield m.register_question(question)

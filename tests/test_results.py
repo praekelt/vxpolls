@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 from twisted.internet.defer import inlineCallbacks
 
 from vumi.application.tests.test_base import ApplicationTestCase
@@ -313,3 +315,20 @@ class PollResultsTestCase(ApplicationTestCase):
             "27761234567,%s" % (utf8_str,),
             ""
             ]))
+
+    @inlineCallbacks
+    def test_unicode_questions(self):
+        collection_id = 'unique-id'
+        user_id = '27761234567'
+        question = u'Hi, welcome to the Star Menu test system. We’d ' \
+                   u'like you to answer a few questions for us. Please ' \
+                   u'tell us your first name. Enter it now. is an ' \
+                   u'unknown question.'
+
+        with self.manager.defaults(collection_id, user_id) as m:
+            yield m.register_question(question)
+
+        # This would've blown up before
+        yield m.add_result(question, 'foo')
+        [stored_question] = yield m.get_questions()
+        self.assertEqual(stored_question, question)

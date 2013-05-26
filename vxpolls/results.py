@@ -66,13 +66,17 @@ class ResultManager(object):
         collection_key = self.r_key(self.collections_prefix)
         return self.r_server.smembers(collection_key)
 
+    @Manager.calls_manager
     def get_questions(self, collection_id):
         questions_key = self.get_questions_key(collection_id)
-        return self.r_server.smembers(questions_key)
+        questions = yield self.r_server.smembers(questions_key)
+        returnValue(set([q.decode('utf-8') for q in questions]))
 
+    @Manager.calls_manager
     def get_answers(self, collection_id, question):
         answers_key = self.get_answers_key(collection_id, question)
-        return self.r_server.smembers(answers_key)
+        answers = yield self.r_server.smembers(answers_key)
+        returnValue(set([q.decode('utf-8') for q in answers]))
 
     @Manager.calls_manager
     def register_question(self, collection_id, question,
@@ -115,8 +119,8 @@ class ResultManager(object):
 
         questions = yield self.get_questions(collection_id)
         if question not in questions:
-            raise ResultManagerException('%s is an unknown question.' % (
-                                question,))
+            raise ResultManagerException(
+                '%s is an unknown question.' % (question.encode('utf-8'),))
 
         users_key = self.get_users_key(collection_id)
         yield self.r_server.sadd(users_key, user_id)
@@ -256,4 +260,3 @@ class ContextResultManager(object):
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         return False
-

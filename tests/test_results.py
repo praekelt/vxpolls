@@ -320,6 +320,8 @@ class PollResultsTestCase(ApplicationTestCase):
     def test_unicode_questions(self):
         collection_id = 'unique-id'
         user_id = '27761234567'
+        # NOTE: copy taken from a failing production scenario, please not the
+        #       "curly quote" in `We'd`.
         question = u'Hi, welcome to the Star Menu test system. We’d ' \
                    u'like you to answer a few questions for us. Please ' \
                    u'tell us your first name.'

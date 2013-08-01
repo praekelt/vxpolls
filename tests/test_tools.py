@@ -146,7 +146,7 @@ class ParticipantExportTestCase(PersistenceMixin, TestCase):
         exported_string = self.exporter.stdout.getvalue()
         exported_data = dict(yaml.safe_load(exported_string))
         # check we have all known users
-        self.assertEqual(exported_data.keys(), ['user-1', 'user-2'])
+        self.assertEqual(sorted(exported_data.keys()), ['user-1', 'user-2'])
         # check we have all known answers
         self.assertEqual(exported_data['user-1']['the-question'], 'one')
         self.assertEqual(exported_data['user-2']['the-question'], 'two')

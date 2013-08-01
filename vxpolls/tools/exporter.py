@@ -105,7 +105,7 @@ if __name__ == '__main__':
 
     exporter_map = {
         'export-poll': PollExporter,
-        'export-participants': None,
+        'export-participants': ParticipantExporter,
     }
 
     exporter_class = exporter_map.get(options.subCommand)

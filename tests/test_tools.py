@@ -187,3 +187,30 @@ class ParticipantExportTestCase(PersistenceMixin, TestCase):
         self.assertEqual(
             set(data.keys()),
             set(['foo', 'bar', 'baz', 'the-question', 'user_timestamp']))
+
+    def test_export_for_a_single_user(self):
+        p1 = self.manager.get_participant(self.poll_id, 'user-1')
+        question = self.poll.get_next_question(p1)
+        self.poll.set_last_question(p1, question)
+        self.poll.submit_answer(p1, 'one')
+
+        p2 = self.manager.get_participant(self.poll_id, 'user-2')
+        question = self.poll.get_next_question(p2)
+        self.poll.set_last_question(p2, question)
+        self.poll.submit_answer(p2, 'two')
+
+        self.exporter.export(FakeOptions(
+            options={'poll-id': self.poll_id},
+            subOptions={
+                'extra-labels': 'foo, bar, baz',
+                'user-id': 'user-1',
+            }))
+
+        exported_string = self.exporter.stdout.getvalue()
+        exported_data = dict(yaml.safe_load(exported_string))
+
+        self.assertEqual(exported_data.keys(), ['user-1'])
+        data = exported_data['user-1']
+        self.assertEqual(
+            set(data.keys()),
+            set(['foo', 'bar', 'baz', 'the-question', 'user_timestamp']))

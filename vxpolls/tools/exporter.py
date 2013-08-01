@@ -49,7 +49,12 @@ class ParticipantExporter(VxpollExporter):
         labels_raw = options.subOptions.get('extra-labels', '').split(',')
         labels = filter(None, [label.strip() for label in labels_raw])
         questions = [q['label'] for q in poll.questions]
-        users = poll.results_manager.get_users(poll.poll_id, questions)
+        single_user_id = options.subOptions['user-id']
+        if single_user_id:
+            users = [(single_user_id, poll.results_manager.get_user(
+                      poll.poll_id, single_user_id, questions))]
+        else:
+            users = poll.results_manager.get_users(poll.poll_id, questions)
         for user_id, user_data in users:
             timestamp = self.pm.get_participant_timestamp(poll.poll_id,
                                                           user_id)
@@ -68,6 +73,7 @@ class ExportParticipantOptions(usage.Options):
 
     optParameters = [
         ['extra-labels', 'l', None, 'Any extra labels to extract'],
+        ['user-id', None, None, 'Extract only for a single user'],
     ]
 
 

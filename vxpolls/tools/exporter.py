@@ -46,15 +46,17 @@ class ParticipantExporter(VxpollExporter):
     def export(self, options):
         poll_id = options['poll-id']
         poll = self.pm.get(poll_id)
-        labels = options.subOptions.get('extra-labels', '').split(',')
-        questions = filter(None, [label.strip() for label in labels])
-        questions.extend([q['label'] for q in poll.questions])
-        users = poll.results_manager.get_users(poll.poll_id,
-                                               sorted(set(questions)))
+        labels_raw = options.subOptions.get('extra-labels', '').split(',')
+        labels = filter(None, [label.strip() for label in labels_raw])
+        questions = [q['label'] for q in poll.questions]
+        users = poll.results_manager.get_users(poll.poll_id, questions)
         for user_id, user_data in users:
             timestamp = self.pm.get_participant_timestamp(poll.poll_id,
                                                           user_id)
             user_data.setdefault('user_timestamp', timestamp.isoformat())
+            for label in labels:
+                participant = self.pm.get_participant(poll_id, user_id)
+                user_data[label] = participant.get_label(label)
         self.serializer(users, self.stdout)
 
 

@@ -11,7 +11,7 @@ from vxpolls.tools.importer import PollImporter
 from vxpolls.manager import PollManager
 
 
-class ExportTestCase(PersistenceMixin, TestCase):
+class PollExportTestCase(PersistenceMixin, TestCase):
 
     @inlineCallbacks
     def setUp(self):
@@ -21,7 +21,7 @@ class ExportTestCase(PersistenceMixin, TestCase):
             'vxpolls': {
                 'prefix': self.poll_prefix,
             },
-        }))
+        }), yaml.safe_dump)
         self.exporter.stdout = StringIO()
         self.manager = PollManager(self.exporter.r_server, self.poll_prefix)
 
@@ -50,7 +50,7 @@ class ExportTestCase(PersistenceMixin, TestCase):
         self.assertEqual(exported_string, yaml.safe_dump(config))
 
 
-class ImportTestCase(PersistenceMixin, TestCase):
+class PollImportTestCase(PersistenceMixin, TestCase):
 
     @inlineCallbacks
     def setUp(self):
@@ -86,10 +86,14 @@ class ImportTestCase(PersistenceMixin, TestCase):
     def test_error_when_poll_exists(self):
         self.importer.import_config('poll-id-1', self.config)
         self.assertRaises(ValueError, self.importer.import_config,
-            'poll-id-1', self.config)
+                          'poll-id-1', self.config)
 
     def test_force_import_when_poll_exists(self):
         self.importer.import_config('poll-id-1', self.config, force=True)
         self.assertRaises(ValueError, self.importer.import_config,
-            'poll-id-1', self.config)
+                          'poll-id-1', self.config)
         self.assertEqual(self.manager.polls(), set(['poll-id-1']))
+
+
+class ParticipantExportTestCase(PersistenceMixin, TestCase):
+    pass

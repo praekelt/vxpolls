@@ -42,8 +42,13 @@ class PollExporter(VxpollExporter):
 class ParticipantExporter(VxpollExporter):
 
     def export(self, poll_id):
-        pass
-
+        poll = self.pm.get(poll_id)
+        questions = [q['label'] for q in poll.questions]
+        users = poll.results_manager.get_users(poll.poll_id, questions)
+        for user_id, user_data in users:
+            timestamp = self.pm.get_participant_timestamp(poll.poll_id, user_id)
+            user_data.setdefault('user_timestamp', timestamp.isoformat())
+        self.serializer(users, self.stdout)
 
 
 class ExportPollOptions(usage.Options):

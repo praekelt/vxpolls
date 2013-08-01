@@ -1,5 +1,4 @@
 import yaml
-import time
 import iso8601
 from StringIO import StringIO
 
@@ -11,7 +10,6 @@ from vumi.tests.utils import PersistenceMixin
 from vxpolls.tools.exporter import PollExporter, ParticipantExporter
 from vxpolls.tools.importer import PollImporter
 from vxpolls.manager import PollManager
-from vxpolls.participant import PollParticipant
 
 
 class PollExportTestCase(PersistenceMixin, TestCase):

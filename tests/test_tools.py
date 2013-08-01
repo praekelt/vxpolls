@@ -12,6 +12,16 @@ from vxpolls.tools.importer import PollImporter
 from vxpolls.manager import PollManager
 
 
+class FakeOptions(object):
+
+    def __init__(self, options, subOptions=None):
+        self.options = options
+        self.subOptions = subOptions
+
+    def __getitem__(self, key):
+        return self.options.get(key)
+
+
 class PollExportTestCase(PersistenceMixin, TestCase):
 
     @inlineCallbacks
@@ -46,7 +56,7 @@ class PollExportTestCase(PersistenceMixin, TestCase):
             'transport_name': 'vxpolls_transport'
         }
         self.create_poll('poll-id-1', config)
-        self.exporter.export('poll-id-1')
+        self.exporter.export(FakeOptions({'poll-id': 'poll-id-1'}))
         exported_string = self.exporter.stdout.getvalue()
         self.assertEqual(exported_string, yaml.safe_dump(config))
 
@@ -142,7 +152,11 @@ class ParticipantExportTestCase(PersistenceMixin, TestCase):
 
         self.poll.submit_answer(p1, 'one')
         self.poll.submit_answer(p2, 'two')
-        self.exporter.export(self.poll_id)
+
+        self.exporter.export(FakeOptions(
+            options={'poll-id': self.poll_id},
+            subOptions={}))
+
         exported_string = self.exporter.stdout.getvalue()
         exported_data = dict(yaml.safe_load(exported_string))
         # check we have all known users
@@ -155,3 +169,21 @@ class ParticipantExportTestCase(PersistenceMixin, TestCase):
             iso8601.parse_date(exported_data['user-1']['user_timestamp']))
         self.assertTrue(
             iso8601.parse_date(exported_data['user-2']['user_timestamp']))
+
+    def test_export_with_extra_labels(self):
+        p1 = self.manager.get_participant(self.poll_id, 'user-1')
+        question = self.poll.get_next_question(p1)
+        self.poll.set_last_question(p1, question)
+        self.poll.submit_answer(p1, 'one')
+
+        self.exporter.export(FakeOptions(
+            options={'poll-id': self.poll_id},
+            subOptions={'extra-labels': 'foo, bar, baz'}))
+
+        exported_string = self.exporter.stdout.getvalue()
+        exported_data = dict(yaml.safe_load(exported_string))
+
+        data = exported_data['user-1']
+        self.assertEqual(
+            set(data.keys()),
+            set(['foo', 'bar', 'baz', 'the-question', 'user_timestamp']))

@@ -33,7 +33,8 @@ class PollExporter(VxpollExporter):
         config = self.pm.get_config(poll_id, uid)
         return config
 
-    def export(self, poll_id):
+    def export(self, options):
+        poll_id = options['poll-id']
         if poll_id not in self.pm.polls():
             raise ValueError('Poll does not exist')
         config = self.get_poll_config(poll_id)
@@ -42,10 +43,14 @@ class PollExporter(VxpollExporter):
 
 class ParticipantExporter(VxpollExporter):
 
-    def export(self, poll_id):
+    def export(self, options):
+        poll_id = options['poll-id']
         poll = self.pm.get(poll_id)
-        questions = [q['label'] for q in poll.questions]
-        users = poll.results_manager.get_users(poll.poll_id, questions)
+        labels = options.subOptions.get('extra-labels', '').split(',')
+        questions = filter(None, [label.strip() for label in labels])
+        questions.extend([q['label'] for q in poll.questions])
+        users = poll.results_manager.get_users(poll.poll_id,
+                                               sorted(set(questions)))
         for user_id, user_data in users:
             timestamp = self.pm.get_participant_timestamp(poll.poll_id,
                                                           user_id)
@@ -58,7 +63,10 @@ class ExportPollOptions(usage.Options):
 
 
 class ExportParticipantOptions(usage.Options):
-    pass
+
+    optParameters = [
+        ['extra-labels', 'l', None, 'Any extra labels to extract'],
+    ]
 
 
 class Options(usage.Options):
@@ -114,4 +122,4 @@ if __name__ == '__main__':
             'Please provide a subcommand')
 
     exporter = exporter_class(config, serializer)
-    exporter.export(options['poll-id'])
+    exporter.export(options)

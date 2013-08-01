@@ -49,7 +49,7 @@ class ParticipantExporter(VxpollExporter):
         labels_raw = options.subOptions.get('extra-labels', '').split(',')
         labels = filter(None, [label.strip() for label in labels_raw])
         questions = [q['label'] for q in poll.questions]
-        single_user_id = options.subOptions['user-id']
+        single_user_id = options.subOptions.get('user-id')
         if single_user_id:
             users = [(single_user_id, poll.results_manager.get_user(
                       poll.poll_id, single_user_id, questions))]
@@ -60,7 +60,8 @@ class ParticipantExporter(VxpollExporter):
                                                           user_id)
             user_data.setdefault('user_timestamp', timestamp.isoformat())
             for label in labels:
-                participant = self.pm.get_participant(poll_id, user_id)
+                label_key = options.subOptions['extra-labels-key']
+                participant = self.pm.get_participant(label_key, user_id)
                 user_data[label] = participant.get_label(label)
         self.serializer(users, self.stdout)
 
@@ -72,9 +73,15 @@ class ExportPollOptions(usage.Options):
 class ExportParticipantOptions(usage.Options):
 
     optParameters = [
+        ['extra-labels-key', None, None, 'Used for grabbing label values'],
         ['extra-labels', 'l', None, 'Any extra labels to extract'],
         ['user-id', None, None, 'Extract only for a single user'],
     ]
+
+    def postOptions(self):
+        if self['extra-labels'] and not self['extra-labels-key']:
+            raise usage.UsageError(
+                'Please provide --extra-labels-key when using --extra-labels')
 
 
 class Options(usage.Options):

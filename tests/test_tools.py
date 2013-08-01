@@ -178,7 +178,10 @@ class ParticipantExportTestCase(PersistenceMixin, TestCase):
 
         self.exporter.export(FakeOptions(
             options={'poll-id': self.poll_id},
-            subOptions={'extra-labels': 'foo, bar, baz'}))
+            subOptions={
+                'extra-labels': 'foo, bar, baz',
+                'extra-labels-key': self.poll_id,
+            }))
 
         exported_string = self.exporter.stdout.getvalue()
         exported_data = dict(yaml.safe_load(exported_string))
@@ -203,6 +206,7 @@ class ParticipantExportTestCase(PersistenceMixin, TestCase):
             options={'poll-id': self.poll_id},
             subOptions={
                 'extra-labels': 'foo, bar, baz',
+                'extra-labels-key': self.poll_id,
                 'user-id': 'user-1',
             }))
 

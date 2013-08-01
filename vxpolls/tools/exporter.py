@@ -113,5 +113,5 @@ if __name__ == '__main__':
         raise usage.UsageError(
             'Please provide a subcommand')
 
-    exporter = exporter_class(config)
-    exporter.export(options['poll-id'], serializer)
+    exporter = exporter_class(config, serializer)
+    exporter.export(options['poll-id'])

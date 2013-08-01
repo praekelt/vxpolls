@@ -1,6 +1,7 @@
 # -*- test-case-name: tests.test_tools -*-
 import sys
 import yaml
+import json
 
 from vumi.persist.redis_manager import RedisManager
 
@@ -108,10 +109,9 @@ if __name__ == '__main__':
     }
 
     exporter_class = exporter_map.get(options.subCommand)
-    if not exporter:
+    if not exporter_class:
         raise usage.UsageError(
             'Please provide a subcommand')
 
     exporter = exporter_class(config)
     exporter.export(options['poll-id'], serializer)
-

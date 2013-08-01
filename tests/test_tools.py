@@ -137,7 +137,6 @@ class ParticipantExportTestCase(PersistenceMixin, TestCase):
         self.poll.set_last_question(p1, question)
 
         p2 = self.manager.get_participant(self.poll_id, 'user-2')
-        p2.set_poll_id(None)
         question = self.poll.get_next_question(p2)
         self.poll.set_last_question(p2, question)
 

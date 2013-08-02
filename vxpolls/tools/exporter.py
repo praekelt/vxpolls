@@ -74,7 +74,8 @@ class ExportParticipantOptions(usage.Options):
 
     optParameters = [
         ['extra-labels-key', None, None, 'Used for grabbing label values'],
-        ['extra-labels', 'l', None, 'Any extra labels to extract'],
+        ['extra-labels', 'l', None,
+            'Any extra labels to extract (comma separated)'],
         ['user-id', None, None, 'Extract only for a single user'],
     ]
 

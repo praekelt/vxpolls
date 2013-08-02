@@ -59,10 +59,11 @@ class ParticipantExporter(VxpollExporter):
             timestamp = self.pm.get_participant_timestamp(poll.poll_id,
                                                           user_id)
             user_data.setdefault('user_timestamp', timestamp.isoformat())
-            for label in labels:
+            if labels:
                 label_key = options.subOptions['extra-labels-key']
                 participant = self.pm.get_participant(label_key, user_id)
-                user_data[label] = participant.get_label(label)
+                for label in labels:
+                    user_data[label] = participant.get_label(label)
         self.serializer(users, self.stdout)
 
 

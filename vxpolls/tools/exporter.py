@@ -64,7 +64,7 @@ class ParticipantExporter(VxpollExporter):
                 participant = self.pm.get_participant(label_key, user_id)
                 for label in labels:
                     value = participant.get_label(label)
-                    if options['skip-nones'] and value is None:
+                    if options.subOptions.get('skip-nones') and value is None:
                         continue
 
                     user_data[label] = value

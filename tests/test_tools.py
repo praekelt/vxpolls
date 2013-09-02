@@ -226,11 +226,9 @@ class ParticipantExportTestCase(PersistenceMixin, TestCase):
         self.poll.submit_answer(p1, 'one')
 
         self.exporter.export(FakeOptions(
-            options={
-                'poll-id': self.poll_id,
-                'skip-nones': True,
-            },
+            options={'poll-id': self.poll_id},
             subOptions={
+                'skip-nones': True,
                 'extra-labels': 'foo, bar, baz',
                 'extra-labels-key': self.poll_id,
                 'user-id': 'user-1',

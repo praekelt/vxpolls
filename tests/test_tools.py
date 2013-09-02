@@ -218,3 +218,29 @@ class ParticipantExportTestCase(PersistenceMixin, TestCase):
         self.assertEqual(
             set(data.keys()),
             set(['foo', 'bar', 'baz', 'the-question', 'user_timestamp']))
+
+    def test_skip_nones(self):
+        p1 = self.manager.get_participant(self.poll_id, 'user-1')
+        question = self.poll.get_next_question(p1)
+        self.poll.set_last_question(p1, question)
+        self.poll.submit_answer(p1, 'one')
+
+        self.exporter.export(FakeOptions(
+            options={
+                'poll-id': self.poll_id,
+                'skip-nones': True,
+            },
+            subOptions={
+                'extra-labels': 'foo, bar, baz',
+                'extra-labels-key': self.poll_id,
+                'user-id': 'user-1',
+            }))
+
+        exported_string = self.exporter.stdout.getvalue()
+        exported_data = dict(yaml.safe_load(exported_string))
+
+        self.assertEqual(exported_data.keys(), ['user-1'])
+        data = exported_data['user-1']
+        self.assertEqual(
+            set(data.keys()),
+            set(['the-question', 'user_timestamp']))

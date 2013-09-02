@@ -63,7 +63,11 @@ class ParticipantExporter(VxpollExporter):
                 label_key = options.subOptions['extra-labels-key']
                 participant = self.pm.get_participant(label_key, user_id)
                 for label in labels:
-                    user_data[label] = participant.get_label(label)
+                    value = participant.get_label(label)
+                    if options['skip-nones'] and value is None:
+                        continue
+
+                    user_data[label] = value
         self.serializer(users, self.stdout)
 
 
@@ -78,6 +82,10 @@ class ExportParticipantOptions(usage.Options):
         ['extra-labels', 'l', None,
             'Any extra labels to extract (comma separated)'],
         ['user-id', None, None, 'Extract only for a single user'],
+    ]
+
+    optFlags = [
+        ['skip-nones', 's', 'Skip None values in the export'],
     ]
 
     def postOptions(self):

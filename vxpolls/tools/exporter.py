@@ -89,7 +89,7 @@ class ParticipantExporter(VxpollExporter):
     def get_msisdns(self, poll):
         keys = self.r_server.keys('%s:poll:results:collections:%s*' % (
             self.poll_prefix, poll.poll_id,))
-        return [key.split(':', 9)[-1] for key in keys]
+        return set([key.split(':', 9)[-1] for key in keys])
 
     def get_active_users(self, poll, msisdns, questions, label_key, labels,
                          skip_nones):

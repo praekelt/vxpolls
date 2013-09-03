@@ -94,7 +94,7 @@ class ArchivedParticipantExporter(ParticipantExporter):
 
     def get_archived_user_ids(self, poll_id):
         archive_keys = self.pm.inactive_participant_session_keys()
-        return [key.split('-')[-1] for key in archive_keys
+        return [key.split('-', 3)[-1] for key in archive_keys
                 if key.startswith(poll_id)]
 
     def get_latest_participant_data(self, archives):

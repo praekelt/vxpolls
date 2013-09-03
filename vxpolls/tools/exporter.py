@@ -78,9 +78,6 @@ class ArchivedParticipantExporter(ParticipantExporter):
     def export(self, options):
         poll_id = options['poll-id']
         poll = self.pm.get(poll_id)
-        labels_raw = options.subOptions.get('extra-labels', '').split(',')
-        labels = filter(None, [label.strip() for label in labels_raw])
-        questions = [q['label'] for q in poll.questions]
         single_user_id = options.subOptions.get('user-id')
         if single_user_id:
             users = [(

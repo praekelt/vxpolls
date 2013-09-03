@@ -72,9 +72,10 @@ class ParticipantExporter(VxpollExporter):
         self.serializer(users, self.stdout)
 
     def is_archived(self, poll, user_id):
-        session_key = '%s:session:%s-%s' % (
-            self.poll_prefix, poll.poll_id, user_id)
-        return self.r_server.type(session_key) == 'none'
+        session_key = self.pm.get_session_key(poll.poll_id, user_id)
+        archive_key = self.pm.r_key('archive')
+        return self.r_server.sismember(archive_key, session_key)
+
 
     def split_active_and_archived_msisdns(self, poll, msisdns):
         active = []
@@ -84,7 +85,7 @@ class ParticipantExporter(VxpollExporter):
                 archived.append(msisdn)
             else:
                 active.append(msisdn)
-        return archived, active
+        return active, archived
 
     def get_msisdns(self, poll):
         keys = self.r_server.keys('%s:poll:results:collections:%s*' % (

@@ -3,6 +3,8 @@ import sys
 import yaml
 import json
 
+from datetime import datetime
+
 from vumi.persist.redis_manager import RedisManager
 
 from vxpolls.manager import PollManager
@@ -71,6 +73,42 @@ class ParticipantExporter(VxpollExporter):
         self.serializer(users, self.stdout)
 
 
+class ArchivedParticipantExporter(ParticipantExporter):
+
+    def export(self, options):
+        poll_id = options['poll-id']
+        poll = self.pm.get(poll_id)
+        labels_raw = options.subOptions.get('extra-labels', '').split(',')
+        labels = filter(None, [label.strip() for label in labels_raw])
+        questions = [q['label'] for q in poll.questions]
+        single_user_id = options.subOptions.get('user-id')
+        if single_user_id:
+            users = [(
+                single_user_id,
+                self.get_latest_participant_data(
+                    self.pm.get_archive(poll_id, single_user_id)))]
+        else:
+            msisdns = self.get_archived_user_ids(poll_id)
+            users = []
+            for msisdn in msisdns:
+                data = self.get_latest_participant_data(
+                        self.pm.get_archive(poll_id, msisdn))
+                users.append((msisdn, data))
+        self.serializer(users, self.stdout)
+
+    def get_archived_user_ids(self, poll_id):
+        archive_keys = self.pm.inactive_participant_session_keys()
+        return [key.split('-')[-1] for key in archive_keys
+                if key.startswith(poll_id)]
+
+    def get_latest_participant_data(self, archives):
+        latest = max(archives, key=lambda participant: participant.updated_at)
+        data = latest.labels.copy()
+        data['user_timestamp'] = datetime.fromtimestamp(
+            latest.updated_at).isoformat()
+        return data
+
+
 class ExportPollOptions(usage.Options):
     pass
 
@@ -107,6 +145,8 @@ class Options(usage.Options):
             "Export a YAML vxpoll definition"],
         ['export-participants', None, ExportParticipantOptions,
             'Export a YAML vxpoll participant definition.'],
+        ['export-archived-participants', None, ExportParticipantOptions,
+            'Export a YAML vspoll participant definition.'],
     ]
 
     def postOptions(self):
@@ -139,6 +179,7 @@ if __name__ == '__main__':
     exporter_map = {
         'export-poll': PollExporter,
         'export-participants': ParticipantExporter,
+        'export-archived-participants': ArchivedParticipantExporter,
     }
 
     exporter_class = exporter_map.get(options.subCommand)

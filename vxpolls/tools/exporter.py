@@ -100,6 +100,8 @@ class ParticipantExporter(VxpollExporter):
                  poll.results_manager.get_users(poll_id, questions)
                  if user_id in msisdns]
         for user_id, user_data in users:
+            # bloody multisurvey crap
+            poll_id = poll.poll_id.split('_')[0]
             timestamp = self.pm.get_participant_timestamp(poll_id, user_id)
             user_data.setdefault('user_timestamp', timestamp.isoformat())
 

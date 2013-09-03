@@ -72,10 +72,11 @@ class ParticipantExporter(VxpollExporter):
         self.serializer(users, self.stdout)
 
     def is_archived(self, poll, user_id):
-        session_key = self.pm.get_session_key(poll.poll_id, user_id)
+        # bloody multisurvey crap
+        poll_id = poll.poll_id.split('_')[0]
+        session_key = self.pm.get_session_key(poll_id, user_id)
         archive_key = self.pm.r_key('archive')
         return self.r_server.sismember(archive_key, session_key)
-
 
     def split_active_and_archived_msisdns(self, poll, msisdns):
         active = []
@@ -115,8 +116,10 @@ class ParticipantExporter(VxpollExporter):
     def get_archived_users(self, poll, msisdns):
         users = []
         for msisdn in msisdns:
+            # bloody multisurvey crap
+            poll_id = poll.poll_id.split('_')[0]
             data = self.get_latest_participant_data(
-                self.pm.get_archive(poll.poll_id, msisdn))
+                self.pm.get_archive(poll_id, msisdn))
             users.append((msisdn, data))
         return users
 

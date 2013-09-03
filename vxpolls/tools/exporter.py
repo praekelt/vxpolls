@@ -77,7 +77,6 @@ class ArchivedParticipantExporter(ParticipantExporter):
 
     def export(self, options):
         poll_id = options['poll-id']
-        poll = self.pm.get(poll_id)
         single_user_id = options.subOptions.get('user-id')
         if single_user_id:
             users = [(
@@ -129,6 +128,13 @@ class ExportParticipantOptions(usage.Options):
                 'Please provide --extra-labels-key when using --extra-labels')
 
 
+class ExportArchivedParticipantOptions(usage.Options):
+
+    optParameters = [
+        ['user-id', None, None, 'Extract only for a single user'],
+    ]
+
+
 class Options(usage.Options):
 
     optParameters = [
@@ -142,7 +148,8 @@ class Options(usage.Options):
             "Export a YAML vxpoll definition"],
         ['export-participants', None, ExportParticipantOptions,
             'Export a YAML vxpoll participant definition.'],
-        ['export-archived-participants', None, ExportParticipantOptions,
+        ['export-archived-participants', None,
+            ExportArchivedParticipantOptions,
             'Export a YAML vspoll participant definition.'],
     ]
 

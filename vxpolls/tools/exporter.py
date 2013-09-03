@@ -19,9 +19,9 @@ class VxpollExporter(object):
     def __init__(self, config, serializer):
         r_config = config.get('redis_manager', {})
         vxp_config = config.get('vxpolls', {})
-        poll_prefix = vxp_config.get('prefix', 'poll_manager')
+        self.poll_prefix = vxp_config.get('prefix', 'poll_manager')
         self.r_server = self.manager = RedisManager.from_config(r_config)
-        self.pm = PollManager(self.r_server, poll_prefix)
+        self.pm = PollManager(self.r_server, self.poll_prefix)
         self.serializer = serializer
 
     def export(self, poll_id):
@@ -49,28 +49,82 @@ class ParticipantExporter(VxpollExporter):
         poll_id = options['poll-id']
         poll = self.pm.get(poll_id)
         labels_raw = options.subOptions.get('extra-labels', '').split(',')
+        label_key = options.subOptions.get('extra-labels-key', None)
         labels = filter(None, [label.strip() for label in labels_raw])
         questions = [q['label'] for q in poll.questions]
         single_user_id = options.subOptions.get('user-id')
-        if single_user_id:
-            users = [(single_user_id, poll.results_manager.get_user(
-                      poll.poll_id, single_user_id, questions))]
-        else:
-            users = poll.results_manager.get_users(poll.poll_id, questions)
-        for user_id, user_data in users:
-            timestamp = self.pm.get_participant_timestamp(poll.poll_id,
-                                                          user_id)
-            user_data.setdefault('user_timestamp', timestamp.isoformat())
-            if labels:
-                label_key = options.subOptions['extra-labels-key']
-                participant = self.pm.get_participant(label_key, user_id)
-                for label in labels:
-                    value = participant.get_label(label)
-                    if options.subOptions.get('skip-nones') and value is None:
-                        continue
+        skip_nones = options.subOptions.get('skip-nones')
 
-                    user_data[label] = value
+        if single_user_id:
+            msisdns = [single_user_id]
+        else:
+            msisdns = self.get_msisdns(poll)
+
+        active, archived = self.split_active_and_archived_msisdns(
+            poll, msisdns)
+
+        users = self.get_active_users(poll, active, questions,
+                                      label_key, labels, skip_nones)
+
+        if options.subOptions['include-archived']:
+            users.extend(self.get_archived_users(poll, archived))
+
         self.serializer(users, self.stdout)
+
+    def is_archived(self, poll, user_id):
+        session_key = '%s:session:%s-%s' % (
+            self.poll_prefix, poll.poll_id, user_id)
+        return self.r_server.type(session_key) == 'none'
+
+    def split_active_and_archived_msisdns(self, poll, msisdns):
+        active = []
+        archived = []
+        for msisdn in msisdns:
+            if self.is_archived(poll, msisdn):
+                archived.append(msisdn)
+            else:
+                active.append(msisdn)
+        return archived, active
+
+    def get_msisdns(self, poll):
+        keys = self.r_server.keys('%s:poll:results:collections:%s*' % (
+            self.poll_prefix, poll.poll_id,))
+        return [key.split(':', 9)[-1] for key in keys]
+
+    def get_active_users(self, poll, msisdns, questions, label_key, labels,
+                         skip_nones):
+        poll_id = poll.poll_id
+        users = [(user_id, user_data) for user_id, user_data in
+                 poll.results_manager.get_users(poll_id, questions)
+                 if user_id in msisdns]
+        for user_id, user_data in users:
+            timestamp = self.pm.get_participant_timestamp(poll_id, user_id)
+            user_data.setdefault('user_timestamp', timestamp.isoformat())
+
+        if labels:
+            participant = self.pm.get_participant(label_key, user_id)
+            for label in labels:
+                value = participant.get_label(label)
+                if skip_nones and value is None:
+                    continue
+
+                user_data[label] = value
+        return users
+
+    def get_archived_users(self, poll, msisdns):
+        users = []
+        for msisdn in msisdns:
+            data = self.get_latest_participant_data(
+                self.pm.get_archive(poll.poll_id, msisdn))
+            users.append((msisdn, data))
+        return users
+
+    def get_latest_participant_data(self, archives):
+        latest = max(archives, key=lambda participant: participant.updated_at)
+        data = latest.labels.copy()
+        data['user_timestamp'] = datetime.fromtimestamp(
+            latest.updated_at).isoformat()
+        return data
 
 
 class ArchivedParticipantExporter(ParticipantExporter):
@@ -120,6 +174,7 @@ class ExportParticipantOptions(usage.Options):
 
     optFlags = [
         ['skip-nones', 's', 'Skip None values in the export'],
+        ['include-archived', 'i', 'Include archived participants'],
     ]
 
     def postOptions(self):

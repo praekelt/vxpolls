@@ -156,7 +156,7 @@ class ParticipantExportTestCase(PersistenceMixin, TestCase):
 
         self.exporter.export(FakeOptions(
             options={'poll-id': self.poll_id},
-            subOptions={}))
+            subOptions={'include-archived': False}))
 
         exported_string = self.exporter.stdout.getvalue()
         exported_data = dict(yaml.safe_load(exported_string))
@@ -171,6 +171,47 @@ class ParticipantExportTestCase(PersistenceMixin, TestCase):
         self.assertTrue(
             iso8601.parse_date(exported_data['user-2']['user_timestamp']))
 
+    def test_export_with_archives(self):
+        p1 = self.manager.get_participant(self.poll_id, 'user-1')
+        question = self.poll.get_next_question(p1)
+        self.poll.set_last_question(p1, question)
+
+        p2 = self.manager.get_participant(self.poll_id, 'user-2')
+        question = self.poll.get_next_question(p2)
+        self.poll.set_last_question(p2, question)
+
+        p3 = self.manager.get_participant(self.poll_id, 'user-3')
+        question = self.poll.get_next_question(p3)
+        self.poll.set_last_question(p3, question)
+
+        self.poll.submit_answer(p1, 'one')
+        self.poll.submit_answer(p2, 'two')
+        self.poll.submit_answer(p3, 'two')
+
+        self.manager.archive(self.poll_id, p3)
+
+        self.exporter.export(FakeOptions(
+            options={'poll-id': self.poll_id},
+            subOptions={'include-archived': True}))
+
+        exported_string = self.exporter.stdout.getvalue()
+        exported_data = dict(yaml.safe_load(exported_string))
+        # check we have all known users
+        self.assertEqual(
+            sorted(exported_data.keys()),
+            ['user-1', 'user-2', 'user-3'])
+        # check we have all known answers
+        self.assertEqual(exported_data['user-1']['the-question'], 'one')
+        self.assertEqual(exported_data['user-2']['the-question'], 'two')
+        self.assertEqual(exported_data['user-3']['the-question'], 'two')
+        # check we have all timestamps
+        self.assertTrue(
+            iso8601.parse_date(exported_data['user-1']['user_timestamp']))
+        self.assertTrue(
+            iso8601.parse_date(exported_data['user-2']['user_timestamp']))
+        self.assertTrue(
+            iso8601.parse_date(exported_data['user-3']['user_timestamp']))
+
     def test_export_with_extra_labels(self):
         p1 = self.manager.get_participant(self.poll_id, 'user-1')
         question = self.poll.get_next_question(p1)
@@ -182,6 +223,7 @@ class ParticipantExportTestCase(PersistenceMixin, TestCase):
             subOptions={
                 'extra-labels': 'foo, bar, baz',
                 'extra-labels-key': self.poll_id,
+                'include-archived': False
             }))
 
         exported_string = self.exporter.stdout.getvalue()
@@ -209,6 +251,7 @@ class ParticipantExportTestCase(PersistenceMixin, TestCase):
                 'extra-labels': 'foo, bar, baz',
                 'extra-labels-key': self.poll_id,
                 'user-id': 'user-1',
+                'include-archived': False,
             }))
 
         exported_string = self.exporter.stdout.getvalue()
@@ -233,6 +276,7 @@ class ParticipantExportTestCase(PersistenceMixin, TestCase):
                 'extra-labels': 'foo, bar, baz',
                 'extra-labels-key': self.poll_id,
                 'user-id': 'user-1',
+                'include-archived': False,
             }))
 
         exported_string = self.exporter.stdout.getvalue()

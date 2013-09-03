@@ -157,7 +157,7 @@ class PollManager(object):
 
     @Manager.calls_manager
     def get_all_archives(self):
-        user_ids = yield self.inactive_participant_session_keys()
+        user_ids = yield self.inactive_participant_user_ids()
         archives = []
         for user_id in user_ids:
             archive = yield self.get_archive(user_id)

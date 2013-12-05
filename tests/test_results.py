@@ -2,7 +2,7 @@
 
 from twisted.internet.defer import inlineCallbacks
 
-from vumi.application.tests.test_base import ApplicationTestCase
+from vumi.application.tests.utils import ApplicationTestCase
 
 from vxpolls.results import (
     ResultManager, ResultManagerException, CollectionException)

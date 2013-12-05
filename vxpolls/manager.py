@@ -255,7 +255,14 @@ class PollManager(object):
         field_names = ['user_id']
         if include_timestamp:
             field_names.append('user_timestamp')
-        field_names.extend([q['label'].encode('utf-8')
+        if include_old_questions:
+            old_questions = set()
+            for user_id, user_data in users:
+                old_questions.update(user_data.iterkeys())
+            old_questions.discard('user_timestamp')
+            field_names.extend(sorted(old_questions))
+        else:
+            field_names.extend([q['label'].encode('utf-8')
                                 for q in poll.questions])
         writer = csv.DictWriter(sio, fieldnames=field_names)
         # write header row

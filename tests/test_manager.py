@@ -214,6 +214,18 @@ class PollManagerTestCase(PersistenceMixin, TestCase):
         self.assertTrue(csv_data.split('\r\n')[1].startswith(
             'user-1,%s' % (datetime.now().date(),)))
 
+    @inlineCallbacks
+    def test_export_user_data_as_csv_with_old_questions(self):
+        poll = yield self.mkpoll_for_export()
+        # remove some questions from the poll
+        del poll.questions[1:]
+        csv_data = yield self.poll_manager.export_user_data_as_csv(
+            poll, include_old_questions=True)
+        self.assertEqual(csv_data.split('\r\n')[0],
+            'user_id,user_timestamp,question-0,question-1,question-2')
+        self.assertTrue(csv_data.split('\r\n')[1].startswith(
+            'user-1,%s' % (datetime.now().date(),)))
+
 
 class MultiLevelPollManagerTestCase(PersistenceMixin, TestCase):
 

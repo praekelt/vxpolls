@@ -3,9 +3,9 @@ from datetime import date, timedelta
 
 from twisted.internet.defer import inlineCallbacks, returnValue
 
-from vumi.application.tests.test_base import ApplicationTestCase
+from vumi.application.tests.utils import ApplicationTestCase
 
-from vxpolls.multipoll_example import MultiPollApplication, Event
+from vxpolls.multipoll_example import MultiPollApplication
 
 
 class MultiPollTestApplication(MultiPollApplication):

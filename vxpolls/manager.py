@@ -211,7 +211,8 @@ class PollManager(object):
         return self.session_manager.stop(stop_redis=False)
 
     @Manager.calls_manager
-    def export_user_data(self, poll, include_timestamp=True):
+    def export_user_data(self, poll, include_timestamp=True,
+                         include_old_questions=False):
         """
         Export the user data for a poll, returns
             [(user_id, user_data_dict), ...]
@@ -221,8 +222,15 @@ class PollManager(object):
             each dict with user data. The timestamp reflects the participants
             `updated_at` value. If `user_timestamp` already exists as a key
             in the user data then it is left as is.
+
+        :param bool include_old_questions:
+            If true, responses to questions from older versions of the poll
+            are included.
         """
-        questions = [q['label'] for q in poll.questions]
+        if include_old_questions:
+            questions = None
+        else:
+            questions = [q['label'] for q in poll.questions]
         users = yield poll.results_manager.get_users(poll.poll_id, questions)
         if not include_timestamp:
             returnValue(users)
@@ -233,13 +241,16 @@ class PollManager(object):
         returnValue(users)
 
     @Manager.calls_manager
-    def export_user_data_as_csv(self, poll, include_timestamp=True):
+    def export_user_data_as_csv(self, poll, include_timestamp=True,
+                                include_old_questions=False):
         """
         See `export_user_data`
 
         Returns the user data in UTF-8 encoded CSV format.
         """
-        users = yield self.export_user_data(poll, include_timestamp)
+        users = yield self.export_user_data(
+            poll, include_timestamp=include_timestamp,
+            include_old_questions=include_old_questions)
         sio = StringIO()
         field_names = ['user_id']
         if include_timestamp:

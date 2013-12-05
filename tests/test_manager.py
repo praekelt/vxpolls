@@ -193,6 +193,19 @@ class PollManagerTestCase(PersistenceMixin, TestCase):
             self.assertEqual(data['user_timestamp'], 'response')
 
     @inlineCallbacks
+    def test_export_user_data_with_old_questions(self):
+        poll = yield self.mkpoll_for_export()
+        # remove some questions from the poll
+        del poll.questions[1:]
+        user_data = yield self.poll_manager.export_user_data(
+            poll, include_old_questions=True)
+        for user_id, data in user_data:
+            self.assertEqual(
+                set(['question-0', 'question-1',
+                     'question-2', 'user_timestamp']),
+                set(data.keys()))
+
+    @inlineCallbacks
     def test_export_user_data_as_csv(self):
         poll = yield self.mkpoll_for_export()
         csv_data = (yield self.poll_manager.export_user_data_as_csv(poll))

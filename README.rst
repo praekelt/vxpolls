@@ -1,45 +1,14 @@
 vxPolls
 =======
 
-Simple PollManager, ResultsManager and PollResultsDashboardServer. 
+Simple PollManager, ResultsManager and PollResultsDashboardServer.
 
-Dependencies
-------------
 
-#. `RabbitMQ <http://www.rabbitmq.com/>`_
+THIS PROJECT IS DEPRECATED.
 
-Installation
-------------
 
-::
+It is currently used in `Vumi Go`_ where it is being phased out in favour of a
+more flexible dialogue engine.
 
-    $ virtualenv --no-site-packages ve
-    $ source ve/bin/activate
-    $ pip install -r requirements.pip
 
-On initial setup RabbitMQ needs to be configured::
-
-    $ sudo ./ve/src/vumi/utils/rabbitmq.setup.sh
-
-Running
--------
-
-Update `xmpp.yaml` with your GTalk account details and run the following:
-
-::
-
-	$ source ve/bin/activate
-	$ supervisord
-
-That will run the necessary processes. Run `supervisorctl` to manage the individual processes.
-Your GTalk account should come online, send it a message to start the poll.
-
-You'll find more instructions for dashboards at http://localhost:8101/dashboard/index.html
-
-Tests
------
-
-::
-
-	$ source ve/bin/activate
-	$ trial tests
+.. _Vumi Go: https://github.com/praekelt/vumi-go

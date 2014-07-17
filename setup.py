@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="vxpolls",
-    version="0.1.0",
+    version="0.2.0a",
     url='http://github.com/praekelt/vxpolls',
     license='BSD',
     description="Simple polling / survey framework for Vumi apps",
